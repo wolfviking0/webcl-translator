@@ -1,0 +1,1486 @@
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "radixSortBlocksKeysOnly" :
+                {
+                    "keysIn" :
+                        {
+                            "index" : 0,
+                            "type" : "uint4 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_keysIn_size"
+                        },
+                    "_wcl_keysIn_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "keysOut" :
+                        {
+                            "index" : 2,
+                            "type" : "uint4 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_keysOut_size"
+                        },
+                    "_wcl_keysOut_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "nbits" :
+                        {
+                            "index" : 4,
+                            "type" : "uint"
+                        },
+                    "startbit" :
+                        {
+                            "index" : 5,
+                            "type" : "uint"
+                        },
+                    "numElements" :
+                        {
+                            "index" : 6,
+                            "type" : "uint"
+                        },
+                    "totalBlocks" :
+                        {
+                            "index" : 7,
+                            "type" : "uint"
+                        },
+                    "sMem" :
+                        {
+                            "index" : 8,
+                            "type" : "uint *",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_sMem_size"
+                        },
+                    "_wcl_sMem_size" :
+                        {
+                            "index" : 9,
+                            "type" : "ulong"
+                        }
+                },
+            "findRadixOffsets" :
+                {
+                    "keys" :
+                        {
+                            "index" : 0,
+                            "type" : "uint2 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_keys_size"
+                        },
+                    "_wcl_keys_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "counters" :
+                        {
+                            "index" : 2,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_counters_size"
+                        },
+                    "_wcl_counters_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "blockOffsets" :
+                        {
+                            "index" : 4,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_blockOffsets_size"
+                        },
+                    "_wcl_blockOffsets_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "startbit" :
+                        {
+                            "index" : 6,
+                            "type" : "uint"
+                        },
+                    "numElements" :
+                        {
+                            "index" : 7,
+                            "type" : "uint"
+                        },
+                    "totalBlocks" :
+                        {
+                            "index" : 8,
+                            "type" : "uint"
+                        },
+                    "sRadix1" :
+                        {
+                            "index" : 9,
+                            "type" : "uint *",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_sRadix1_size"
+                        },
+                    "_wcl_sRadix1_size" :
+                        {
+                            "index" : 10,
+                            "type" : "ulong"
+                        }
+                },
+            "scanNaive" :
+                {
+                    "g_odata" :
+                        {
+                            "index" : 0,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_g_odata_size"
+                        },
+                    "_wcl_g_odata_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "g_idata" :
+                        {
+                            "index" : 2,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_g_idata_size"
+                        },
+                    "_wcl_g_idata_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "n" :
+                        {
+                            "index" : 4,
+                            "type" : "uint"
+                        },
+                    "temp" :
+                        {
+                            "index" : 5,
+                            "type" : "uint *",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_temp_size"
+                        },
+                    "_wcl_temp_size" :
+                        {
+                            "index" : 6,
+                            "type" : "ulong"
+                        }
+                },
+            "reorderDataKeysOnly" :
+                {
+                    "outKeys" :
+                        {
+                            "index" : 0,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_outKeys_size"
+                        },
+                    "_wcl_outKeys_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "keys" :
+                        {
+                            "index" : 2,
+                            "type" : "uint2 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_keys_size"
+                        },
+                    "_wcl_keys_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "blockOffsets" :
+                        {
+                            "index" : 4,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_blockOffsets_size"
+                        },
+                    "_wcl_blockOffsets_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "offsets" :
+                        {
+                            "index" : 6,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_offsets_size"
+                        },
+                    "_wcl_offsets_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        },
+                    "sizes" :
+                        {
+                            "index" : 8,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_sizes_size"
+                        },
+                    "_wcl_sizes_size" :
+                        {
+                            "index" : 9,
+                            "type" : "ulong"
+                        },
+                    "startbit" :
+                        {
+                            "index" : 10,
+                            "type" : "uint"
+                        },
+                    "numElements" :
+                        {
+                            "index" : 11,
+                            "type" : "uint"
+                        },
+                    "totalBlocks" :
+                        {
+                            "index" : 12,
+                            "type" : "uint"
+                        },
+                    "sKeys2" :
+                        {
+                            "index" : 13,
+                            "type" : "uint2 *",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_sKeys2_size"
+                        },
+                    "_wcl_sKeys2_size" :
+                        {
+                            "index" : 14,
+                            "type" : "ulong"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((128 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (128/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((128 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (128/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((64 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (64/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+typedef struct {
+    uint _wcl_sum[3];
+    uint4 _wcl_rank;
+    uint4 _wcl_lsb;
+    uint4 _wcl_r;
+    uint4 _wcl_key;
+    uint2 _wcl_radix2;
+    __local uint *_wcl_sKeys1;
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
+
+typedef struct {
+    uint _wcl_numtrue[1];
+    uint _wcl_sStartPointers[16];
+    uint _wcl_sOffsets[16];
+    uint _wcl_sBlockOffsets[16];
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_local_ALIGNMENT))) _WclLocals;
+
+typedef struct {
+    __global uint4 *radixSortBlocksKeysOnly__keysIn_min;
+    __global uint4 *radixSortBlocksKeysOnly__keysIn_max;
+    __global uint4 *radixSortBlocksKeysOnly__keysOut_min;
+    __global uint4 *radixSortBlocksKeysOnly__keysOut_max;
+    __global uint2 *findRadixOffsets__keys_min;
+    __global uint2 *findRadixOffsets__keys_max;
+    __global uint *findRadixOffsets__counters_min;
+    __global uint *findRadixOffsets__counters_max;
+    __global uint *findRadixOffsets__blockOffsets_min;
+    __global uint *findRadixOffsets__blockOffsets_max;
+    __global uint *scanNaive__g_odata_min;
+    __global uint *scanNaive__g_odata_max;
+    __global uint *scanNaive__g_idata_min;
+    __global uint *scanNaive__g_idata_max;
+    __global uint *reorderDataKeysOnly__outKeys_min;
+    __global uint *reorderDataKeysOnly__outKeys_max;
+    __global uint2 *reorderDataKeysOnly__keys_min;
+    __global uint2 *reorderDataKeysOnly__keys_max;
+    __global uint *reorderDataKeysOnly__blockOffsets_min;
+    __global uint *reorderDataKeysOnly__blockOffsets_max;
+    __global uint *reorderDataKeysOnly__offsets_min;
+    __global uint *reorderDataKeysOnly__offsets_max;
+    __global uint *reorderDataKeysOnly__sizes_min;
+    __global uint *reorderDataKeysOnly__sizes_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    __local _WclLocals * _wcl_locals_min;
+    __local _WclLocals * _wcl_locals_max;
+    __local uint *radixSortBlocksKeysOnly__sMem_min;
+    __local uint *radixSortBlocksKeysOnly__sMem_max;
+    __local uint *findRadixOffsets__sRadix1_min;
+    __local uint *findRadixOffsets__sRadix1_max;
+    __local uint *scanNaive__temp_min;
+    __local uint *scanNaive__temp_max;
+    __local uint2 *reorderDataKeysOnly__sKeys2_min;
+    __local uint2 *reorderDataKeysOnly__sKeys2_max;
+} _WclLocalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+    _WclLocalLimits ll;
+    __local uint *ln;
+    _WclPrivates pa;
+    __private uint *pn;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+// be careful to edit this, this has been carefully tuned to work on every OpenCL driver
+// e.g. % item_count was added to start[(items_offset+i)] = _WCL_FILLCHAR;
+// to prevent compiler crash on Apple GeForce 640M
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[(items_offset+i) % item_count] = _WCL_FILLCHAR;           \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+constant int hd4k_workaround_constant = 0;
+
+// <= General code that doesn't depend on input.
+
+bool _wcl_addr_check_private_1_uint__Ptr(uint *addr, unsigned size, uint * min0, uint * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(uint *, max0)) );
+}
+uint *_wcl_addr_clamp_private_1_uint__Ptr(uint *addr, unsigned size, uint * min0, uint * max0, uint * asnull)
+{
+     return _wcl_addr_check_private_1_uint__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_private_1_uint4__Ptr(uint4 *addr, unsigned size, uint4 * min0, uint4 * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(uint4 *, max0)) );
+}
+uint4 *_wcl_addr_clamp_private_1_uint4__Ptr(uint4 *addr, unsigned size, uint4 * min0, uint4 * max0, uint4 * asnull)
+{
+     return _wcl_addr_check_private_1_uint4__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_12__u_uglobal__uint__Ptr(__global uint *addr, unsigned size, __global uint * min0, __global uint * max0, __global uint * min1, __global uint * max1, __global uint * min2, __global uint * max2, __global uint * min3, __global uint * max3, __global uint * min4, __global uint * max4, __global uint * min5, __global uint * max5, __global uint * min6, __global uint * max6, __global uint * min7, __global uint * max7, __global uint * min8, __global uint * max8, __global uint * min9, __global uint * max9, __global uint * min10, __global uint * max10, __global uint * min11, __global uint * max11)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max4)) )
+        || ( ((addr) >= (min5)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max5)) )
+        || ( ((addr) >= (min6)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max6)) )
+        || ( ((addr) >= (min7)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max7)) )
+        || ( ((addr) >= (min8)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max8)) )
+        || ( ((addr) >= (min9)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max9)) )
+        || ( ((addr) >= (min10)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max10)) )
+        || ( ((addr) >= (min11)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max11)) );
+}
+__global uint *_wcl_addr_clamp_global_12__u_uglobal__uint__Ptr(__global uint *addr, unsigned size, __global uint * min0, __global uint * max0, __global uint * min1, __global uint * max1, __global uint * min2, __global uint * max2, __global uint * min3, __global uint * max3, __global uint * min4, __global uint * max4, __global uint * min5, __global uint * max5, __global uint * min6, __global uint * max6, __global uint * min7, __global uint * max7, __global uint * min8, __global uint * max8, __global uint * min9, __global uint * max9, __global uint * min10, __global uint * max10, __global uint * min11, __global uint * max11, __global uint * asnull)
+{
+     return _wcl_addr_check_global_12__u_uglobal__uint__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6, min7, max7, min8, max8, min9, max9, min10, max10, min11, max11) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_12__u_uglobal__uint2__Ptr(__global uint2 *addr, unsigned size, __global uint2 * min0, __global uint2 * max0, __global uint2 * min1, __global uint2 * max1, __global uint2 * min2, __global uint2 * max2, __global uint2 * min3, __global uint2 * max3, __global uint2 * min4, __global uint2 * max4, __global uint2 * min5, __global uint2 * max5, __global uint2 * min6, __global uint2 * max6, __global uint2 * min7, __global uint2 * max7, __global uint2 * min8, __global uint2 * max8, __global uint2 * min9, __global uint2 * max9, __global uint2 * min10, __global uint2 * max10, __global uint2 * min11, __global uint2 * max11)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global uint2 *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global uint2 *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global uint2 *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__global uint2 *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(__global uint2 *, max4)) )
+        || ( ((addr) >= (min5)) && ((addr + size - 1) <= _WCL_LAST(__global uint2 *, max5)) )
+        || ( ((addr) >= (min6)) && ((addr + size - 1) <= _WCL_LAST(__global uint2 *, max6)) )
+        || ( ((addr) >= (min7)) && ((addr + size - 1) <= _WCL_LAST(__global uint2 *, max7)) )
+        || ( ((addr) >= (min8)) && ((addr + size - 1) <= _WCL_LAST(__global uint2 *, max8)) )
+        || ( ((addr) >= (min9)) && ((addr + size - 1) <= _WCL_LAST(__global uint2 *, max9)) )
+        || ( ((addr) >= (min10)) && ((addr + size - 1) <= _WCL_LAST(__global uint2 *, max10)) )
+        || ( ((addr) >= (min11)) && ((addr + size - 1) <= _WCL_LAST(__global uint2 *, max11)) );
+}
+__global uint2 *_wcl_addr_clamp_global_12__u_uglobal__uint2__Ptr(__global uint2 *addr, unsigned size, __global uint2 * min0, __global uint2 * max0, __global uint2 * min1, __global uint2 * max1, __global uint2 * min2, __global uint2 * max2, __global uint2 * min3, __global uint2 * max3, __global uint2 * min4, __global uint2 * max4, __global uint2 * min5, __global uint2 * max5, __global uint2 * min6, __global uint2 * max6, __global uint2 * min7, __global uint2 * max7, __global uint2 * min8, __global uint2 * max8, __global uint2 * min9, __global uint2 * max9, __global uint2 * min10, __global uint2 * max10, __global uint2 * min11, __global uint2 * max11, __global uint2 * asnull)
+{
+     return _wcl_addr_check_global_12__u_uglobal__uint2__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6, min7, max7, min8, max8, min9, max9, min10, max10, min11, max11) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_12__u_uglobal__uint4__Ptr(__global uint4 *addr, unsigned size, __global uint4 * min0, __global uint4 * max0, __global uint4 * min1, __global uint4 * max1, __global uint4 * min2, __global uint4 * max2, __global uint4 * min3, __global uint4 * max3, __global uint4 * min4, __global uint4 * max4, __global uint4 * min5, __global uint4 * max5, __global uint4 * min6, __global uint4 * max6, __global uint4 * min7, __global uint4 * max7, __global uint4 * min8, __global uint4 * max8, __global uint4 * min9, __global uint4 * max9, __global uint4 * min10, __global uint4 * max10, __global uint4 * min11, __global uint4 * max11)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global uint4 *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global uint4 *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global uint4 *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__global uint4 *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(__global uint4 *, max4)) )
+        || ( ((addr) >= (min5)) && ((addr + size - 1) <= _WCL_LAST(__global uint4 *, max5)) )
+        || ( ((addr) >= (min6)) && ((addr + size - 1) <= _WCL_LAST(__global uint4 *, max6)) )
+        || ( ((addr) >= (min7)) && ((addr + size - 1) <= _WCL_LAST(__global uint4 *, max7)) )
+        || ( ((addr) >= (min8)) && ((addr + size - 1) <= _WCL_LAST(__global uint4 *, max8)) )
+        || ( ((addr) >= (min9)) && ((addr + size - 1) <= _WCL_LAST(__global uint4 *, max9)) )
+        || ( ((addr) >= (min10)) && ((addr + size - 1) <= _WCL_LAST(__global uint4 *, max10)) )
+        || ( ((addr) >= (min11)) && ((addr + size - 1) <= _WCL_LAST(__global uint4 *, max11)) );
+}
+__global uint4 *_wcl_addr_clamp_global_12__u_uglobal__uint4__Ptr(__global uint4 *addr, unsigned size, __global uint4 * min0, __global uint4 * max0, __global uint4 * min1, __global uint4 * max1, __global uint4 * min2, __global uint4 * max2, __global uint4 * min3, __global uint4 * max3, __global uint4 * min4, __global uint4 * max4, __global uint4 * min5, __global uint4 * max5, __global uint4 * min6, __global uint4 * max6, __global uint4 * min7, __global uint4 * max7, __global uint4 * min8, __global uint4 * max8, __global uint4 * min9, __global uint4 * max9, __global uint4 * min10, __global uint4 * max10, __global uint4 * min11, __global uint4 * max11, __global uint4 * asnull)
+{
+     return _wcl_addr_check_global_12__u_uglobal__uint4__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6, min7, max7, min8, max8, min9, max9, min10, max10, min11, max11) ? addr : asnull;
+}
+
+bool _wcl_addr_check_local_5__u_ulocal__uint__Ptr(__local uint *addr, unsigned size, __local uint * min0, __local uint * max0, __local uint * min1, __local uint * max1, __local uint * min2, __local uint * max2, __local uint * min3, __local uint * max3, __local uint * min4, __local uint * max4)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__local uint *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__local uint *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__local uint *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__local uint *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(__local uint *, max4)) );
+}
+__local uint *_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr(__local uint *addr, unsigned size, __local uint * min0, __local uint * max0, __local uint * min1, __local uint * max1, __local uint * min2, __local uint * max2, __local uint * min3, __local uint * max3, __local uint * min4, __local uint * max4, __local uint * asnull)
+{
+     return _wcl_addr_check_local_5__u_ulocal__uint__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4) ? addr : asnull;
+}
+
+bool _wcl_addr_check_local_5__u_ulocal__uint2__Ptr(__local uint2 *addr, unsigned size, __local uint2 * min0, __local uint2 * max0, __local uint2 * min1, __local uint2 * max1, __local uint2 * min2, __local uint2 * max2, __local uint2 * min3, __local uint2 * max3, __local uint2 * min4, __local uint2 * max4)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__local uint2 *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__local uint2 *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__local uint2 *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__local uint2 *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(__local uint2 *, max4)) );
+}
+__local uint2 *_wcl_addr_clamp_local_5__u_ulocal__uint2__Ptr(__local uint2 *addr, unsigned size, __local uint2 * min0, __local uint2 * max0, __local uint2 * min1, __local uint2 * max1, __local uint2 * min2, __local uint2 * max2, __local uint2 * min3, __local uint2 * max3, __local uint2 * min4, __local uint2 * max4, __local uint2 * asnull)
+{
+     return _wcl_addr_check_local_5__u_ulocal__uint2__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4) ? addr : asnull;
+}
+
+bool _wcl_addr_check_local_5_volatile___u_ulocal__uint__Ptr(volatile __local uint *addr, unsigned size, volatile __local uint * min0, volatile __local uint * max0, volatile __local uint * min1, volatile __local uint * max1, volatile __local uint * min2, volatile __local uint * max2, volatile __local uint * min3, volatile __local uint * max3, volatile __local uint * min4, volatile __local uint * max4)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(volatile __local uint *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(volatile __local uint *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(volatile __local uint *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(volatile __local uint *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(volatile __local uint *, max4)) );
+}
+volatile __local uint *_wcl_addr_clamp_local_5_volatile___u_ulocal__uint__Ptr(volatile __local uint *addr, unsigned size, volatile __local uint * min0, volatile __local uint * max0, volatile __local uint * min1, volatile __local uint * max1, volatile __local uint * min2, volatile __local uint * max2, volatile __local uint * min3, volatile __local uint * max3, volatile __local uint * min4, volatile __local uint * max4, volatile __local uint * asnull)
+{
+     return _wcl_addr_check_local_5_volatile___u_ulocal__uint__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4) ? addr : asnull;
+}
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+/*
+* Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+*
+* Please refer to the NVIDIA end user license agreement (EULA) associated
+* with this source code for terms and conditions that govern your use of
+* this software. Any use, reproduction, disclosure, or distribution of
+* this software and related documentation outside the terms of the EULA
+* is strictly prohibited.
+*
+*/
+
+//----------------------------------------------------------------------------
+// Scans each warp in parallel ("warp-scan"), one element per thread.
+// uses 2 numElements of shared memory per thread (64 = elements per warp)
+//----------------------------------------------------------------------------
+
+uint scanwarp(_WclProgramAllocations *_wcl_allocs, uint val, volatile __local uint* sData, int maxlevel)
+{
+    // The following is the same as 2 * RadixSort::WARP_SIZE * warpId + threadInWarp = 
+    // 64*(threadIdx.x >> 5) + (threadIdx.x & (RadixSort::WARP_SIZE - 1))
+    int localId = get_local_id(0);
+    int idx = 2 * localId - (localId & (32 - 1));
+    (*(_wcl_addr_clamp_local_5_volatile___u_ulocal__uint__Ptr((sData)+(idx), 1, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_min, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_max, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_min, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_max, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (volatile __local uint *)_wcl_allocs->ln))) = 0;
+    idx += 32;
+    (*(_wcl_addr_clamp_local_5_volatile___u_ulocal__uint__Ptr((sData)+(idx), 1, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_min, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_max, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_min, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_max, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (volatile __local uint *)_wcl_allocs->ln))) = val;
+
+    if (0 <= maxlevel) { (*(_wcl_addr_clamp_local_5_volatile___u_ulocal__uint__Ptr((sData)+(idx), 1, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_min, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_max, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_min, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_max, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (volatile __local uint *)_wcl_allocs->ln))) += (*(_wcl_addr_clamp_local_5_volatile___u_ulocal__uint__Ptr((sData)+(idx - 1), 1, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_min, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_max, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_min, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_max, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (volatile __local uint *)_wcl_allocs->ln))); }
+    if (1 <= maxlevel) { (*(_wcl_addr_clamp_local_5_volatile___u_ulocal__uint__Ptr((sData)+(idx), 1, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_min, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_max, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_min, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_max, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (volatile __local uint *)_wcl_allocs->ln))) += (*(_wcl_addr_clamp_local_5_volatile___u_ulocal__uint__Ptr((sData)+(idx - 2), 1, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_min, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_max, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_min, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_max, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (volatile __local uint *)_wcl_allocs->ln))); }
+    if (2 <= maxlevel) { (*(_wcl_addr_clamp_local_5_volatile___u_ulocal__uint__Ptr((sData)+(idx), 1, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_min, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_max, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_min, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_max, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (volatile __local uint *)_wcl_allocs->ln))) += (*(_wcl_addr_clamp_local_5_volatile___u_ulocal__uint__Ptr((sData)+(idx - 4), 1, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_min, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_max, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_min, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_max, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (volatile __local uint *)_wcl_allocs->ln))); }
+    if (3 <= maxlevel) { (*(_wcl_addr_clamp_local_5_volatile___u_ulocal__uint__Ptr((sData)+(idx), 1, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_min, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_max, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_min, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_max, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (volatile __local uint *)_wcl_allocs->ln))) += (*(_wcl_addr_clamp_local_5_volatile___u_ulocal__uint__Ptr((sData)+(idx - 8), 1, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_min, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_max, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_min, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_max, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (volatile __local uint *)_wcl_allocs->ln))); }
+    if (4 <= maxlevel) { (*(_wcl_addr_clamp_local_5_volatile___u_ulocal__uint__Ptr((sData)+(idx), 1, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_min, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_max, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_min, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_max, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (volatile __local uint *)_wcl_allocs->ln))) += (*(_wcl_addr_clamp_local_5_volatile___u_ulocal__uint__Ptr((sData)+(idx -16), 1, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_min, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_max, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_min, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_max, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (volatile __local uint *)_wcl_allocs->ln))); }
+
+    return (*(_wcl_addr_clamp_local_5_volatile___u_ulocal__uint__Ptr((sData)+(idx), 1, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_min, (volatile __local uint *)_wcl_allocs->ll._wcl_locals_max, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (volatile __local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (volatile __local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_min, (volatile __local uint *)_wcl_allocs->ll.scanNaive__temp_max, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (volatile __local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (volatile __local uint *)_wcl_allocs->ln))) - val; // convert inclusive -> exclusive
+}
+
+//----------------------------------------------------------------------------
+// scan4 scans 4*RadixSort::CTA_SIZE numElements in a block (4 per thread), using 
+// a warp-scan algorithm
+//----------------------------------------------------------------------------
+uint4 scan4(_WclProgramAllocations *_wcl_allocs, uint4 idata, __local uint* ptr)
+{
+
+    uint idx = get_local_id(0);
+
+    uint4 val4 = idata;
+    uint sum[3];
+    (*(_wcl_addr_clamp_private_1_uint__Ptr((_wcl_allocs->pa._wcl_sum)+(0), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn))) = val4.x;
+    (*(_wcl_addr_clamp_private_1_uint__Ptr((_wcl_allocs->pa._wcl_sum)+(1), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn))) = val4.y + (*(_wcl_addr_clamp_private_1_uint__Ptr((_wcl_allocs->pa._wcl_sum)+(0), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn)));
+    (*(_wcl_addr_clamp_private_1_uint__Ptr((_wcl_allocs->pa._wcl_sum)+(2), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn))) = val4.z + (*(_wcl_addr_clamp_private_1_uint__Ptr((_wcl_allocs->pa._wcl_sum)+(1), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn)));
+
+    uint val = val4.w + (*(_wcl_addr_clamp_private_1_uint__Ptr((_wcl_allocs->pa._wcl_sum)+(2), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn)));
+
+    val = scanwarp(_wcl_allocs, val, ptr, 4);
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if ((idx & (32 - 1)) == 32 - 1)
+    {
+        (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((ptr)+(idx >> 5), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) = val + val4.w + (*(_wcl_addr_clamp_private_1_uint__Ptr((_wcl_allocs->pa._wcl_sum)+(2), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn)));
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+ if (idx < 32)
+  (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((ptr)+(idx), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) = scanwarp(_wcl_allocs, (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((ptr)+(idx), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))), ptr, 2);
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    val += (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((ptr)+(idx >> 5), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)));
+
+    val4.x = val;
+    val4.y = val + (*(_wcl_addr_clamp_private_1_uint__Ptr((_wcl_allocs->pa._wcl_sum)+(0), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn)));
+    val4.z = val + (*(_wcl_addr_clamp_private_1_uint__Ptr((_wcl_allocs->pa._wcl_sum)+(1), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn)));
+    val4.w = val + (*(_wcl_addr_clamp_private_1_uint__Ptr((_wcl_allocs->pa._wcl_sum)+(2), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn)));
+
+    return val4;
+}
+
+uint4 rank4(_WclProgramAllocations *_wcl_allocs, uint4 preds, __local uint* sMem, __local uint* numtrue)
+{
+ int localId = get_local_id(0);
+ int localSize = get_local_size(0);
+
+ uint4 address = scan4(_wcl_allocs, preds, sMem);
+
+ if (localId == localSize - 1)
+ {
+  (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((numtrue)+(0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) = address.w + preds.w;
+ }
+ barrier(CLK_LOCAL_MEM_FENCE);
+
+ uint4 rank;
+ int idx = localId*4;
+ _wcl_allocs->pa._wcl_rank.x = (preds.x) ? address.x : (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((numtrue)+(0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) + idx - address.x;
+ _wcl_allocs->pa._wcl_rank.y = (preds.y) ? address.y : (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((numtrue)+(0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) + idx + 1 - address.y;
+ _wcl_allocs->pa._wcl_rank.z = (preds.z) ? address.z : (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((numtrue)+(0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) + idx + 2 - address.z;
+ _wcl_allocs->pa._wcl_rank.w = (preds.w) ? address.w : (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((numtrue)+(0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) + idx + 3 - address.w;
+
+ return _wcl_allocs->pa._wcl_rank;
+}
+
+void radixSortBlockKeysOnly(_WclProgramAllocations *_wcl_allocs, uint4 *key, uint nbits, uint startbit, __local uint* sMem, __local uint* numtrue)
+{
+ int localId = get_local_id(0);
+    int localSize = get_local_size(0);
+
+ for(uint shift = startbit; shift < (startbit + nbits); ++shift)
+ {
+  uint4 lsb;
+  _wcl_allocs->pa._wcl_lsb.x = !((((*(_wcl_addr_clamp_private_1_uint4__Ptr((key), 1, (uint4 *)&_wcl_allocs->pa, (uint4 *)(&_wcl_allocs->pa + 1), (uint4 *)_wcl_allocs->pn)))).x >> shift) & 0x1);
+  _wcl_allocs->pa._wcl_lsb.y = !((((*(_wcl_addr_clamp_private_1_uint4__Ptr((key), 1, (uint4 *)&_wcl_allocs->pa, (uint4 *)(&_wcl_allocs->pa + 1), (uint4 *)_wcl_allocs->pn)))).y >> shift) & 0x1);
+        _wcl_allocs->pa._wcl_lsb.z = !((((*(_wcl_addr_clamp_private_1_uint4__Ptr((key), 1, (uint4 *)&_wcl_allocs->pa, (uint4 *)(&_wcl_allocs->pa + 1), (uint4 *)_wcl_allocs->pn)))).z >> shift) & 0x1);
+        _wcl_allocs->pa._wcl_lsb.w = !((((*(_wcl_addr_clamp_private_1_uint4__Ptr((key), 1, (uint4 *)&_wcl_allocs->pa, (uint4 *)(&_wcl_allocs->pa + 1), (uint4 *)_wcl_allocs->pn)))).w >> shift) & 0x1);
+
+  uint4 r;
+
+  _wcl_allocs->pa._wcl_r = rank4(_wcl_allocs, _wcl_allocs->pa._wcl_lsb, sMem, numtrue);
+
+        // This arithmetic strides the ranks across 4 CTA_SIZE regions
+        (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sMem)+((_wcl_allocs->pa._wcl_r.x & 3) * localSize + (_wcl_allocs->pa._wcl_r.x >> 2)), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) = ((*(_wcl_addr_clamp_private_1_uint4__Ptr((key), 1, (uint4 *)&_wcl_allocs->pa, (uint4 *)(&_wcl_allocs->pa + 1), (uint4 *)_wcl_allocs->pn)))).x;
+        (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sMem)+((_wcl_allocs->pa._wcl_r.y & 3) * localSize + (_wcl_allocs->pa._wcl_r.y >> 2)), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) = ((*(_wcl_addr_clamp_private_1_uint4__Ptr((key), 1, (uint4 *)&_wcl_allocs->pa, (uint4 *)(&_wcl_allocs->pa + 1), (uint4 *)_wcl_allocs->pn)))).y;
+        (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sMem)+((_wcl_allocs->pa._wcl_r.z & 3) * localSize + (_wcl_allocs->pa._wcl_r.z >> 2)), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) = ((*(_wcl_addr_clamp_private_1_uint4__Ptr((key), 1, (uint4 *)&_wcl_allocs->pa, (uint4 *)(&_wcl_allocs->pa + 1), (uint4 *)_wcl_allocs->pn)))).z;
+        (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sMem)+((_wcl_allocs->pa._wcl_r.w & 3) * localSize + (_wcl_allocs->pa._wcl_r.w >> 2)), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) = ((*(_wcl_addr_clamp_private_1_uint4__Ptr((key), 1, (uint4 *)&_wcl_allocs->pa, (uint4 *)(&_wcl_allocs->pa + 1), (uint4 *)_wcl_allocs->pn)))).w;
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        // The above allows us to read without 4-way bank conflicts:
+        ((*(_wcl_addr_clamp_private_1_uint4__Ptr((key), 1, (uint4 *)&_wcl_allocs->pa, (uint4 *)(&_wcl_allocs->pa + 1), (uint4 *)_wcl_allocs->pn)))).x = (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sMem)+(localId), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)));
+        ((*(_wcl_addr_clamp_private_1_uint4__Ptr((key), 1, (uint4 *)&_wcl_allocs->pa, (uint4 *)(&_wcl_allocs->pa + 1), (uint4 *)_wcl_allocs->pn)))).y = (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sMem)+(localId + localSize), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)));
+        ((*(_wcl_addr_clamp_private_1_uint4__Ptr((key), 1, (uint4 *)&_wcl_allocs->pa, (uint4 *)(&_wcl_allocs->pa + 1), (uint4 *)_wcl_allocs->pn)))).z = (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sMem)+(localId + 2 * localSize), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)));
+        ((*(_wcl_addr_clamp_private_1_uint4__Ptr((key), 1, (uint4 *)&_wcl_allocs->pa, (uint4 *)(&_wcl_allocs->pa + 1), (uint4 *)_wcl_allocs->pn)))).w = (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sMem)+(localId + 3 * localSize), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)));
+
+  barrier(CLK_LOCAL_MEM_FENCE);
+ }
+}
+
+__kernel void radixSortBlocksKeysOnly(__global uint4* keysIn, ulong _wcl_keysIn_size,
+           __global uint4* keysOut, ulong _wcl_keysOut_size,
+           uint nbits,
+           uint startbit,
+           uint numElements,
+           uint totalBlocks,
+           __local uint* sMem, ulong _wcl_sMem_size)
+{
+
+    __local _WclLocals _wcl_locals;
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &keysIn[0], &keysIn[_wcl_keysIn_size],&keysOut[0], &keysOut[_wcl_keysOut_size],0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { &(&_wcl_locals)[0], &(&_wcl_locals)[1],&sMem[0], &sMem[_wcl_sMem_size],0, 0,0, 0,0, 0 },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_min, _wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_min, _wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findRadixOffsets__keys_min, _wcl_allocs->gl.findRadixOffsets__keys_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findRadixOffsets__counters_min, _wcl_allocs->gl.findRadixOffsets__counters_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findRadixOffsets__blockOffsets_min, _wcl_allocs->gl.findRadixOffsets__blockOffsets_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanNaive__g_odata_min, _wcl_allocs->gl.scanNaive__g_odata_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanNaive__g_idata_min, _wcl_allocs->gl.scanNaive__g_idata_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__outKeys_min, _wcl_allocs->gl.reorderDataKeysOnly__outKeys_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__keys_min, _wcl_allocs->gl.reorderDataKeysOnly__keys_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_min, _wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__offsets_min, _wcl_allocs->gl.reorderDataKeysOnly__offsets_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__sizes_min, _wcl_allocs->gl.reorderDataKeysOnly__sizes_max, (__global uint*)0))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll._wcl_locals_min, _wcl_allocs->ll._wcl_locals_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, _wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.findRadixOffsets__sRadix1_min, _wcl_allocs->ll.findRadixOffsets__sRadix1_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.scanNaive__temp_min, _wcl_allocs->ll.scanNaive__temp_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, _wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+ int globalId = get_global_id(0);
+ __local uint numtrue[1];
+
+ uint4 key;
+ _wcl_allocs->pa._wcl_key = (*(_wcl_addr_clamp_global_12__u_uglobal__uint4__Ptr((keysIn)+(globalId), 1, (__global uint4 *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_min, (__global uint4 *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_max, (__global uint4 *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_min, (__global uint4 *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_max, (__global uint4 *)_wcl_allocs->gl.findRadixOffsets__keys_min, (__global uint4 *)_wcl_allocs->gl.findRadixOffsets__keys_max, (__global uint4 *)_wcl_allocs->gl.findRadixOffsets__counters_min, (__global uint4 *)_wcl_allocs->gl.findRadixOffsets__counters_max, (__global uint4 *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_min, (__global uint4 *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_max, (__global uint4 *)_wcl_allocs->gl.scanNaive__g_odata_min, (__global uint4 *)_wcl_allocs->gl.scanNaive__g_odata_max, (__global uint4 *)_wcl_allocs->gl.scanNaive__g_idata_min, (__global uint4 *)_wcl_allocs->gl.scanNaive__g_idata_max, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_min, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_max, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__keys_min, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__keys_max, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_min, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_max, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_min, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_max, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_min, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_max, (__global uint4 *)_wcl_allocs->gn)));
+
+ barrier(CLK_LOCAL_MEM_FENCE);
+
+ radixSortBlockKeysOnly(_wcl_allocs, &_wcl_allocs->pa._wcl_key, nbits, startbit, sMem, _wcl_locals._wcl_numtrue);
+
+ (*(_wcl_addr_clamp_global_12__u_uglobal__uint4__Ptr((keysOut)+(globalId), 1, (__global uint4 *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_min, (__global uint4 *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_max, (__global uint4 *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_min, (__global uint4 *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_max, (__global uint4 *)_wcl_allocs->gl.findRadixOffsets__keys_min, (__global uint4 *)_wcl_allocs->gl.findRadixOffsets__keys_max, (__global uint4 *)_wcl_allocs->gl.findRadixOffsets__counters_min, (__global uint4 *)_wcl_allocs->gl.findRadixOffsets__counters_max, (__global uint4 *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_min, (__global uint4 *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_max, (__global uint4 *)_wcl_allocs->gl.scanNaive__g_odata_min, (__global uint4 *)_wcl_allocs->gl.scanNaive__g_odata_max, (__global uint4 *)_wcl_allocs->gl.scanNaive__g_idata_min, (__global uint4 *)_wcl_allocs->gl.scanNaive__g_idata_max, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_min, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_max, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__keys_min, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__keys_max, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_min, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_max, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_min, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_max, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_min, (__global uint4 *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_max, (__global uint4 *)_wcl_allocs->gn))) = _wcl_allocs->pa._wcl_key;
+}
+
+//----------------------------------------------------------------------------
+// Given an array with blocks sorted according to a 4-bit radix group, each 
+// block counts the number of keys that fall into each radix in the group, and 
+// finds the starting offset of each radix in the block.  It then writes the radix 
+// counts to the counters array, and the starting offsets to the blockOffsets array.
+//
+// Template parameters are used to generate efficient code for various special cases
+// For example, we have to handle arrays that are a multiple of the block size 
+// (fullBlocks) differently than arrays that are not. "loop" is used when persistent 
+// CTAs are used. 
+//
+// By persistent CTAs we mean that we launch only as many thread blocks as can 
+// be resident in the GPU and no more, rather than launching as many threads as
+// we have elements. Persistent CTAs loop over blocks of elements until all work
+// is complete.  This can be faster in some cases.  In our tests it is faster
+// for large sorts (and the threshold is higher on compute version 1.1 and earlier
+// GPUs than it is on compute version 1.2 GPUs.
+//                                
+//----------------------------------------------------------------------------
+__kernel void findRadixOffsets(__global uint2* keys, ulong _wcl_keys_size,
+          __global uint* counters, ulong _wcl_counters_size,
+          __global uint* blockOffsets, ulong _wcl_blockOffsets_size,
+          uint startbit,
+          uint numElements,
+          uint totalBlocks,
+          __local uint* sRadix1, ulong _wcl_sRadix1_size)
+{
+
+    __local _WclLocals _wcl_locals;
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,&keys[0], &keys[_wcl_keys_size],&counters[0], &counters[_wcl_counters_size],&blockOffsets[0], &blockOffsets[_wcl_blockOffsets_size],0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { &(&_wcl_locals)[0], &(&_wcl_locals)[1],0, 0,&sRadix1[0], &sRadix1[_wcl_sRadix1_size],0, 0,0, 0 },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_min, _wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_min, _wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findRadixOffsets__keys_min, _wcl_allocs->gl.findRadixOffsets__keys_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findRadixOffsets__counters_min, _wcl_allocs->gl.findRadixOffsets__counters_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findRadixOffsets__blockOffsets_min, _wcl_allocs->gl.findRadixOffsets__blockOffsets_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanNaive__g_odata_min, _wcl_allocs->gl.scanNaive__g_odata_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanNaive__g_idata_min, _wcl_allocs->gl.scanNaive__g_idata_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__outKeys_min, _wcl_allocs->gl.reorderDataKeysOnly__outKeys_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__keys_min, _wcl_allocs->gl.reorderDataKeysOnly__keys_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_min, _wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__offsets_min, _wcl_allocs->gl.reorderDataKeysOnly__offsets_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__sizes_min, _wcl_allocs->gl.reorderDataKeysOnly__sizes_max, (__global uint*)0))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll._wcl_locals_min, _wcl_allocs->ll._wcl_locals_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, _wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.findRadixOffsets__sRadix1_min, _wcl_allocs->ll.findRadixOffsets__sRadix1_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.scanNaive__temp_min, _wcl_allocs->ll.scanNaive__temp_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, _wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+ __local uint sStartPointers[16];
+
+    uint groupId = get_group_id(0);
+    uint localId = get_local_id(0);
+    uint groupSize = get_local_size(0);
+
+    uint2 radix2;
+
+    _wcl_allocs->pa._wcl_radix2 = (*(_wcl_addr_clamp_global_12__u_uglobal__uint2__Ptr((keys)+(get_global_id(0)), 1, (__global uint2 *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_min, (__global uint2 *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_max, (__global uint2 *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_min, (__global uint2 *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_max, (__global uint2 *)_wcl_allocs->gl.findRadixOffsets__keys_min, (__global uint2 *)_wcl_allocs->gl.findRadixOffsets__keys_max, (__global uint2 *)_wcl_allocs->gl.findRadixOffsets__counters_min, (__global uint2 *)_wcl_allocs->gl.findRadixOffsets__counters_max, (__global uint2 *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_min, (__global uint2 *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_max, (__global uint2 *)_wcl_allocs->gl.scanNaive__g_odata_min, (__global uint2 *)_wcl_allocs->gl.scanNaive__g_odata_max, (__global uint2 *)_wcl_allocs->gl.scanNaive__g_idata_min, (__global uint2 *)_wcl_allocs->gl.scanNaive__g_idata_max, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_min, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_max, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__keys_min, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__keys_max, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_min, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_max, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_min, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_max, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_min, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_max, (__global uint2 *)_wcl_allocs->gn)));
+
+
+    (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sRadix1)+(2 * localId), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) = (_wcl_allocs->pa._wcl_radix2.x >> startbit) & 0xF;
+    (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sRadix1)+(2 * localId + 1), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) = (_wcl_allocs->pa._wcl_radix2.y >> startbit) & 0xF;
+
+    // Finds the position where the sRadix1 entries differ and stores start 
+    // index for each radix.
+    if(localId < 16)
+    {
+        (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_locals._wcl_sStartPointers)+(localId), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) = 0;
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if((localId > 0) && ((*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sRadix1)+(localId), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) != (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sRadix1)+(localId - 1), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)))) )
+    {
+        (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_locals._wcl_sStartPointers)+((*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sRadix1)+(localId), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)))), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) = localId;
+    }
+    if((*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sRadix1)+(localId + groupSize), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) != (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sRadix1)+(localId + groupSize - 1), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))))
+    {
+        (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_locals._wcl_sStartPointers)+((*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sRadix1)+(localId + groupSize), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)))), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) = localId + groupSize;
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if(localId < 16)
+    {
+        (*(_wcl_addr_clamp_global_12__u_uglobal__uint__Ptr((blockOffsets)+(groupId*16 + localId), 1, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_min, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_max, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_min, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__keys_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__keys_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__counters_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__counters_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_max, (__global uint *)_wcl_allocs->gl.scanNaive__g_odata_min, (__global uint *)_wcl_allocs->gl.scanNaive__g_odata_max, (__global uint *)_wcl_allocs->gl.scanNaive__g_idata_min, (__global uint *)_wcl_allocs->gl.scanNaive__g_idata_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__keys_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__keys_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_max, (__global uint *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_locals._wcl_sStartPointers)+(localId), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)));
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    // Compute the sizes of each block.
+    if((localId > 0) && ((*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sRadix1)+(localId), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) != (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sRadix1)+(localId - 1), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)))) )
+    {
+        (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_locals._wcl_sStartPointers)+((*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sRadix1)+(localId - 1), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)))), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) =
+            localId - (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_locals._wcl_sStartPointers)+((*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sRadix1)+(localId - 1), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)))), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)));
+    }
+    if((*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sRadix1)+(localId + groupSize), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) != (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sRadix1)+(localId + groupSize - 1), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) )
+    {
+        (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_locals._wcl_sStartPointers)+((*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sRadix1)+(localId + groupSize - 1), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)))), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) =
+            localId + groupSize - (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_locals._wcl_sStartPointers)+((*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sRadix1)+(localId + groupSize - 1), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)))), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)));
+    }
+
+
+    if(localId == groupSize - 1)
+    {
+        (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_locals._wcl_sStartPointers)+((*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sRadix1)+(2 * groupSize - 1), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)))), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) =
+            2 * groupSize - (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_locals._wcl_sStartPointers)+((*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((sRadix1)+(2 * groupSize - 1), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)))), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)));
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if(localId < 16)
+    {
+        (*(_wcl_addr_clamp_global_12__u_uglobal__uint__Ptr((counters)+(localId * totalBlocks + groupId), 1, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_min, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_max, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_min, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__keys_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__keys_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__counters_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__counters_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_max, (__global uint *)_wcl_allocs->gl.scanNaive__g_odata_min, (__global uint *)_wcl_allocs->gl.scanNaive__g_odata_max, (__global uint *)_wcl_allocs->gl.scanNaive__g_idata_min, (__global uint *)_wcl_allocs->gl.scanNaive__g_idata_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__keys_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__keys_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_max, (__global uint *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_locals._wcl_sStartPointers)+(localId), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)));
+    }
+}
+
+// a naive scan routine that works only for array that
+// can fit into a single block, just for debugging purpose,
+// not used in the sort now
+__kernel void scanNaive(__global uint *g_odata, ulong _wcl_g_odata_size,
+                        __global uint *g_idata, ulong _wcl_g_idata_size,
+                        uint n,
+                        __local uint* temp, ulong _wcl_temp_size)
+{
+
+    __local _WclLocals _wcl_locals;
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,0, 0,&g_odata[0], &g_odata[_wcl_g_odata_size],&g_idata[0], &g_idata[_wcl_g_idata_size],0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { &(&_wcl_locals)[0], &(&_wcl_locals)[1],0, 0,0, 0,&temp[0], &temp[_wcl_temp_size],0, 0 },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_min, _wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_min, _wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findRadixOffsets__keys_min, _wcl_allocs->gl.findRadixOffsets__keys_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findRadixOffsets__counters_min, _wcl_allocs->gl.findRadixOffsets__counters_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findRadixOffsets__blockOffsets_min, _wcl_allocs->gl.findRadixOffsets__blockOffsets_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanNaive__g_odata_min, _wcl_allocs->gl.scanNaive__g_odata_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanNaive__g_idata_min, _wcl_allocs->gl.scanNaive__g_idata_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__outKeys_min, _wcl_allocs->gl.reorderDataKeysOnly__outKeys_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__keys_min, _wcl_allocs->gl.reorderDataKeysOnly__keys_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_min, _wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__offsets_min, _wcl_allocs->gl.reorderDataKeysOnly__offsets_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__sizes_min, _wcl_allocs->gl.reorderDataKeysOnly__sizes_max, (__global uint*)0))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll._wcl_locals_min, _wcl_allocs->ll._wcl_locals_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, _wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.findRadixOffsets__sRadix1_min, _wcl_allocs->ll.findRadixOffsets__sRadix1_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.scanNaive__temp_min, _wcl_allocs->ll.scanNaive__temp_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, _wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+
+    int localId = get_local_id(0);
+
+    int pout = 0;
+    int pin = 1;
+
+    // Cache the computational window in shared memory
+    (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((temp)+(pout*n + localId), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) = (localId > 0) ? (*(_wcl_addr_clamp_global_12__u_uglobal__uint__Ptr((g_idata)+(localId-1), 1, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_min, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_max, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_min, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__keys_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__keys_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__counters_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__counters_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_max, (__global uint *)_wcl_allocs->gl.scanNaive__g_odata_min, (__global uint *)_wcl_allocs->gl.scanNaive__g_odata_max, (__global uint *)_wcl_allocs->gl.scanNaive__g_idata_min, (__global uint *)_wcl_allocs->gl.scanNaive__g_idata_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__keys_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__keys_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_max, (__global uint *)_wcl_allocs->gn))) : 0;
+
+    for (int offset = 1; offset < n; offset *= 2)
+    {
+        pout = 1 - pout;
+        pin = 1 - pout;
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((temp)+(pout*n+localId), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((temp)+(pin*n+localId), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)));
+
+        if (localId >= offset)
+            (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((temp)+(pout*n+localId), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) += (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((temp)+(pin*n+localId - offset), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)));
+    }
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    (*(_wcl_addr_clamp_global_12__u_uglobal__uint__Ptr((g_odata)+(localId), 1, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_min, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_max, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_min, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__keys_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__keys_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__counters_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__counters_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_max, (__global uint *)_wcl_allocs->gl.scanNaive__g_odata_min, (__global uint *)_wcl_allocs->gl.scanNaive__g_odata_max, (__global uint *)_wcl_allocs->gl.scanNaive__g_idata_min, (__global uint *)_wcl_allocs->gl.scanNaive__g_idata_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__keys_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__keys_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_max, (__global uint *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((temp)+(pout*n+localId), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)));
+}
+
+//----------------------------------------------------------------------------
+// reorderData shuffles data in the array globally after the radix offsets 
+// have been found. On compute version 1.1 and earlier GPUs, this code depends 
+// on RadixSort::CTA_SIZE being 16 * number of radices (i.e. 16 * 2^nbits).
+// 
+// On compute version 1.1 GPUs ("manualCoalesce=true") this function ensures
+// that all writes are coalesced using extra work in the kernel.  On later
+// GPUs coalescing rules have been relaxed, so this extra overhead hurts 
+// performance.  On these GPUs we set manualCoalesce=false and directly store
+// the results.
+//
+// Template parameters are used to generate efficient code for various special cases
+// For example, we have to handle arrays that are a multiple of the block size 
+// (fullBlocks) differently than arrays that are not.  "loop" is used when persistent 
+// CTAs are used. 
+//
+// By persistent CTAs we mean that we launch only as many thread blocks as can 
+// be resident in the GPU and no more, rather than launching as many threads as
+// we have elements. Persistent CTAs loop over blocks of elements until all work
+// is complete.  This can be faster in some cases.  In our tests it is faster
+// for large sorts (and the threshold is higher on compute version 1.1 and earlier
+// GPUs than it is on compute version 1.2 GPUs.
+//----------------------------------------------------------------------------
+__kernel void reorderDataKeysOnly(__global uint *outKeys, ulong _wcl_outKeys_size,
+                                  __global uint2 *keys, ulong _wcl_keys_size,
+                                  __global uint *blockOffsets, ulong _wcl_blockOffsets_size,
+                                  __global uint *offsets, ulong _wcl_offsets_size,
+                                  __global uint *sizes, ulong _wcl_sizes_size,
+                                  uint startbit,
+                                  uint numElements,
+                                  uint totalBlocks,
+                                  __local uint2* sKeys2, ulong _wcl_sKeys2_size)
+{
+
+    __local _WclLocals _wcl_locals;
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,&outKeys[0], &outKeys[_wcl_outKeys_size],&keys[0], &keys[_wcl_keys_size],&blockOffsets[0], &blockOffsets[_wcl_blockOffsets_size],&offsets[0], &offsets[_wcl_offsets_size],&sizes[0], &sizes[_wcl_sizes_size] },
+        0,
+        { &(&_wcl_locals)[0], &(&_wcl_locals)[1],0, 0,0, 0,0, 0,&sKeys2[0], &sKeys2[_wcl_sKeys2_size] },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_min, _wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_min, _wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findRadixOffsets__keys_min, _wcl_allocs->gl.findRadixOffsets__keys_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findRadixOffsets__counters_min, _wcl_allocs->gl.findRadixOffsets__counters_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findRadixOffsets__blockOffsets_min, _wcl_allocs->gl.findRadixOffsets__blockOffsets_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanNaive__g_odata_min, _wcl_allocs->gl.scanNaive__g_odata_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanNaive__g_idata_min, _wcl_allocs->gl.scanNaive__g_idata_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__outKeys_min, _wcl_allocs->gl.reorderDataKeysOnly__outKeys_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__keys_min, _wcl_allocs->gl.reorderDataKeysOnly__keys_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_min, _wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__offsets_min, _wcl_allocs->gl.reorderDataKeysOnly__offsets_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.reorderDataKeysOnly__sizes_min, _wcl_allocs->gl.reorderDataKeysOnly__sizes_max, (__global uint*)0))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll._wcl_locals_min, _wcl_allocs->ll._wcl_locals_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, _wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.findRadixOffsets__sRadix1_min, _wcl_allocs->ll.findRadixOffsets__sRadix1_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.scanNaive__temp_min, _wcl_allocs->ll.scanNaive__temp_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, _wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    __local uint sOffsets[16];
+    __local uint sBlockOffsets[16];
+
+    __local uint *sKeys1 = (__local uint*)sKeys2;;_wcl_allocs->pa._wcl_sKeys1 = sKeys1;
+
+    uint groupId = get_group_id(0);
+
+ uint globalId = get_global_id(0);
+    uint localId = get_local_id(0);
+    uint groupSize = get_local_size(0);
+
+    (*(_wcl_addr_clamp_local_5__u_ulocal__uint2__Ptr((sKeys2)+(localId), 1, (__local uint2 *)_wcl_allocs->ll._wcl_locals_min, (__local uint2 *)_wcl_allocs->ll._wcl_locals_max, (__local uint2 *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint2 *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint2 *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint2 *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint2 *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint2 *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint2 *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint2 *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint2 *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_12__u_uglobal__uint2__Ptr((keys)+(globalId), 1, (__global uint2 *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_min, (__global uint2 *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_max, (__global uint2 *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_min, (__global uint2 *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_max, (__global uint2 *)_wcl_allocs->gl.findRadixOffsets__keys_min, (__global uint2 *)_wcl_allocs->gl.findRadixOffsets__keys_max, (__global uint2 *)_wcl_allocs->gl.findRadixOffsets__counters_min, (__global uint2 *)_wcl_allocs->gl.findRadixOffsets__counters_max, (__global uint2 *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_min, (__global uint2 *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_max, (__global uint2 *)_wcl_allocs->gl.scanNaive__g_odata_min, (__global uint2 *)_wcl_allocs->gl.scanNaive__g_odata_max, (__global uint2 *)_wcl_allocs->gl.scanNaive__g_idata_min, (__global uint2 *)_wcl_allocs->gl.scanNaive__g_idata_max, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_min, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_max, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__keys_min, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__keys_max, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_min, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_max, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_min, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_max, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_min, (__global uint2 *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_max, (__global uint2 *)_wcl_allocs->gn)));
+
+    if(localId < 16)
+    {
+        (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_locals._wcl_sOffsets)+(localId), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_12__u_uglobal__uint__Ptr((offsets)+(localId * totalBlocks + groupId), 1, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_min, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_max, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_min, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__keys_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__keys_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__counters_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__counters_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_max, (__global uint *)_wcl_allocs->gl.scanNaive__g_odata_min, (__global uint *)_wcl_allocs->gl.scanNaive__g_odata_max, (__global uint *)_wcl_allocs->gl.scanNaive__g_idata_min, (__global uint *)_wcl_allocs->gl.scanNaive__g_idata_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__keys_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__keys_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_max, (__global uint *)_wcl_allocs->gn)));
+        (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_locals._wcl_sBlockOffsets)+(localId), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_12__u_uglobal__uint__Ptr((blockOffsets)+(groupId * 16 + localId), 1, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_min, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_max, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_min, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__keys_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__keys_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__counters_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__counters_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_max, (__global uint *)_wcl_allocs->gl.scanNaive__g_odata_min, (__global uint *)_wcl_allocs->gl.scanNaive__g_odata_max, (__global uint *)_wcl_allocs->gl.scanNaive__g_idata_min, (__global uint *)_wcl_allocs->gl.scanNaive__g_idata_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__keys_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__keys_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_max, (__global uint *)_wcl_allocs->gn)));
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    uint radix = ((*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_allocs->pa._wcl_sKeys1)+(localId), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) >> startbit) & 0xF;
+    uint globalOffset = (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_locals._wcl_sOffsets)+(radix), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) + localId - (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_locals._wcl_sBlockOffsets)+(radix), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)));
+
+    if (globalOffset < numElements)
+    {
+        (*(_wcl_addr_clamp_global_12__u_uglobal__uint__Ptr((outKeys)+(globalOffset), 1, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_min, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_max, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_min, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__keys_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__keys_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__counters_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__counters_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_max, (__global uint *)_wcl_allocs->gl.scanNaive__g_odata_min, (__global uint *)_wcl_allocs->gl.scanNaive__g_odata_max, (__global uint *)_wcl_allocs->gl.scanNaive__g_idata_min, (__global uint *)_wcl_allocs->gl.scanNaive__g_idata_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__keys_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__keys_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_max, (__global uint *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_allocs->pa._wcl_sKeys1)+(localId), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)));
+    }
+
+    radix = ((*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_allocs->pa._wcl_sKeys1)+(localId + groupSize), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) >> startbit) & 0xF;
+    globalOffset = (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_locals._wcl_sOffsets)+(radix), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln))) + localId + groupSize - (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_locals._wcl_sBlockOffsets)+(radix), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)));
+
+    if (globalOffset < numElements)
+    {
+        (*(_wcl_addr_clamp_global_12__u_uglobal__uint__Ptr((outKeys)+(globalOffset), 1, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_min, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysIn_max, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_min, (__global uint *)_wcl_allocs->gl.radixSortBlocksKeysOnly__keysOut_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__keys_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__keys_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__counters_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__counters_max, (__global uint *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_min, (__global uint *)_wcl_allocs->gl.findRadixOffsets__blockOffsets_max, (__global uint *)_wcl_allocs->gl.scanNaive__g_odata_min, (__global uint *)_wcl_allocs->gl.scanNaive__g_odata_max, (__global uint *)_wcl_allocs->gl.scanNaive__g_idata_min, (__global uint *)_wcl_allocs->gl.scanNaive__g_idata_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__outKeys_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__keys_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__keys_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__blockOffsets_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__offsets_max, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_min, (__global uint *)_wcl_allocs->gl.reorderDataKeysOnly__sizes_max, (__global uint *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_5__u_ulocal__uint__Ptr((_wcl_allocs->pa._wcl_sKeys1)+(localId + groupSize), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_min, (__local uint *)_wcl_allocs->ll.radixSortBlocksKeysOnly__sMem_max, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_min, (__local uint *)_wcl_allocs->ll.findRadixOffsets__sRadix1_max, (__local uint *)_wcl_allocs->ll.scanNaive__temp_min, (__local uint *)_wcl_allocs->ll.scanNaive__temp_max, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_min, (__local uint *)_wcl_allocs->ll.reorderDataKeysOnly__sKeys2_max, (__local uint *)_wcl_allocs->ln)));
+    }
+
+
+}
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "scanExclusiveLocal1" :
+                {
+                    "d_Dst" :
+                        {
+                            "index" : 0,
+                            "type" : "uint4 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Dst_size"
+                        },
+                    "_wcl_d_Dst_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "d_Src" :
+                        {
+                            "index" : 2,
+                            "type" : "uint4 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Src_size"
+                        },
+                    "_wcl_d_Src_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "l_Data" :
+                        {
+                            "index" : 4,
+                            "type" : "uint *",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_l_Data_size"
+                        },
+                    "_wcl_l_Data_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "size" :
+                        {
+                            "index" : 6,
+                            "type" : "uint"
+                        }
+                },
+            "scanExclusiveLocal2" :
+                {
+                    "d_Buf" :
+                        {
+                            "index" : 0,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Buf_size"
+                        },
+                    "_wcl_d_Buf_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "d_Dst" :
+                        {
+                            "index" : 2,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Dst_size"
+                        },
+                    "_wcl_d_Dst_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "d_Src" :
+                        {
+                            "index" : 4,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Src_size"
+                        },
+                    "_wcl_d_Src_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "l_Data" :
+                        {
+                            "index" : 6,
+                            "type" : "uint *",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_l_Data_size"
+                        },
+                    "_wcl_l_Data_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        },
+                    "N" :
+                        {
+                            "index" : 8,
+                            "type" : "uint"
+                        },
+                    "arrayLength" :
+                        {
+                            "index" : 9,
+                            "type" : "uint"
+                        }
+                },
+            "uniformUpdate" :
+                {
+                    "d_Data" :
+                        {
+                            "index" : 0,
+                            "type" : "uint4 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Data_size"
+                        },
+                    "_wcl_d_Data_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "d_Buf" :
+                        {
+                            "index" : 2,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Buf_size"
+                        },
+                    "_wcl_d_Buf_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((128 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (128/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+typedef struct {
+    uint _wcl_buf[1];
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_local_ALIGNMENT))) _WclLocals;
+
+typedef struct {
+    __global uint4 *scanExclusiveLocal1__d_Dst_min;
+    __global uint4 *scanExclusiveLocal1__d_Dst_max;
+    __global uint4 *scanExclusiveLocal1__d_Src_min;
+    __global uint4 *scanExclusiveLocal1__d_Src_max;
+    __global uint *scanExclusiveLocal2__d_Buf_min;
+    __global uint *scanExclusiveLocal2__d_Buf_max;
+    __global uint *scanExclusiveLocal2__d_Dst_min;
+    __global uint *scanExclusiveLocal2__d_Dst_max;
+    __global uint *scanExclusiveLocal2__d_Src_min;
+    __global uint *scanExclusiveLocal2__d_Src_max;
+    __global uint4 *uniformUpdate__d_Data_min;
+    __global uint4 *uniformUpdate__d_Data_max;
+    __global uint *uniformUpdate__d_Buf_min;
+    __global uint *uniformUpdate__d_Buf_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    __local _WclLocals * _wcl_locals_min;
+    __local _WclLocals * _wcl_locals_max;
+    __local uint *scanExclusiveLocal1__l_Data_min;
+    __local uint *scanExclusiveLocal1__l_Data_max;
+    __local uint *scanExclusiveLocal2__l_Data_min;
+    __local uint *scanExclusiveLocal2__l_Data_max;
+} _WclLocalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+    _WclLocalLimits ll;
+    __local uint *ln;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+// be careful to edit this, this has been carefully tuned to work on every OpenCL driver
+// e.g. % item_count was added to start[(items_offset+i)] = _WCL_FILLCHAR;
+// to prevent compiler crash on Apple GeForce 640M
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[(items_offset+i) % item_count] = _WCL_FILLCHAR;           \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+constant int hd4k_workaround_constant = 0;
+
+// <= General code that doesn't depend on input.
+
+bool _wcl_addr_check_global_7__u_uglobal__uint__Ptr(__global uint *addr, unsigned size, __global uint * min0, __global uint * max0, __global uint * min1, __global uint * max1, __global uint * min2, __global uint * max2, __global uint * min3, __global uint * max3, __global uint * min4, __global uint * max4, __global uint * min5, __global uint * max5, __global uint * min6, __global uint * max6)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max4)) )
+        || ( ((addr) >= (min5)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max5)) )
+        || ( ((addr) >= (min6)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max6)) );
+}
+__global uint *_wcl_addr_clamp_global_7__u_uglobal__uint__Ptr(__global uint *addr, unsigned size, __global uint * min0, __global uint * max0, __global uint * min1, __global uint * max1, __global uint * min2, __global uint * max2, __global uint * min3, __global uint * max3, __global uint * min4, __global uint * max4, __global uint * min5, __global uint * max5, __global uint * min6, __global uint * max6, __global uint * asnull)
+{
+     return _wcl_addr_check_global_7__u_uglobal__uint__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_7__u_uglobal__uint4__Ptr(__global uint4 *addr, unsigned size, __global uint4 * min0, __global uint4 * max0, __global uint4 * min1, __global uint4 * max1, __global uint4 * min2, __global uint4 * max2, __global uint4 * min3, __global uint4 * max3, __global uint4 * min4, __global uint4 * max4, __global uint4 * min5, __global uint4 * max5, __global uint4 * min6, __global uint4 * max6)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global uint4 *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global uint4 *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global uint4 *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__global uint4 *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(__global uint4 *, max4)) )
+        || ( ((addr) >= (min5)) && ((addr + size - 1) <= _WCL_LAST(__global uint4 *, max5)) )
+        || ( ((addr) >= (min6)) && ((addr + size - 1) <= _WCL_LAST(__global uint4 *, max6)) );
+}
+__global uint4 *_wcl_addr_clamp_global_7__u_uglobal__uint4__Ptr(__global uint4 *addr, unsigned size, __global uint4 * min0, __global uint4 * max0, __global uint4 * min1, __global uint4 * max1, __global uint4 * min2, __global uint4 * max2, __global uint4 * min3, __global uint4 * max3, __global uint4 * min4, __global uint4 * max4, __global uint4 * min5, __global uint4 * max5, __global uint4 * min6, __global uint4 * max6, __global uint4 * asnull)
+{
+     return _wcl_addr_check_global_7__u_uglobal__uint4__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6) ? addr : asnull;
+}
+
+bool _wcl_addr_check_local_3__u_ulocal__uint__Ptr(__local uint *addr, unsigned size, __local uint * min0, __local uint * max0, __local uint * min1, __local uint * max1, __local uint * min2, __local uint * max2)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__local uint *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__local uint *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__local uint *, max2)) );
+}
+__local uint *_wcl_addr_clamp_local_3__u_ulocal__uint__Ptr(__local uint *addr, unsigned size, __local uint * min0, __local uint * max0, __local uint * min1, __local uint * max1, __local uint * min2, __local uint * max2, __local uint * asnull)
+{
+     return _wcl_addr_check_local_3__u_ulocal__uint__Ptr(addr, size, min0, max0, min1, max1, min2, max2) ? addr : asnull;
+}
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+/*
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ *
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
+ */
+
+
+
+//All three kernels run 512 threads per workgroup
+//Must be a power of two
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Scan codelets
+////////////////////////////////////////////////////////////////////////////////
+
+    //Naive inclusive scan: O(N * log2(N)) operations
+    //Allocate 2 * 'size' local memory, initialize the first half
+    //with 'size' zeros avoiding if(pos >= offset) condition evaluation
+    //and saving instructions
+    inline uint scan1Inclusive(_WclProgramAllocations *_wcl_allocs, uint idata, __local uint *l_Data, uint size){
+        uint pos = 2 * get_local_id(0) - (get_local_id(0) & (size - 1));
+        (*(_wcl_addr_clamp_local_3__u_ulocal__uint__Ptr((l_Data)+(pos), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal1__l_Data_min, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal1__l_Data_max, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal2__l_Data_min, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal2__l_Data_max, (__local uint *)_wcl_allocs->ln))) = 0;
+        pos += size;
+        (*(_wcl_addr_clamp_local_3__u_ulocal__uint__Ptr((l_Data)+(pos), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal1__l_Data_min, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal1__l_Data_max, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal2__l_Data_min, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal2__l_Data_max, (__local uint *)_wcl_allocs->ln))) = idata;
+
+        for(uint offset = 1; offset < size; offset <<= 1){
+            barrier(CLK_LOCAL_MEM_FENCE);
+            uint t = (*(_wcl_addr_clamp_local_3__u_ulocal__uint__Ptr((l_Data)+(pos), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal1__l_Data_min, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal1__l_Data_max, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal2__l_Data_min, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal2__l_Data_max, (__local uint *)_wcl_allocs->ln))) + (*(_wcl_addr_clamp_local_3__u_ulocal__uint__Ptr((l_Data)+(pos - offset), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal1__l_Data_min, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal1__l_Data_max, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal2__l_Data_min, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal2__l_Data_max, (__local uint *)_wcl_allocs->ln)));
+            barrier(CLK_LOCAL_MEM_FENCE);
+            (*(_wcl_addr_clamp_local_3__u_ulocal__uint__Ptr((l_Data)+(pos), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal1__l_Data_min, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal1__l_Data_max, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal2__l_Data_min, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal2__l_Data_max, (__local uint *)_wcl_allocs->ln))) = t;
+        }
+
+        return (*(_wcl_addr_clamp_local_3__u_ulocal__uint__Ptr((l_Data)+(pos), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal1__l_Data_min, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal1__l_Data_max, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal2__l_Data_min, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal2__l_Data_max, (__local uint *)_wcl_allocs->ln)));
+    }
+
+    inline uint scan1Exclusive(_WclProgramAllocations *_wcl_allocs, uint idata, __local uint *l_Data, uint size){
+        return scan1Inclusive(_wcl_allocs, idata, l_Data, size) - idata;
+    }
+//Vector scan: the array to be scanned is stored
+//in work-item private memory as uint4
+inline uint4 scan4Inclusive(_WclProgramAllocations *_wcl_allocs, uint4 data4, __local uint *l_Data, uint size){
+    //Level-0 inclusive scan
+    data4.y += data4.x;
+    data4.z += data4.y;
+    data4.w += data4.z;
+
+    //Level-1 exclusive scan
+    uint val = scan1Inclusive(_wcl_allocs, data4.w, l_Data, size / 4) - data4.w;
+
+    return (data4 + (uint4)val);
+}
+
+inline uint4 scan4Exclusive(_WclProgramAllocations *_wcl_allocs, uint4 data4, __local uint *l_Data, uint size){
+    return scan4Inclusive(_wcl_allocs, data4, l_Data, size) - data4;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Scan kernels
+////////////////////////////////////////////////////////////////////////////////
+__kernel __attribute__((reqd_work_group_size(256, 1, 1)))
+void scanExclusiveLocal1(
+    __global uint4 *d_Dst, ulong _wcl_d_Dst_size,
+    __global uint4 *d_Src, ulong _wcl_d_Src_size,
+    __local uint* l_Data, ulong _wcl_l_Data_size,
+    uint size
+){
+
+    __local _WclLocals _wcl_locals;
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &d_Dst[0], &d_Dst[_wcl_d_Dst_size],&d_Src[0], &d_Src[_wcl_d_Src_size],0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { &(&_wcl_locals)[0], &(&_wcl_locals)[1],&l_Data[0], &l_Data[_wcl_l_Data_size],0, 0 },
+        _wcl_local_null
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanExclusiveLocal1__d_Dst_min, _wcl_allocs->gl.scanExclusiveLocal1__d_Dst_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanExclusiveLocal1__d_Src_min, _wcl_allocs->gl.scanExclusiveLocal1__d_Src_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanExclusiveLocal2__d_Buf_min, _wcl_allocs->gl.scanExclusiveLocal2__d_Buf_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanExclusiveLocal2__d_Dst_min, _wcl_allocs->gl.scanExclusiveLocal2__d_Dst_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanExclusiveLocal2__d_Src_min, _wcl_allocs->gl.scanExclusiveLocal2__d_Src_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.uniformUpdate__d_Data_min, _wcl_allocs->gl.uniformUpdate__d_Data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.uniformUpdate__d_Buf_min, _wcl_allocs->gl.uniformUpdate__d_Buf_max, (__global uint*)0)))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll._wcl_locals_min, _wcl_allocs->ll._wcl_locals_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.scanExclusiveLocal1__l_Data_min, _wcl_allocs->ll.scanExclusiveLocal1__l_Data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.scanExclusiveLocal2__l_Data_min, _wcl_allocs->ll.scanExclusiveLocal2__l_Data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    //Load data
+    uint4 idata4 = (*(_wcl_addr_clamp_global_7__u_uglobal__uint4__Ptr((d_Src)+(get_global_id(0)), 1, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal1__d_Dst_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal1__d_Dst_max, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal1__d_Src_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal1__d_Src_max, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Buf_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Buf_max, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Dst_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Dst_max, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Src_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Src_max, (__global uint4 *)_wcl_allocs->gl.uniformUpdate__d_Data_min, (__global uint4 *)_wcl_allocs->gl.uniformUpdate__d_Data_max, (__global uint4 *)_wcl_allocs->gl.uniformUpdate__d_Buf_min, (__global uint4 *)_wcl_allocs->gl.uniformUpdate__d_Buf_max, (__global uint4 *)_wcl_allocs->gn)));
+
+    //Calculate exclusive scan
+    uint4 odata4 = scan4Exclusive(_wcl_allocs, idata4, l_Data, size);
+
+    //Write back
+    (*(_wcl_addr_clamp_global_7__u_uglobal__uint4__Ptr((d_Dst)+(get_global_id(0)), 1, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal1__d_Dst_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal1__d_Dst_max, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal1__d_Src_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal1__d_Src_max, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Buf_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Buf_max, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Dst_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Dst_max, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Src_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Src_max, (__global uint4 *)_wcl_allocs->gl.uniformUpdate__d_Data_min, (__global uint4 *)_wcl_allocs->gl.uniformUpdate__d_Data_max, (__global uint4 *)_wcl_allocs->gl.uniformUpdate__d_Buf_min, (__global uint4 *)_wcl_allocs->gl.uniformUpdate__d_Buf_max, (__global uint4 *)_wcl_allocs->gn))) = odata4;
+}
+
+//Exclusive scan of top elements of bottom-level scans (4 * THREADBLOCK_SIZE)
+__kernel __attribute__((reqd_work_group_size(256, 1, 1)))
+void scanExclusiveLocal2(
+    __global uint *d_Buf, ulong _wcl_d_Buf_size,
+    __global uint *d_Dst, ulong _wcl_d_Dst_size,
+    __global uint *d_Src, ulong _wcl_d_Src_size,
+    __local uint* l_Data, ulong _wcl_l_Data_size,
+    uint N,
+    uint arrayLength
+){
+
+    __local _WclLocals _wcl_locals;
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,&d_Buf[0], &d_Buf[_wcl_d_Buf_size],&d_Dst[0], &d_Dst[_wcl_d_Dst_size],&d_Src[0], &d_Src[_wcl_d_Src_size],0, 0,0, 0 },
+        0,
+        { &(&_wcl_locals)[0], &(&_wcl_locals)[1],0, 0,&l_Data[0], &l_Data[_wcl_l_Data_size] },
+        _wcl_local_null
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanExclusiveLocal1__d_Dst_min, _wcl_allocs->gl.scanExclusiveLocal1__d_Dst_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanExclusiveLocal1__d_Src_min, _wcl_allocs->gl.scanExclusiveLocal1__d_Src_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanExclusiveLocal2__d_Buf_min, _wcl_allocs->gl.scanExclusiveLocal2__d_Buf_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanExclusiveLocal2__d_Dst_min, _wcl_allocs->gl.scanExclusiveLocal2__d_Dst_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanExclusiveLocal2__d_Src_min, _wcl_allocs->gl.scanExclusiveLocal2__d_Src_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.uniformUpdate__d_Data_min, _wcl_allocs->gl.uniformUpdate__d_Data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.uniformUpdate__d_Buf_min, _wcl_allocs->gl.uniformUpdate__d_Buf_max, (__global uint*)0)))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll._wcl_locals_min, _wcl_allocs->ll._wcl_locals_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.scanExclusiveLocal1__l_Data_min, _wcl_allocs->ll.scanExclusiveLocal1__l_Data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.scanExclusiveLocal2__l_Data_min, _wcl_allocs->ll.scanExclusiveLocal2__l_Data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    //Load top elements
+    //Convert results of bottom-level scan back to inclusive
+    //Skip loads and stores for inactive work-items of the work-group with highest index(pos >= N)
+    uint data = 0;
+    if(get_global_id(0) < N)
+    data =
+        (*(_wcl_addr_clamp_global_7__u_uglobal__uint__Ptr((d_Dst)+((4 * 256 - 1) + (4 * 256) * get_global_id(0)), 1, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal1__d_Dst_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal1__d_Dst_max, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal1__d_Src_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal1__d_Src_max, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Buf_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Buf_max, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Dst_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Dst_max, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Src_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Src_max, (__global uint *)_wcl_allocs->gl.uniformUpdate__d_Data_min, (__global uint *)_wcl_allocs->gl.uniformUpdate__d_Data_max, (__global uint *)_wcl_allocs->gl.uniformUpdate__d_Buf_min, (__global uint *)_wcl_allocs->gl.uniformUpdate__d_Buf_max, (__global uint *)_wcl_allocs->gn))) +
+        (*(_wcl_addr_clamp_global_7__u_uglobal__uint__Ptr((d_Src)+((4 * 256 - 1) + (4 * 256) * get_global_id(0)), 1, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal1__d_Dst_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal1__d_Dst_max, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal1__d_Src_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal1__d_Src_max, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Buf_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Buf_max, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Dst_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Dst_max, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Src_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Src_max, (__global uint *)_wcl_allocs->gl.uniformUpdate__d_Data_min, (__global uint *)_wcl_allocs->gl.uniformUpdate__d_Data_max, (__global uint *)_wcl_allocs->gl.uniformUpdate__d_Buf_min, (__global uint *)_wcl_allocs->gl.uniformUpdate__d_Buf_max, (__global uint *)_wcl_allocs->gn)));
+
+    //Compute
+    uint odata = scan1Exclusive(_wcl_allocs, data, l_Data, arrayLength);
+
+    //Avoid out-of-bound access
+    if(get_global_id(0) < N)
+        (*(_wcl_addr_clamp_global_7__u_uglobal__uint__Ptr((d_Buf)+(get_global_id(0)), 1, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal1__d_Dst_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal1__d_Dst_max, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal1__d_Src_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal1__d_Src_max, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Buf_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Buf_max, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Dst_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Dst_max, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Src_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Src_max, (__global uint *)_wcl_allocs->gl.uniformUpdate__d_Data_min, (__global uint *)_wcl_allocs->gl.uniformUpdate__d_Data_max, (__global uint *)_wcl_allocs->gl.uniformUpdate__d_Buf_min, (__global uint *)_wcl_allocs->gl.uniformUpdate__d_Buf_max, (__global uint *)_wcl_allocs->gn))) = odata;
+}
+
+//Final step of large-array scan: combine basic inclusive scan with exclusive scan of top elements of input arrays
+__kernel __attribute__((reqd_work_group_size(256, 1, 1)))
+void uniformUpdate(
+    __global uint4 *d_Data, ulong _wcl_d_Data_size,
+    __global uint *d_Buf, ulong _wcl_d_Buf_size
+){
+
+    __local _WclLocals _wcl_locals;
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,0, 0,&d_Data[0], &d_Data[_wcl_d_Data_size],&d_Buf[0], &d_Buf[_wcl_d_Buf_size] },
+        0,
+        { &(&_wcl_locals)[0], &(&_wcl_locals)[1],0, 0,0, 0 },
+        _wcl_local_null
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanExclusiveLocal1__d_Dst_min, _wcl_allocs->gl.scanExclusiveLocal1__d_Dst_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanExclusiveLocal1__d_Src_min, _wcl_allocs->gl.scanExclusiveLocal1__d_Src_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanExclusiveLocal2__d_Buf_min, _wcl_allocs->gl.scanExclusiveLocal2__d_Buf_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanExclusiveLocal2__d_Dst_min, _wcl_allocs->gl.scanExclusiveLocal2__d_Dst_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.scanExclusiveLocal2__d_Src_min, _wcl_allocs->gl.scanExclusiveLocal2__d_Src_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.uniformUpdate__d_Data_min, _wcl_allocs->gl.uniformUpdate__d_Data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.uniformUpdate__d_Buf_min, _wcl_allocs->gl.uniformUpdate__d_Buf_max, (__global uint*)0)))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll._wcl_locals_min, _wcl_allocs->ll._wcl_locals_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.scanExclusiveLocal1__l_Data_min, _wcl_allocs->ll.scanExclusiveLocal1__l_Data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.scanExclusiveLocal2__l_Data_min, _wcl_allocs->ll.scanExclusiveLocal2__l_Data_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    __local uint buf[1];
+
+    uint4 data4 = (*(_wcl_addr_clamp_global_7__u_uglobal__uint4__Ptr((d_Data)+(get_global_id(0)), 1, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal1__d_Dst_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal1__d_Dst_max, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal1__d_Src_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal1__d_Src_max, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Buf_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Buf_max, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Dst_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Dst_max, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Src_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Src_max, (__global uint4 *)_wcl_allocs->gl.uniformUpdate__d_Data_min, (__global uint4 *)_wcl_allocs->gl.uniformUpdate__d_Data_max, (__global uint4 *)_wcl_allocs->gl.uniformUpdate__d_Buf_min, (__global uint4 *)_wcl_allocs->gl.uniformUpdate__d_Buf_max, (__global uint4 *)_wcl_allocs->gn)));
+
+    if(get_local_id(0) == 0)
+        (*(_wcl_addr_clamp_local_3__u_ulocal__uint__Ptr((_wcl_locals._wcl_buf)+(0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal1__l_Data_min, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal1__l_Data_max, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal2__l_Data_min, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal2__l_Data_max, (__local uint *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_7__u_uglobal__uint__Ptr((d_Buf)+(get_group_id(0)), 1, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal1__d_Dst_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal1__d_Dst_max, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal1__d_Src_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal1__d_Src_max, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Buf_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Buf_max, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Dst_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Dst_max, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Src_min, (__global uint *)_wcl_allocs->gl.scanExclusiveLocal2__d_Src_max, (__global uint *)_wcl_allocs->gl.uniformUpdate__d_Data_min, (__global uint *)_wcl_allocs->gl.uniformUpdate__d_Data_max, (__global uint *)_wcl_allocs->gl.uniformUpdate__d_Buf_min, (__global uint *)_wcl_allocs->gl.uniformUpdate__d_Buf_max, (__global uint *)_wcl_allocs->gn)));
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+    data4 += (uint4)(*(_wcl_addr_clamp_local_3__u_ulocal__uint__Ptr((_wcl_locals._wcl_buf)+(0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal1__l_Data_min, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal1__l_Data_max, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal2__l_Data_min, (__local uint *)_wcl_allocs->ll.scanExclusiveLocal2__l_Data_max, (__local uint *)_wcl_allocs->ln)));
+    (*(_wcl_addr_clamp_global_7__u_uglobal__uint4__Ptr((d_Data)+(get_global_id(0)), 1, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal1__d_Dst_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal1__d_Dst_max, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal1__d_Src_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal1__d_Src_max, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Buf_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Buf_max, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Dst_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Dst_max, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Src_min, (__global uint4 *)_wcl_allocs->gl.scanExclusiveLocal2__d_Src_max, (__global uint4 *)_wcl_allocs->gl.uniformUpdate__d_Data_min, (__global uint4 *)_wcl_allocs->gl.uniformUpdate__d_Data_max, (__global uint4 *)_wcl_allocs->gl.uniformUpdate__d_Buf_min, (__global uint4 *)_wcl_allocs->gl.uniformUpdate__d_Buf_max, (__global uint4 *)_wcl_allocs->gn))) = data4;
+}

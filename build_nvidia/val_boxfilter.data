@@ -1,3 +1,362 @@
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "BoxRowsTex" :
+                {
+                    "SourceRgbaTex" :
+                        {
+                            "index" : 0,
+                            "type" : "image2d_t",
+                            "access" : "read_only"
+                        },
+                    "uiDest" :
+                        {
+                            "index" : 1,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_uiDest_size"
+                        },
+                    "_wcl_uiDest_size" :
+                        {
+                            "index" : 2,
+                            "type" : "ulong"
+                        },
+                    "RowSampler" :
+                        {
+                            "index" : 3,
+                            "type" : "sampler_t"
+                        },
+                    "uiWidth" :
+                        {
+                            "index" : 4,
+                            "type" : "uint"
+                        },
+                    "uiHeight" :
+                        {
+                            "index" : 5,
+                            "type" : "uint"
+                        },
+                    "iRadius" :
+                        {
+                            "index" : 6,
+                            "type" : "int"
+                        },
+                    "fScale" :
+                        {
+                            "index" : 7,
+                            "type" : "float"
+                        }
+                },
+            "BoxColumns" :
+                {
+                    "uiInputImage" :
+                        {
+                            "index" : 0,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_uiInputImage_size"
+                        },
+                    "_wcl_uiInputImage_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "uiOutputImage" :
+                        {
+                            "index" : 2,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_uiOutputImage_size"
+                        },
+                    "_wcl_uiOutputImage_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "uiWidth" :
+                        {
+                            "index" : 4,
+                            "type" : "uint"
+                        },
+                    "uiHeight" :
+                        {
+                            "index" : 5,
+                            "type" : "uint"
+                        },
+                    "iRadius" :
+                        {
+                            "index" : 6,
+                            "type" : "int"
+                        },
+                    "fScale" :
+                        {
+                            "index" : 7,
+                            "type" : "float"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+typedef struct {
+    float4 _wcl_rgba;
+    float4 _wcl_f4Sum;
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
+
+typedef struct {
+    __global unsigned int *BoxRowsTex__uiDest_min;
+    __global unsigned int *BoxRowsTex__uiDest_max;
+    __global unsigned int *BoxColumns__uiInputImage_min;
+    __global unsigned int *BoxColumns__uiInputImage_max;
+    __global unsigned int *BoxColumns__uiOutputImage_min;
+    __global unsigned int *BoxColumns__uiOutputImage_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+    _WclPrivates pa;
+    __private uint *pn;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+// be careful to edit this, this has been carefully tuned to work on every OpenCL driver
+// e.g. % item_count was added to start[(items_offset+i)] = _WCL_FILLCHAR;
+// to prevent compiler crash on Apple GeForce 640M
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[(items_offset+i) % item_count] = _WCL_FILLCHAR;           \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+constant int hd4k_workaround_constant = 0;
+
+// <= General code that doesn't depend on input.
+
+bool _wcl_addr_check_global_3__u_uglobal__unsigned__int__Ptr(__global unsigned int *addr, unsigned size, __global unsigned int * min0, __global unsigned int * max0, __global unsigned int * min1, __global unsigned int * max1, __global unsigned int * min2, __global unsigned int * max2)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global unsigned int *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global unsigned int *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global unsigned int *, max2)) );
+}
+__global unsigned int *_wcl_addr_clamp_global_3__u_uglobal__unsigned__int__Ptr(__global unsigned int *addr, unsigned size, __global unsigned int * min0, __global unsigned int * max0, __global unsigned int * min1, __global unsigned int * max1, __global unsigned int * min2, __global unsigned int * max2, __global unsigned int * asnull)
+{
+     return _wcl_addr_check_global_3__u_uglobal__unsigned__int__Ptr(addr, size, min0, max0, min1, max1, min2, max2) ? addr : asnull;
+}
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+/*
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ *
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
+ */
+
+
+
+// Inline device function to convert 32-bit unsigned integer to floating point rgba color 
+//*****************************************************************
+float4 rgbaUintToFloat4(_WclProgramAllocations *_wcl_allocs, unsigned int c)
+{
+    float4 rgba;
+    _wcl_allocs->pa._wcl_rgba.x = c & 0xff;
+    _wcl_allocs->pa._wcl_rgba.y = (c >> 8) & 0xff;
+    _wcl_allocs->pa._wcl_rgba.z = (c >> 16) & 0xff;
+    _wcl_allocs->pa._wcl_rgba.w = (c >> 24) & 0xff;
+    return _wcl_allocs->pa._wcl_rgba;
+}
+
+// Inline device function to convert floating point rgba color to 32-bit unsigned integer
+//*****************************************************************
+unsigned int rgbaFloat4ToUint(_WclProgramAllocations *_wcl_allocs, float4 rgba, float fScale)
+{
+    unsigned int uiPackedPix = 0U;
+    uiPackedPix |= 0x000000FF & (unsigned int)(rgba.x * fScale);
+    uiPackedPix |= 0x0000FF00 & (((unsigned int)(rgba.y * fScale)) << 8);
+    uiPackedPix |= 0x00FF0000 & (((unsigned int)(rgba.z * fScale)) << 16);
+    uiPackedPix |= 0xFF000000 & (((unsigned int)(rgba.w * fScale)) << 24);
+    return uiPackedPix;
+}
+
+// Row summation filter kernel with rescaling, using Image (texture)
+// USETEXTURE switch passed in via OpenCL clBuildProgram call options string at app runtime
+//*****************************************************************
+
+    // Row summation filter kernel with rescaling, using Image (texture)
+    __kernel void BoxRowsTex( __read_only image2d_t SourceRgbaTex, __global unsigned int* uiDest, ulong _wcl_uiDest_size, sampler_t RowSampler,
+                              unsigned int uiWidth, unsigned int uiHeight, int iRadius, float fScale)
+    {
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &uiDest[0], &uiDest[_wcl_uiDest_size],0, 0,0, 0 },
+        0,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.BoxRowsTex__uiDest_min, _wcl_allocs->gl.BoxRowsTex__uiDest_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.BoxColumns__uiInputImage_min, _wcl_allocs->gl.BoxColumns__uiInputImage_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.BoxColumns__uiOutputImage_min, _wcl_allocs->gl.BoxColumns__uiOutputImage_max, (__global uint*)0)));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+        // Row to process (note:  1 dimensional workgroup and ND range used for row kernel)
+     size_t globalPosY = get_global_id(0);
+        size_t szBaseOffset = globalPosY*uiWidth;
+
+        // Process the row as long as Y pos isn'f4Sum off the image
+        if (globalPosY < uiHeight)
+        {
+            // 4 fp32 accumulators
+            float4 f4Sum = (float4)0.0f;
+
+            // Do the left boundary
+            for(int x = -iRadius; x <= iRadius; x++) // (note:  clamping provided by Image (texture))
+            {
+                int2 pos = {x , globalPosY};
+                f4Sum += convert_float4(read_imageui(SourceRgbaTex, RowSampler, pos));
+            }
+            (*(_wcl_addr_clamp_global_3__u_uglobal__unsigned__int__Ptr((uiDest)+(szBaseOffset), 1, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_min, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_max, (__global unsigned int *)_wcl_allocs->gn))) = rgbaFloat4ToUint(_wcl_allocs, f4Sum, fScale);
+
+            // Do the rest of the image
+            int2 pos = {0, globalPosY};
+            for(unsigned int x = 1; x < uiWidth; x++) //  (note:  clamping provided by Image (texture)) 
+            {
+                // Accumulate the next rgba sub-pixel vals
+                pos.x = x + iRadius;
+                f4Sum += convert_float4(read_imageui(SourceRgbaTex, RowSampler, pos));
+
+                // Remove the trailing rgba sub-pixel vals
+                pos.x = x - iRadius - 1;
+                f4Sum -= convert_float4(read_imageui(SourceRgbaTex, RowSampler, pos));
+
+                // Write out to GMEM
+                (*(_wcl_addr_clamp_global_3__u_uglobal__unsigned__int__Ptr((uiDest)+(szBaseOffset + x), 1, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_min, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_max, (__global unsigned int *)_wcl_allocs->gn))) = rgbaFloat4ToUint(_wcl_allocs, f4Sum, fScale);
+            }
+        }
+    }
+
+
+// Row summation filter kernel with rescaling, using LMEM
+// USELMEM switch passed in via OpenCL clBuildProgram call options string at app runtime
+//*****************************************************************
+// Column kernel using coalesced global memory reads
+//*****************************************************************
+__kernel void BoxColumns(__global unsigned int* uiInputImage, ulong _wcl_uiInputImage_size, __global unsigned int* uiOutputImage, ulong _wcl_uiOutputImage_size,
+                         unsigned int uiWidth, unsigned int uiHeight, int iRadius, float fScale)
+{
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,&uiInputImage[0], &uiInputImage[_wcl_uiInputImage_size],&uiOutputImage[0], &uiOutputImage[_wcl_uiOutputImage_size] },
+        0,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.BoxRowsTex__uiDest_min, _wcl_allocs->gl.BoxRowsTex__uiDest_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.BoxColumns__uiInputImage_min, _wcl_allocs->gl.BoxColumns__uiInputImage_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.BoxColumns__uiOutputImage_min, _wcl_allocs->gl.BoxColumns__uiOutputImage_max, (__global uint*)0)));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+ size_t globalPosX = get_global_id(0);
+    uiInputImage = &(*(_wcl_addr_clamp_global_3__u_uglobal__unsigned__int__Ptr((uiInputImage)+(globalPosX), 1, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_min, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_max, (__global unsigned int *)_wcl_allocs->gn)));
+    uiOutputImage = &(*(_wcl_addr_clamp_global_3__u_uglobal__unsigned__int__Ptr((uiOutputImage)+(globalPosX), 1, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_min, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_max, (__global unsigned int *)_wcl_allocs->gn)));
+
+    // do left edge
+    float4 f4Sum;
+    _wcl_allocs->pa._wcl_f4Sum = rgbaUintToFloat4(_wcl_allocs, (*(_wcl_addr_clamp_global_3__u_uglobal__unsigned__int__Ptr((uiInputImage)+(0), 1, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_min, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_max, (__global unsigned int *)_wcl_allocs->gn)))) * (float4)(iRadius);
+    for (int y = 0; y < iRadius + 1; y++)
+    {
+        _wcl_allocs->pa._wcl_f4Sum += rgbaUintToFloat4(_wcl_allocs, (*(_wcl_addr_clamp_global_3__u_uglobal__unsigned__int__Ptr((uiInputImage)+(y * uiWidth), 1, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_min, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_max, (__global unsigned int *)_wcl_allocs->gn))));
+    }
+    (*(_wcl_addr_clamp_global_3__u_uglobal__unsigned__int__Ptr((uiOutputImage)+(0), 1, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_min, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_max, (__global unsigned int *)_wcl_allocs->gn))) = rgbaFloat4ToUint(_wcl_allocs, _wcl_allocs->pa._wcl_f4Sum, fScale);
+    for(int y = 1; y < iRadius + 1; y++)
+    {
+        _wcl_allocs->pa._wcl_f4Sum += rgbaUintToFloat4(_wcl_allocs, (*(_wcl_addr_clamp_global_3__u_uglobal__unsigned__int__Ptr((uiInputImage)+((y + iRadius) * uiWidth), 1, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_min, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_max, (__global unsigned int *)_wcl_allocs->gn))));
+        _wcl_allocs->pa._wcl_f4Sum -= rgbaUintToFloat4(_wcl_allocs, (*(_wcl_addr_clamp_global_3__u_uglobal__unsigned__int__Ptr((uiInputImage)+(0), 1, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_min, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_max, (__global unsigned int *)_wcl_allocs->gn))));
+        (*(_wcl_addr_clamp_global_3__u_uglobal__unsigned__int__Ptr((uiOutputImage)+(y * uiWidth), 1, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_min, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_max, (__global unsigned int *)_wcl_allocs->gn))) = rgbaFloat4ToUint(_wcl_allocs, _wcl_allocs->pa._wcl_f4Sum, fScale);
+    }
+
+    // main loop
+    for(int y = iRadius + 1; y < uiHeight - iRadius; y++)
+    {
+        _wcl_allocs->pa._wcl_f4Sum += rgbaUintToFloat4(_wcl_allocs, (*(_wcl_addr_clamp_global_3__u_uglobal__unsigned__int__Ptr((uiInputImage)+((y + iRadius) * uiWidth), 1, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_min, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_max, (__global unsigned int *)_wcl_allocs->gn))));
+        _wcl_allocs->pa._wcl_f4Sum -= rgbaUintToFloat4(_wcl_allocs, (*(_wcl_addr_clamp_global_3__u_uglobal__unsigned__int__Ptr((uiInputImage)+(((y - iRadius) * uiWidth) - uiWidth), 1, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_min, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_max, (__global unsigned int *)_wcl_allocs->gn))));
+        (*(_wcl_addr_clamp_global_3__u_uglobal__unsigned__int__Ptr((uiOutputImage)+(y * uiWidth), 1, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_min, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_max, (__global unsigned int *)_wcl_allocs->gn))) = rgbaFloat4ToUint(_wcl_allocs, _wcl_allocs->pa._wcl_f4Sum, fScale);
+    }
+
+    // do right edge
+    for (int y = uiHeight - iRadius; y < uiHeight; y++)
+    {
+        _wcl_allocs->pa._wcl_f4Sum += rgbaUintToFloat4(_wcl_allocs, (*(_wcl_addr_clamp_global_3__u_uglobal__unsigned__int__Ptr((uiInputImage)+((uiHeight - 1) * uiWidth), 1, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_min, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_max, (__global unsigned int *)_wcl_allocs->gn))));
+        _wcl_allocs->pa._wcl_f4Sum -= rgbaUintToFloat4(_wcl_allocs, (*(_wcl_addr_clamp_global_3__u_uglobal__unsigned__int__Ptr((uiInputImage)+(((y - iRadius) * uiWidth) - uiWidth), 1, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_min, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_max, (__global unsigned int *)_wcl_allocs->gn))));
+        (*(_wcl_addr_clamp_global_3__u_uglobal__unsigned__int__Ptr((uiOutputImage)+(y * uiWidth), 1, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_min, (__global unsigned int *)_wcl_allocs->gl.BoxRowsTex__uiDest_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiInputImage_max, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_min, (__global unsigned int *)_wcl_allocs->gl.BoxColumns__uiOutputImage_max, (__global unsigned int *)_wcl_allocs->gn))) = rgbaFloat4ToUint(_wcl_allocs, _wcl_allocs->pa._wcl_f4Sum, fScale);
+    }
+}
 P6
 # Created by IrfanView
 1024 1024

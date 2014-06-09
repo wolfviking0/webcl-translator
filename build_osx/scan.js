@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-osx-sample/js/scan.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'scan.data';
     var REMOTE_PACKAGE_SIZE = 15054;
-    var PACKAGE_UUID = 'c59450ab-d1cb-4e7b-8478-f99f8640439a';
+    var PACKAGE_UUID = 'a3dd8fd9-aee3-4e65-9c0e-a350e1829a7e';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -247,7 +247,6 @@ else if (ENVIRONMENT_IS_SHELL) {
 
   this['Module'] = Module;
 
-  eval("if (typeof gc === 'function' && gc.toString().indexOf('[native code]') > 0) var gc = undefined"); // wipe out the SpiderMonkey shell 'gc' function, which can confuse closure (uses it as a minified name, and it is then initted to a non-falsey value unexpectedly)
 }
 else if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
   Module['read'] = function read(url) {
@@ -722,10 +721,11 @@ var globalScope = this;
 
 // Returns the C function with a specified identifier (for C++, you need to do manual name mangling)
 function getCFunc(ident) {
-  try {
-    var func = Module['_' + ident]; // closure exported function
-    if (!func) func = eval('_' + ident); // explicit lookup
-  } catch(e) {
+  var func = Module['_' + ident]; // closure exported function
+  if (!func) {
+    try {
+      func = eval('_' + ident); // explicit lookup
+    } catch(e) {}
   }
   assert(func, 'Cannot call unknown function ' + ident + ' (perhaps LLVM optimizations or closure removed it?)');
   return func;
@@ -804,7 +804,7 @@ var cwrap, ccall;
     return ret;
   }
 
-  var sourceRegex = /^function \((.*)\)\s*{\s*([^]*?)[\s;]*(?:return\s*(.*?)[;\s]*)?}$/;
+  var sourceRegex = /^function\s*\(([^)]*)\)\s*{\s*([^*]*?)[\s;]*(?:return\s*(.*?)[;\s]*)?}$/;
   function parseJSFunc(jsfunc) {
     // Match the body and the return value of a javascript function source
     var parsed = jsfunc.toString().match(sourceRegex).slice(1);
@@ -2085,21 +2085,33 @@ function copyTempDouble(ptr) {
                 sizePerPixel = 2;
                 break;
               default:
-                throw 'Invalid format (' + format + ')';
+                GL.recordError(0x0500); // GL_INVALID_ENUM
+                return {
+                  pixels: null,
+                  internalFormat: 0x0
+                };
             }
             break;
           case 0x1403 /* GL_UNSIGNED_SHORT */:
             if (format == 0x1902 /* GL_DEPTH_COMPONENT */) {
               sizePerPixel = 2;
             } else {
-              throw 'Invalid format (' + format + ')';
+              GL.recordError(0x0500); // GL_INVALID_ENUM
+              return {
+                pixels: null,
+                internalFormat: 0x0
+              };
             }
             break;
           case 0x1405 /* GL_UNSIGNED_INT */:
             if (format == 0x1902 /* GL_DEPTH_COMPONENT */) {
               sizePerPixel = 4;
             } else {
-              throw 'Invalid format (' + format + ')';
+              GL.recordError(0x0500); // GL_INVALID_ENUM
+              return {
+                pixels: null,
+                internalFormat: 0x0
+              };
             }
             break;
           case 0x84FA /* UNSIGNED_INT_24_8_WEBGL */:
@@ -2120,12 +2132,20 @@ function copyTempDouble(ptr) {
                 sizePerPixel = 4*4;
                 break;
               default:
-                throw 'Invalid format (' + format + ')';
+                GL.recordError(0x0500); // GL_INVALID_ENUM
+                return {
+                  pixels: null,
+                  internalFormat: 0x0
+                };
             }
             internalFormat = GLctx.RGBA;
             break;
           default:
-            throw 'Invalid type (' + type + ')';
+            GL.recordError(0x0500); // GL_INVALID_ENUM
+            return {
+              pixels: null,
+              internalFormat: 0x0
+            };
         }
         var bytes = GL.computeImageSize(width, height, sizePerPixel, GL.unpackAlignment);
         if (type == 0x1401 /* GL_UNSIGNED_BYTE */) {
@@ -2140,7 +2160,7 @@ function copyTempDouble(ptr) {
         return {
           pixels: pixels,
           internalFormat: internalFormat
-        }
+        };
       },initExtensions:function () {
         if (GL.initExtensions.done) return;
         GL.initExtensions.done = true;
@@ -6872,23 +6892,6 @@ function copyTempDouble(ptr) {
       return _id;
     }
 
-  function _frexp(x, exp_addr) {
-      var sig = 0, exp_ = 0;
-      if (x !== 0) {
-        var sign = 1;
-        if (x < 0) {
-          x = -x;
-          sign = -1;
-        }
-        var raw_exp = Math.log(x)/Math.log(2);
-        exp_ = Math.ceil(raw_exp);
-        if (exp_ === raw_exp) exp_ += 1;
-        sig = sign*x/Math.pow(2, exp_);
-      }
-      HEAP32[((exp_addr)>>2)]=exp_;
-      return sig;
-    }
-
   var _fabs=Math_abs;
 
   function _clBuildProgram(program,num_devices,device_list,options,pfn_notify,user_data) {
@@ -7784,6 +7787,9 @@ function copyTempDouble(ptr) {
       }
     }
 
+   
+  Module["_bitshift64Lshr"] = _bitshift64Lshr;
+
   
   
   function _recv(fd, buf, len, flags) {
@@ -7977,6 +7983,8 @@ function copyTempDouble(ptr) {
       return _id;
     }
 
+  var _BDtoIHigh=true;
+
   var _ceil=Math_ceil;
 
   function _clEnqueueWriteBuffer(command_queue,buffer,blocking_write,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event) {
@@ -8014,6 +8022,8 @@ function copyTempDouble(ptr) {
   
       return webcl.SUCCESS;  
     }
+
+  var _BDtoILow=true;
 
   function _clSetKernelArg(kernel,arg_index,arg_size,arg_value) {
       if (CL.cl_objects[kernel].sig.length < arg_index) {
@@ -8136,6 +8146,8 @@ function copyTempDouble(ptr) {
   function ___errno_location() {
       return ___errno_state;
     }
+
+  var _BItoD=true;
 
   function _clFinish(command_queue) {
   
@@ -8379,7 +8391,6 @@ assert(DYNAMIC_BASE < TOTAL_MEMORY, "TOTAL_MEMORY not big enough for stack");
   var asmPrintFloat=env.asmPrintFloat;
   var Math_min=env.min;
   var _fabs=env._fabs;
-  var _frexp=env._frexp;
   var _clReleaseProgram=env._clReleaseProgram;
   var _clCreateKernel=env._clCreateKernel;
   var _send=env._send;
@@ -8503,7 +8514,7 @@ function _floorPow2($n) {
  $1 = $0;
  $2 = (+($1|0));
  $3 = $2;
- (+_frexp((+$3),($exp|0)));
+ (+_frexp($3,$exp));
  $4 = HEAP32[$exp>>2]|0;
  $5 = (($4) - 1)|0;
  $6 = 1 << $5;
@@ -10478,129 +10489,6 @@ function _GetCurrentTime() {
  $1 = $0;
  STACKTOP = sp;return (+$1);
 }
-function _memchr($src,$c,$n) {
- $src = $src|0;
- $c = $c|0;
- $n = $n|0;
- var $$0$lcssa = 0, $$0$lcssa34 = 0, $$013 = 0, $$1$lcssa = 0, $$17 = 0, $$24 = 0, $$3 = 0, $$lcssa = 0, $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0;
- var $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0, $27 = 0, $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $4 = 0;
- var $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $or$cond = 0, $or$cond12 = 0, $s$0$lcssa = 0, $s$0$lcssa33 = 0, $s$014 = 0, $s$15 = 0, $s$2 = 0, $w$0$lcssa = 0, $w$08 = 0, label = 0, sp = 0;
- sp = STACKTOP;
- $0 = $c & 255;
- $1 = $src;
- $2 = $1 & 3;
- $3 = ($2|0)==(0);
- $4 = ($n|0)==(0);
- $or$cond12 = $3 | $4;
- L1: do {
-  if ($or$cond12) {
-   $$0$lcssa = $n;$$lcssa = $4;$s$0$lcssa = $src;
-   label = 5;
-  } else {
-   $5 = $c&255;
-   $$013 = $n;$s$014 = $src;
-   while(1) {
-    $6 = HEAP8[$s$014>>0]|0;
-    $7 = ($6<<24>>24)==($5<<24>>24);
-    if ($7) {
-     $$0$lcssa34 = $$013;$s$0$lcssa33 = $s$014;
-     label = 6;
-     break L1;
-    }
-    $8 = (($s$014) + 1|0);
-    $9 = (($$013) + -1)|0;
-    $10 = $8;
-    $11 = $10 & 3;
-    $12 = ($11|0)==(0);
-    $13 = ($9|0)==(0);
-    $or$cond = $12 | $13;
-    if ($or$cond) {
-     $$0$lcssa = $9;$$lcssa = $13;$s$0$lcssa = $8;
-     label = 5;
-     break;
-    } else {
-     $$013 = $9;$s$014 = $8;
-    }
-   }
-  }
- } while(0);
- if ((label|0) == 5) {
-  if ($$lcssa) {
-   $$3 = 0;$s$2 = $s$0$lcssa;
-  } else {
-   $$0$lcssa34 = $$0$lcssa;$s$0$lcssa33 = $s$0$lcssa;
-   label = 6;
-  }
- }
- L8: do {
-  if ((label|0) == 6) {
-   $14 = HEAP8[$s$0$lcssa33>>0]|0;
-   $15 = $c&255;
-   $16 = ($14<<24>>24)==($15<<24>>24);
-   if ($16) {
-    $$3 = $$0$lcssa34;$s$2 = $s$0$lcssa33;
-   } else {
-    $17 = Math_imul($0, 16843009)|0;
-    $18 = ($$0$lcssa34>>>0)>(3);
-    L11: do {
-     if ($18) {
-      $$17 = $$0$lcssa34;$w$08 = $s$0$lcssa33;
-      while(1) {
-       $19 = HEAP32[$w$08>>2]|0;
-       $20 = $19 ^ $17;
-       $21 = (($20) + -16843009)|0;
-       $22 = $20 & -2139062144;
-       $23 = $22 ^ -2139062144;
-       $24 = $23 & $21;
-       $25 = ($24|0)==(0);
-       if (!($25)) {
-        $$1$lcssa = $$17;$w$0$lcssa = $w$08;
-        break L11;
-       }
-       $26 = (($w$08) + 4|0);
-       $27 = (($$17) + -4)|0;
-       $28 = ($27>>>0)>(3);
-       if ($28) {
-        $$17 = $27;$w$08 = $26;
-       } else {
-        $$1$lcssa = $27;$w$0$lcssa = $26;
-        break;
-       }
-      }
-     } else {
-      $$1$lcssa = $$0$lcssa34;$w$0$lcssa = $s$0$lcssa33;
-     }
-    } while(0);
-    $29 = ($$1$lcssa|0)==(0);
-    if ($29) {
-     $$3 = 0;$s$2 = $w$0$lcssa;
-    } else {
-     $$24 = $$1$lcssa;$s$15 = $w$0$lcssa;
-     while(1) {
-      $30 = HEAP8[$s$15>>0]|0;
-      $31 = ($30<<24>>24)==($15<<24>>24);
-      if ($31) {
-       $$3 = $$24;$s$2 = $s$15;
-       break L8;
-      }
-      $32 = (($s$15) + 1|0);
-      $33 = (($$24) + -1)|0;
-      $34 = ($33|0)==(0);
-      if ($34) {
-       $$3 = 0;$s$2 = $32;
-       break;
-      } else {
-       $$24 = $33;$s$15 = $32;
-      }
-     }
-    }
-   }
-  }
- } while(0);
- $35 = ($$3|0)!=(0);
- $36 = $35 ? $s$2 : 0;
- STACKTOP = sp;return ($36|0);
-}
 function _strchr($s,$c) {
  $s = $s|0;
  $c = $c|0;
@@ -11973,7 +11861,7 @@ function _malloc($bytes) {
      $276 = ((1560 + ($idx$0$i<<2)|0) + 304|0);
      $277 = HEAP32[$276>>2]|0;
      $278 = ($277|0)==(0|0);
-     L126: do {
+     L9: do {
       if ($278) {
        $rsize$2$i = $250;$t$1$i = 0;$v$2$i = 0;
       } else {
@@ -11997,7 +11885,7 @@ function _malloc($bytes) {
          $289 = ($286|0)==($247|0);
          if ($289) {
           $rsize$2$i = $287;$t$1$i = $t$0$i14;$v$2$i = $t$0$i14;
-          break L126;
+          break L9;
          } else {
           $rsize$1$i = $287;$v$1$i = $t$0$i14;
          }
@@ -12282,7 +12170,7 @@ function _malloc($bytes) {
         }
        } while(0);
        $412 = ($rsize$3$lcssa$i>>>0)<(16);
-       L204: do {
+       L87: do {
         if ($412) {
          $413 = (($rsize$3$lcssa$i) + ($247))|0;
          $414 = $413 | 3;
@@ -12421,7 +12309,7 @@ function _malloc($bytes) {
          $482 = HEAP32[$481>>2]|0;
          $483 = $482 & -8;
          $484 = ($483|0)==($rsize$3$lcssa$i|0);
-         L225: do {
+         L108: do {
           if ($484) {
            $T$0$lcssa$i = $477;
           } else {
@@ -12442,7 +12330,7 @@ function _malloc($bytes) {
             $492 = ($491|0)==($rsize$3$lcssa$i|0);
             if ($492) {
              $T$0$lcssa$i = $489;
-             break L225;
+             break L108;
             } else {
              $K12$025$i = $487;$T$024$i = $489;
             }
@@ -12463,7 +12351,7 @@ function _malloc($bytes) {
             $$sum13$i = (($247) + 8)|0;
             $500 = (($v$3$lcssa$i) + ($$sum13$i)|0);
             HEAP32[$500>>2] = $349;
-            break L204;
+            break L87;
            }
           }
          } while(0);
@@ -14658,6 +14546,167 @@ function _free($mem) {
  HEAP32[((1560 + 32|0))>>2] = -1;
  STACKTOP = sp;return;
 }
+function _frexp($x,$e) {
+ $x = +$x;
+ $e = $e|0;
+ var $$0 = 0.0, $$01 = 0.0, $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0.0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0.0, $7 = 0.0, $8 = 0, $9 = 0, $storemerge = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ HEAPF64[tempDoublePtr>>3] = $x;$0 = HEAP32[tempDoublePtr>>2]|0;
+ $1 = HEAP32[tempDoublePtr+4>>2]|0;
+ $2 = (_bitshift64Lshr(($0|0),($1|0),52)|0);
+ $3 = tempRet0;
+ $4 = $2 & 2047;
+ if ((($4|0) == 0)) {
+  $5 = $x != 0.0;
+  if ($5) {
+   $6 = $x * 18446744073709551616.0;
+   $7 = (+_frexp($6,$e));
+   $8 = HEAP32[$e>>2]|0;
+   $9 = (($8) + -64)|0;
+   $$01 = $7;$storemerge = $9;
+  } else {
+   $$01 = $x;$storemerge = 0;
+  }
+  HEAP32[$e>>2] = $storemerge;
+  $$0 = $$01;
+  STACKTOP = sp;return (+$$0);
+ } else if ((($4|0) == 2047)) {
+  $$0 = $x;
+  STACKTOP = sp;return (+$$0);
+ } else {
+  $10 = (($4) + -1022)|0;
+  HEAP32[$e>>2] = $10;
+  $11 = $1 & -2146435073;
+  $12 = $11 | 1071644672;
+  HEAP32[tempDoublePtr>>2] = $0;HEAP32[tempDoublePtr+4>>2] = $12;$13 = +HEAPF64[tempDoublePtr>>3];
+  $$0 = $13;
+  STACKTOP = sp;return (+$$0);
+ }
+ return +0;
+}
+function _memchr($src,$c,$n) {
+ $src = $src|0;
+ $c = $c|0;
+ $n = $n|0;
+ var $$0$lcssa = 0, $$0$lcssa34 = 0, $$013 = 0, $$1$lcssa = 0, $$17 = 0, $$24 = 0, $$3 = 0, $$lcssa = 0, $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0;
+ var $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0, $27 = 0, $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $4 = 0;
+ var $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $or$cond = 0, $or$cond12 = 0, $s$0$lcssa = 0, $s$0$lcssa33 = 0, $s$014 = 0, $s$15 = 0, $s$2 = 0, $w$0$lcssa = 0, $w$08 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ $0 = $c & 255;
+ $1 = $src;
+ $2 = $1 & 3;
+ $3 = ($2|0)==(0);
+ $4 = ($n|0)==(0);
+ $or$cond12 = $3 | $4;
+ L1: do {
+  if ($or$cond12) {
+   $$0$lcssa = $n;$$lcssa = $4;$s$0$lcssa = $src;
+   label = 5;
+  } else {
+   $5 = $c&255;
+   $$013 = $n;$s$014 = $src;
+   while(1) {
+    $6 = HEAP8[$s$014>>0]|0;
+    $7 = ($6<<24>>24)==($5<<24>>24);
+    if ($7) {
+     $$0$lcssa34 = $$013;$s$0$lcssa33 = $s$014;
+     label = 6;
+     break L1;
+    }
+    $8 = (($s$014) + 1|0);
+    $9 = (($$013) + -1)|0;
+    $10 = $8;
+    $11 = $10 & 3;
+    $12 = ($11|0)==(0);
+    $13 = ($9|0)==(0);
+    $or$cond = $12 | $13;
+    if ($or$cond) {
+     $$0$lcssa = $9;$$lcssa = $13;$s$0$lcssa = $8;
+     label = 5;
+     break;
+    } else {
+     $$013 = $9;$s$014 = $8;
+    }
+   }
+  }
+ } while(0);
+ if ((label|0) == 5) {
+  if ($$lcssa) {
+   $$3 = 0;$s$2 = $s$0$lcssa;
+  } else {
+   $$0$lcssa34 = $$0$lcssa;$s$0$lcssa33 = $s$0$lcssa;
+   label = 6;
+  }
+ }
+ L8: do {
+  if ((label|0) == 6) {
+   $14 = HEAP8[$s$0$lcssa33>>0]|0;
+   $15 = $c&255;
+   $16 = ($14<<24>>24)==($15<<24>>24);
+   if ($16) {
+    $$3 = $$0$lcssa34;$s$2 = $s$0$lcssa33;
+   } else {
+    $17 = Math_imul($0, 16843009)|0;
+    $18 = ($$0$lcssa34>>>0)>(3);
+    L11: do {
+     if ($18) {
+      $$17 = $$0$lcssa34;$w$08 = $s$0$lcssa33;
+      while(1) {
+       $19 = HEAP32[$w$08>>2]|0;
+       $20 = $19 ^ $17;
+       $21 = (($20) + -16843009)|0;
+       $22 = $20 & -2139062144;
+       $23 = $22 ^ -2139062144;
+       $24 = $23 & $21;
+       $25 = ($24|0)==(0);
+       if (!($25)) {
+        $$1$lcssa = $$17;$w$0$lcssa = $w$08;
+        break L11;
+       }
+       $26 = (($w$08) + 4|0);
+       $27 = (($$17) + -4)|0;
+       $28 = ($27>>>0)>(3);
+       if ($28) {
+        $$17 = $27;$w$08 = $26;
+       } else {
+        $$1$lcssa = $27;$w$0$lcssa = $26;
+        break;
+       }
+      }
+     } else {
+      $$1$lcssa = $$0$lcssa34;$w$0$lcssa = $s$0$lcssa33;
+     }
+    } while(0);
+    $29 = ($$1$lcssa|0)==(0);
+    if ($29) {
+     $$3 = 0;$s$2 = $w$0$lcssa;
+    } else {
+     $$24 = $$1$lcssa;$s$15 = $w$0$lcssa;
+     while(1) {
+      $30 = HEAP8[$s$15>>0]|0;
+      $31 = ($30<<24>>24)==($15<<24>>24);
+      if ($31) {
+       $$3 = $$24;$s$2 = $s$15;
+       break L8;
+      }
+      $32 = (($s$15) + 1|0);
+      $33 = (($$24) + -1)|0;
+      $34 = ($33|0)==(0);
+      if ($34) {
+       $$3 = 0;$s$2 = $32;
+       break;
+      } else {
+       $$24 = $33;$s$15 = $32;
+      }
+     }
+    }
+   }
+  }
+ } while(0);
+ $35 = ($$3|0)!=(0);
+ $36 = $35 ? $s$2 : 0;
+ STACKTOP = sp;return ($36|0);
+}
 function _memcmp($vl,$vr,$n) {
  $vl = $vl|0;
  $vr = $vr|0;
@@ -14746,6 +14795,17 @@ function _strlen(ptr) {
     }
     return (curr - ptr)|0;
 }
+function _bitshift64Lshr(low, high, bits) {
+    low = low|0; high = high|0; bits = bits|0;
+    var ander = 0;
+    if ((bits|0) < 32) {
+      ander = ((1 << bits) - 1)|0;
+      tempRet0 = high >>> bits;
+      return (low >>> bits) | ((high&ander) << (32 - bits));
+    }
+    tempRet0 = 0;
+    return (high >>> (bits - 32))|0;
+}
 function _memcpy(dest, src, num) {
     dest = dest|0; src = src|0; num = num|0;
     var ret = 0;
@@ -14782,10 +14842,10 @@ function _memcpy(dest, src, num) {
   // EMSCRIPTEN_END_FUNCS
   
 
-    return { _strlen: _strlen, _free: _free, _main: _main, _rand_r: _rand_r, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, _rand: _rand, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, setThrew: setThrew, setTempRet0: setTempRet0, getTempRet0: getTempRet0 };
+    return { _strlen: _strlen, _free: _free, _main: _main, _rand_r: _rand_r, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, _bitshift64Lshr: _bitshift64Lshr, _rand: _rand, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, setThrew: setThrew, setTempRet0: setTempRet0, getTempRet0: getTempRet0 };
   })
   // EMSCRIPTEN_END_ASM
-  ({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "_fabs": _fabs, "_frexp": _frexp, "_clReleaseProgram": _clReleaseProgram, "_clCreateKernel": _clCreateKernel, "_send": _send, "_fread": _fread, "_clReleaseKernel": _clReleaseKernel, "_clReleaseContext": _clReleaseContext, "___setErrNo": ___setErrNo, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_clCreateContext": _clCreateContext, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_clCreateProgramWithSource": _clCreateProgramWithSource, "_fmax": _fmax, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "_time": _time, "_pwrite": _pwrite, "_open": _open, "_sbrk": _sbrk, "_clReleaseMemObject": _clReleaseMemObject, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_fileno": _fileno, "_sysconf": _sysconf, "_clFinish": _clFinish, "_clGetDeviceInfo": _clGetDeviceInfo, "_clCreateCommandQueue": _clCreateCommandQueue, "_printf": _printf, "_clReleaseCommandQueue": _clReleaseCommandQueue, "__reallyNegative": __reallyNegative, "_fflush": _fflush, "_write": _write, "_pread": _pread, "___errno_location": ___errno_location, "_clCreateBuffer": _clCreateBuffer, "_stat": _stat, "_recv": _recv, "_clGetDeviceIDs": _clGetDeviceIDs, "_mkport": _mkport, "_read": _read, "_clSetKernelArg": _clSetKernelArg, "_abort": _abort, "_fwrite": _fwrite, "_emscripten_get_now": _emscripten_get_now, "_clBuildProgram": _clBuildProgram, "_fprintf": _fprintf, "_ceil": _ceil, "__formatString": __formatString, "_fopen": _fopen, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_clGetKernelWorkGroupInfo": _clGetKernelWorkGroupInfo, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "___rand_seed": ___rand_seed, "NaN": NaN, "Infinity": Infinity }, buffer);
+  ({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "_fabs": _fabs, "_clReleaseProgram": _clReleaseProgram, "_clCreateKernel": _clCreateKernel, "_send": _send, "_fread": _fread, "_clReleaseKernel": _clReleaseKernel, "_clReleaseContext": _clReleaseContext, "___setErrNo": ___setErrNo, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_clCreateContext": _clCreateContext, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_clCreateProgramWithSource": _clCreateProgramWithSource, "_fmax": _fmax, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "_time": _time, "_pwrite": _pwrite, "_open": _open, "_sbrk": _sbrk, "_clReleaseMemObject": _clReleaseMemObject, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_fileno": _fileno, "_sysconf": _sysconf, "_clFinish": _clFinish, "_clGetDeviceInfo": _clGetDeviceInfo, "_clCreateCommandQueue": _clCreateCommandQueue, "_printf": _printf, "_clReleaseCommandQueue": _clReleaseCommandQueue, "__reallyNegative": __reallyNegative, "_fflush": _fflush, "_write": _write, "_pread": _pread, "___errno_location": ___errno_location, "_clCreateBuffer": _clCreateBuffer, "_stat": _stat, "_recv": _recv, "_clGetDeviceIDs": _clGetDeviceIDs, "_mkport": _mkport, "_read": _read, "_clSetKernelArg": _clSetKernelArg, "_abort": _abort, "_fwrite": _fwrite, "_emscripten_get_now": _emscripten_get_now, "_clBuildProgram": _clBuildProgram, "_fprintf": _fprintf, "_ceil": _ceil, "__formatString": __formatString, "_fopen": _fopen, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_clGetKernelWorkGroupInfo": _clGetKernelWorkGroupInfo, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "___rand_seed": ___rand_seed, "NaN": NaN, "Infinity": Infinity }, buffer);
   var _strlen = Module["_strlen"] = asm["_strlen"];
 var _free = Module["_free"] = asm["_free"];
 var _main = Module["_main"] = asm["_main"];
@@ -14793,6 +14853,7 @@ var _rand_r = Module["_rand_r"] = asm["_rand_r"];
 var _memset = Module["_memset"] = asm["_memset"];
 var _malloc = Module["_malloc"] = asm["_malloc"];
 var _memcpy = Module["_memcpy"] = asm["_memcpy"];
+var _bitshift64Lshr = Module["_bitshift64Lshr"] = asm["_bitshift64Lshr"];
 var _rand = Module["_rand"] = asm["_rand"];
 var runPostSets = Module["runPostSets"] = asm["runPostSets"];
   

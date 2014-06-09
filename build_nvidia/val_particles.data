@@ -1,0 +1,1120 @@
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "integrate" :
+                {
+                    "d_Pos" :
+                        {
+                            "index" : 0,
+                            "type" : "float4 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Pos_size"
+                        },
+                    "_wcl_d_Pos_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "d_Vel" :
+                        {
+                            "index" : 2,
+                            "type" : "float4 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Vel_size"
+                        },
+                    "_wcl_d_Vel_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "params" :
+                        {
+                            "index" : 4,
+                            "type" : "struct _Wcl4Struct *",
+                            "address-space" : "constant",
+                            "size-parameter" : "_wcl_params_size"
+                        },
+                    "_wcl_params_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "deltaTime" :
+                        {
+                            "index" : 6,
+                            "type" : "float"
+                        },
+                    "numParticles" :
+                        {
+                            "index" : 7,
+                            "type" : "uint"
+                        }
+                },
+            "calcHash" :
+                {
+                    "d_Hash" :
+                        {
+                            "index" : 0,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Hash_size"
+                        },
+                    "_wcl_d_Hash_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "d_Index" :
+                        {
+                            "index" : 2,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Index_size"
+                        },
+                    "_wcl_d_Index_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "d_Pos" :
+                        {
+                            "index" : 4,
+                            "type" : "float4 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Pos_size"
+                        },
+                    "_wcl_d_Pos_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "params" :
+                        {
+                            "index" : 6,
+                            "type" : "struct _Wcl4Struct *",
+                            "address-space" : "constant",
+                            "size-parameter" : "_wcl_params_size"
+                        },
+                    "_wcl_params_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        },
+                    "numParticles" :
+                        {
+                            "index" : 8,
+                            "type" : "uint"
+                        }
+                },
+            "Memset" :
+                {
+                    "d_Data" :
+                        {
+                            "index" : 0,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Data_size"
+                        },
+                    "_wcl_d_Data_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "val" :
+                        {
+                            "index" : 2,
+                            "type" : "uint"
+                        },
+                    "N" :
+                        {
+                            "index" : 3,
+                            "type" : "uint"
+                        }
+                },
+            "findCellBoundsAndReorder" :
+                {
+                    "d_CellStart" :
+                        {
+                            "index" : 0,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_CellStart_size"
+                        },
+                    "_wcl_d_CellStart_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "d_CellEnd" :
+                        {
+                            "index" : 2,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_CellEnd_size"
+                        },
+                    "_wcl_d_CellEnd_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "d_ReorderedPos" :
+                        {
+                            "index" : 4,
+                            "type" : "float4 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_ReorderedPos_size"
+                        },
+                    "_wcl_d_ReorderedPos_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "d_ReorderedVel" :
+                        {
+                            "index" : 6,
+                            "type" : "float4 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_ReorderedVel_size"
+                        },
+                    "_wcl_d_ReorderedVel_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        },
+                    "d_Hash" :
+                        {
+                            "index" : 8,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Hash_size"
+                        },
+                    "_wcl_d_Hash_size" :
+                        {
+                            "index" : 9,
+                            "type" : "ulong"
+                        },
+                    "d_Index" :
+                        {
+                            "index" : 10,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Index_size"
+                        },
+                    "_wcl_d_Index_size" :
+                        {
+                            "index" : 11,
+                            "type" : "ulong"
+                        },
+                    "d_Pos" :
+                        {
+                            "index" : 12,
+                            "type" : "float4 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Pos_size"
+                        },
+                    "_wcl_d_Pos_size" :
+                        {
+                            "index" : 13,
+                            "type" : "ulong"
+                        },
+                    "d_Vel" :
+                        {
+                            "index" : 14,
+                            "type" : "float4 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Vel_size"
+                        },
+                    "_wcl_d_Vel_size" :
+                        {
+                            "index" : 15,
+                            "type" : "ulong"
+                        },
+                    "localHash" :
+                        {
+                            "index" : 16,
+                            "type" : "uint *",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_localHash_size"
+                        },
+                    "_wcl_localHash_size" :
+                        {
+                            "index" : 17,
+                            "type" : "ulong"
+                        },
+                    "numParticles" :
+                        {
+                            "index" : 18,
+                            "type" : "uint"
+                        }
+                },
+            "collide" :
+                {
+                    "d_Vel" :
+                        {
+                            "index" : 0,
+                            "type" : "float4 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Vel_size"
+                        },
+                    "_wcl_d_Vel_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "d_ReorderedPos" :
+                        {
+                            "index" : 2,
+                            "type" : "float4 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_ReorderedPos_size"
+                        },
+                    "_wcl_d_ReorderedPos_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "d_ReorderedVel" :
+                        {
+                            "index" : 4,
+                            "type" : "float4 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_ReorderedVel_size"
+                        },
+                    "_wcl_d_ReorderedVel_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "d_Index" :
+                        {
+                            "index" : 6,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Index_size"
+                        },
+                    "_wcl_d_Index_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        },
+                    "d_CellStart" :
+                        {
+                            "index" : 8,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_CellStart_size"
+                        },
+                    "_wcl_d_CellStart_size" :
+                        {
+                            "index" : 9,
+                            "type" : "ulong"
+                        },
+                    "d_CellEnd" :
+                        {
+                            "index" : 10,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_CellEnd_size"
+                        },
+                    "_wcl_d_CellEnd_size" :
+                        {
+                            "index" : 11,
+                            "type" : "ulong"
+                        },
+                    "params" :
+                        {
+                            "index" : 12,
+                            "type" : "struct _Wcl4Struct *",
+                            "address-space" : "constant",
+                            "size-parameter" : "_wcl_params_size"
+                        },
+                    "_wcl_params_size" :
+                        {
+                            "index" : 13,
+                            "type" : "ulong"
+                        },
+                    "numParticles" :
+                        {
+                            "index" : 14,
+                            "type" : "uint"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((128 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (128/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((96 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (64/CHAR_BIT)
+typedef struct _WclStruct{
+    float x;
+    float y;
+    float z;
+} Float3;
+
+typedef struct _Wcl2Struct{
+    uint x;
+    uint y;
+    uint z;
+}Uint3;
+
+typedef struct _Wcl3Struct{
+    int x;
+    int y;
+    int z;
+}Int3;
+
+typedef struct _Wcl4Struct{
+    Float3 colliderPos;
+    float colliderRadius;
+
+    Float3 gravity;
+    float globalDamping;
+    float particleRadius;
+
+    Uint3 gridSize;
+    uint numCells;
+    Float3 worldOrigin;
+    Float3 cellSize;
+
+    uint numBodies;
+    uint maxParticlesPerCell;
+
+    float spring;
+    float damping;
+    float shear;
+    float attraction;
+    float boundaryDamping;
+} simParams_t;
+
+typedef struct {
+    int4 _wcl_gridPos;
+    uint _wcl_hash;
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
+
+typedef struct {
+    __global float4 *integrate__d_Pos_min;
+    __global float4 *integrate__d_Pos_max;
+    __global float4 *integrate__d_Vel_min;
+    __global float4 *integrate__d_Vel_max;
+    __global uint *calcHash__d_Hash_min;
+    __global uint *calcHash__d_Hash_max;
+    __global uint *calcHash__d_Index_min;
+    __global uint *calcHash__d_Index_max;
+    const __global float4 *calcHash__d_Pos_min;
+    const __global float4 *calcHash__d_Pos_max;
+    __global uint *Memset__d_Data_min;
+    __global uint *Memset__d_Data_max;
+    __global uint *findCellBoundsAndReorder__d_CellStart_min;
+    __global uint *findCellBoundsAndReorder__d_CellStart_max;
+    __global uint *findCellBoundsAndReorder__d_CellEnd_min;
+    __global uint *findCellBoundsAndReorder__d_CellEnd_max;
+    __global float4 *findCellBoundsAndReorder__d_ReorderedPos_min;
+    __global float4 *findCellBoundsAndReorder__d_ReorderedPos_max;
+    __global float4 *findCellBoundsAndReorder__d_ReorderedVel_min;
+    __global float4 *findCellBoundsAndReorder__d_ReorderedVel_max;
+    const __global uint *findCellBoundsAndReorder__d_Hash_min;
+    const __global uint *findCellBoundsAndReorder__d_Hash_max;
+    const __global uint *findCellBoundsAndReorder__d_Index_min;
+    const __global uint *findCellBoundsAndReorder__d_Index_max;
+    const __global float4 *findCellBoundsAndReorder__d_Pos_min;
+    const __global float4 *findCellBoundsAndReorder__d_Pos_max;
+    const __global float4 *findCellBoundsAndReorder__d_Vel_min;
+    const __global float4 *findCellBoundsAndReorder__d_Vel_max;
+    __global float4 *collide__d_Vel_min;
+    __global float4 *collide__d_Vel_max;
+    const __global float4 *collide__d_ReorderedPos_min;
+    const __global float4 *collide__d_ReorderedPos_max;
+    const __global float4 *collide__d_ReorderedVel_min;
+    const __global float4 *collide__d_ReorderedVel_max;
+    const __global uint *collide__d_Index_min;
+    const __global uint *collide__d_Index_max;
+    const __global uint *collide__d_CellStart_min;
+    const __global uint *collide__d_CellStart_max;
+    const __global uint *collide__d_CellEnd_min;
+    const __global uint *collide__d_CellEnd_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    __constant simParams_t *integrate__params_min;
+    __constant simParams_t *integrate__params_max;
+    __constant simParams_t *calcHash__params_min;
+    __constant simParams_t *calcHash__params_max;
+    __constant simParams_t *collide__params_min;
+    __constant simParams_t *collide__params_max;
+} _WclConstantLimits;
+
+typedef struct {
+    __local uint *findCellBoundsAndReorder__localHash_min;
+    __local uint *findCellBoundsAndReorder__localHash_max;
+} _WclLocalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+    _WclConstantLimits cl;
+    __constant uint *cn;
+    _WclLocalLimits ll;
+    __local uint *ln;
+    _WclPrivates pa;
+    __private uint *pn;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+// be careful to edit this, this has been carefully tuned to work on every OpenCL driver
+// e.g. % item_count was added to start[(items_offset+i)] = _WCL_FILLCHAR;
+// to prevent compiler crash on Apple GeForce 640M
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[(items_offset+i) % item_count] = _WCL_FILLCHAR;           \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+constant int hd4k_workaround_constant = 0;
+
+// <= General code that doesn't depend on input.
+
+bool _wcl_addr_check_global_20__u_uglobal__float4__Ptr(__global float4 *addr, unsigned size, __global float4 * min0, __global float4 * max0, __global float4 * min1, __global float4 * max1, __global float4 * min2, __global float4 * max2, __global float4 * min3, __global float4 * max3, __global float4 * min4, __global float4 * max4, __global float4 * min5, __global float4 * max5, __global float4 * min6, __global float4 * max6, __global float4 * min7, __global float4 * max7, __global float4 * min8, __global float4 * max8, __global float4 * min9, __global float4 * max9, __global float4 * min10, __global float4 * max10, __global float4 * min11, __global float4 * max11, __global float4 * min12, __global float4 * max12, __global float4 * min13, __global float4 * max13, __global float4 * min14, __global float4 * max14, __global float4 * min15, __global float4 * max15, __global float4 * min16, __global float4 * max16, __global float4 * min17, __global float4 * max17, __global float4 * min18, __global float4 * max18, __global float4 * min19, __global float4 * max19)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max4)) )
+        || ( ((addr) >= (min5)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max5)) )
+        || ( ((addr) >= (min6)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max6)) )
+        || ( ((addr) >= (min7)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max7)) )
+        || ( ((addr) >= (min8)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max8)) )
+        || ( ((addr) >= (min9)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max9)) )
+        || ( ((addr) >= (min10)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max10)) )
+        || ( ((addr) >= (min11)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max11)) )
+        || ( ((addr) >= (min12)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max12)) )
+        || ( ((addr) >= (min13)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max13)) )
+        || ( ((addr) >= (min14)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max14)) )
+        || ( ((addr) >= (min15)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max15)) )
+        || ( ((addr) >= (min16)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max16)) )
+        || ( ((addr) >= (min17)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max17)) )
+        || ( ((addr) >= (min18)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max18)) )
+        || ( ((addr) >= (min19)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max19)) );
+}
+__global float4 *_wcl_addr_clamp_global_20__u_uglobal__float4__Ptr(__global float4 *addr, unsigned size, __global float4 * min0, __global float4 * max0, __global float4 * min1, __global float4 * max1, __global float4 * min2, __global float4 * max2, __global float4 * min3, __global float4 * max3, __global float4 * min4, __global float4 * max4, __global float4 * min5, __global float4 * max5, __global float4 * min6, __global float4 * max6, __global float4 * min7, __global float4 * max7, __global float4 * min8, __global float4 * max8, __global float4 * min9, __global float4 * max9, __global float4 * min10, __global float4 * max10, __global float4 * min11, __global float4 * max11, __global float4 * min12, __global float4 * max12, __global float4 * min13, __global float4 * max13, __global float4 * min14, __global float4 * max14, __global float4 * min15, __global float4 * max15, __global float4 * min16, __global float4 * max16, __global float4 * min17, __global float4 * max17, __global float4 * min18, __global float4 * max18, __global float4 * min19, __global float4 * max19, __global float4 * asnull)
+{
+     return _wcl_addr_check_global_20__u_uglobal__float4__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6, min7, max7, min8, max8, min9, max9, min10, max10, min11, max11, min12, max12, min13, max13, min14, max14, min15, max15, min16, max16, min17, max17, min18, max18, min19, max19) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_20__u_uglobal__uint__Ptr(__global uint *addr, unsigned size, __global uint * min0, __global uint * max0, __global uint * min1, __global uint * max1, __global uint * min2, __global uint * max2, __global uint * min3, __global uint * max3, __global uint * min4, __global uint * max4, __global uint * min5, __global uint * max5, __global uint * min6, __global uint * max6, __global uint * min7, __global uint * max7, __global uint * min8, __global uint * max8, __global uint * min9, __global uint * max9, __global uint * min10, __global uint * max10, __global uint * min11, __global uint * max11, __global uint * min12, __global uint * max12, __global uint * min13, __global uint * max13, __global uint * min14, __global uint * max14, __global uint * min15, __global uint * max15, __global uint * min16, __global uint * max16, __global uint * min17, __global uint * max17, __global uint * min18, __global uint * max18, __global uint * min19, __global uint * max19)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max4)) )
+        || ( ((addr) >= (min5)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max5)) )
+        || ( ((addr) >= (min6)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max6)) )
+        || ( ((addr) >= (min7)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max7)) )
+        || ( ((addr) >= (min8)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max8)) )
+        || ( ((addr) >= (min9)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max9)) )
+        || ( ((addr) >= (min10)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max10)) )
+        || ( ((addr) >= (min11)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max11)) )
+        || ( ((addr) >= (min12)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max12)) )
+        || ( ((addr) >= (min13)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max13)) )
+        || ( ((addr) >= (min14)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max14)) )
+        || ( ((addr) >= (min15)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max15)) )
+        || ( ((addr) >= (min16)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max16)) )
+        || ( ((addr) >= (min17)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max17)) )
+        || ( ((addr) >= (min18)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max18)) )
+        || ( ((addr) >= (min19)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max19)) );
+}
+__global uint *_wcl_addr_clamp_global_20__u_uglobal__uint__Ptr(__global uint *addr, unsigned size, __global uint * min0, __global uint * max0, __global uint * min1, __global uint * max1, __global uint * min2, __global uint * max2, __global uint * min3, __global uint * max3, __global uint * min4, __global uint * max4, __global uint * min5, __global uint * max5, __global uint * min6, __global uint * max6, __global uint * min7, __global uint * max7, __global uint * min8, __global uint * max8, __global uint * min9, __global uint * max9, __global uint * min10, __global uint * max10, __global uint * min11, __global uint * max11, __global uint * min12, __global uint * max12, __global uint * min13, __global uint * max13, __global uint * min14, __global uint * max14, __global uint * min15, __global uint * max15, __global uint * min16, __global uint * max16, __global uint * min17, __global uint * max17, __global uint * min18, __global uint * max18, __global uint * min19, __global uint * max19, __global uint * asnull)
+{
+     return _wcl_addr_check_global_20__u_uglobal__uint__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6, min7, max7, min8, max8, min9, max9, min10, max10, min11, max11, min12, max12, min13, max13, min14, max14, min15, max15, min16, max16, min17, max17, min18, max18, min19, max19) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_20_const___u_uglobal__float4__Ptr(const __global float4 *addr, unsigned size, const __global float4 * min0, const __global float4 * max0, const __global float4 * min1, const __global float4 * max1, const __global float4 * min2, const __global float4 * max2, const __global float4 * min3, const __global float4 * max3, const __global float4 * min4, const __global float4 * max4, const __global float4 * min5, const __global float4 * max5, const __global float4 * min6, const __global float4 * max6, const __global float4 * min7, const __global float4 * max7, const __global float4 * min8, const __global float4 * max8, const __global float4 * min9, const __global float4 * max9, const __global float4 * min10, const __global float4 * max10, const __global float4 * min11, const __global float4 * max11, const __global float4 * min12, const __global float4 * max12, const __global float4 * min13, const __global float4 * max13, const __global float4 * min14, const __global float4 * max14, const __global float4 * min15, const __global float4 * max15, const __global float4 * min16, const __global float4 * max16, const __global float4 * min17, const __global float4 * max17, const __global float4 * min18, const __global float4 * max18, const __global float4 * min19, const __global float4 * max19)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max4)) )
+        || ( ((addr) >= (min5)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max5)) )
+        || ( ((addr) >= (min6)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max6)) )
+        || ( ((addr) >= (min7)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max7)) )
+        || ( ((addr) >= (min8)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max8)) )
+        || ( ((addr) >= (min9)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max9)) )
+        || ( ((addr) >= (min10)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max10)) )
+        || ( ((addr) >= (min11)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max11)) )
+        || ( ((addr) >= (min12)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max12)) )
+        || ( ((addr) >= (min13)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max13)) )
+        || ( ((addr) >= (min14)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max14)) )
+        || ( ((addr) >= (min15)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max15)) )
+        || ( ((addr) >= (min16)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max16)) )
+        || ( ((addr) >= (min17)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max17)) )
+        || ( ((addr) >= (min18)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max18)) )
+        || ( ((addr) >= (min19)) && ((addr + size - 1) <= _WCL_LAST(const __global float4 *, max19)) );
+}
+const __global float4 *_wcl_addr_clamp_global_20_const___u_uglobal__float4__Ptr(const __global float4 *addr, unsigned size, const __global float4 * min0, const __global float4 * max0, const __global float4 * min1, const __global float4 * max1, const __global float4 * min2, const __global float4 * max2, const __global float4 * min3, const __global float4 * max3, const __global float4 * min4, const __global float4 * max4, const __global float4 * min5, const __global float4 * max5, const __global float4 * min6, const __global float4 * max6, const __global float4 * min7, const __global float4 * max7, const __global float4 * min8, const __global float4 * max8, const __global float4 * min9, const __global float4 * max9, const __global float4 * min10, const __global float4 * max10, const __global float4 * min11, const __global float4 * max11, const __global float4 * min12, const __global float4 * max12, const __global float4 * min13, const __global float4 * max13, const __global float4 * min14, const __global float4 * max14, const __global float4 * min15, const __global float4 * max15, const __global float4 * min16, const __global float4 * max16, const __global float4 * min17, const __global float4 * max17, const __global float4 * min18, const __global float4 * max18, const __global float4 * min19, const __global float4 * max19, const __global float4 * asnull)
+{
+     return _wcl_addr_check_global_20_const___u_uglobal__float4__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6, min7, max7, min8, max8, min9, max9, min10, max10, min11, max11, min12, max12, min13, max13, min14, max14, min15, max15, min16, max16, min17, max17, min18, max18, min19, max19) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_20_const___u_uglobal__uint__Ptr(const __global uint *addr, unsigned size, const __global uint * min0, const __global uint * max0, const __global uint * min1, const __global uint * max1, const __global uint * min2, const __global uint * max2, const __global uint * min3, const __global uint * max3, const __global uint * min4, const __global uint * max4, const __global uint * min5, const __global uint * max5, const __global uint * min6, const __global uint * max6, const __global uint * min7, const __global uint * max7, const __global uint * min8, const __global uint * max8, const __global uint * min9, const __global uint * max9, const __global uint * min10, const __global uint * max10, const __global uint * min11, const __global uint * max11, const __global uint * min12, const __global uint * max12, const __global uint * min13, const __global uint * max13, const __global uint * min14, const __global uint * max14, const __global uint * min15, const __global uint * max15, const __global uint * min16, const __global uint * max16, const __global uint * min17, const __global uint * max17, const __global uint * min18, const __global uint * max18, const __global uint * min19, const __global uint * max19)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max4)) )
+        || ( ((addr) >= (min5)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max5)) )
+        || ( ((addr) >= (min6)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max6)) )
+        || ( ((addr) >= (min7)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max7)) )
+        || ( ((addr) >= (min8)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max8)) )
+        || ( ((addr) >= (min9)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max9)) )
+        || ( ((addr) >= (min10)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max10)) )
+        || ( ((addr) >= (min11)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max11)) )
+        || ( ((addr) >= (min12)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max12)) )
+        || ( ((addr) >= (min13)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max13)) )
+        || ( ((addr) >= (min14)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max14)) )
+        || ( ((addr) >= (min15)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max15)) )
+        || ( ((addr) >= (min16)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max16)) )
+        || ( ((addr) >= (min17)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max17)) )
+        || ( ((addr) >= (min18)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max18)) )
+        || ( ((addr) >= (min19)) && ((addr + size - 1) <= _WCL_LAST(const __global uint *, max19)) );
+}
+const __global uint *_wcl_addr_clamp_global_20_const___u_uglobal__uint__Ptr(const __global uint *addr, unsigned size, const __global uint * min0, const __global uint * max0, const __global uint * min1, const __global uint * max1, const __global uint * min2, const __global uint * max2, const __global uint * min3, const __global uint * max3, const __global uint * min4, const __global uint * max4, const __global uint * min5, const __global uint * max5, const __global uint * min6, const __global uint * max6, const __global uint * min7, const __global uint * max7, const __global uint * min8, const __global uint * max8, const __global uint * min9, const __global uint * max9, const __global uint * min10, const __global uint * max10, const __global uint * min11, const __global uint * max11, const __global uint * min12, const __global uint * max12, const __global uint * min13, const __global uint * max13, const __global uint * min14, const __global uint * max14, const __global uint * min15, const __global uint * max15, const __global uint * min16, const __global uint * max16, const __global uint * min17, const __global uint * max17, const __global uint * min18, const __global uint * max18, const __global uint * min19, const __global uint * max19, const __global uint * asnull)
+{
+     return _wcl_addr_check_global_20_const___u_uglobal__uint__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6, min7, max7, min8, max8, min9, max9, min10, max10, min11, max11, min12, max12, min13, max13, min14, max14, min15, max15, min16, max16, min17, max17, min18, max18, min19, max19) ? addr : asnull;
+}
+
+bool _wcl_addr_check_local_1__u_ulocal__uint__Ptr(__local uint *addr, unsigned size, __local uint * min0, __local uint * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__local uint *, max0)) );
+}
+__local uint *_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr(__local uint *addr, unsigned size, __local uint * min0, __local uint * max0, __local uint * asnull)
+{
+     return _wcl_addr_check_local_1__u_ulocal__uint__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_constant_3__u_uconstant__simPParams_ut__Ptr(__constant simParams_t *addr, unsigned size, __constant simParams_t * min0, __constant simParams_t * max0, __constant simParams_t * min1, __constant simParams_t * max1, __constant simParams_t * min2, __constant simParams_t * max2)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__constant simParams_t *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__constant simParams_t *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__constant simParams_t *, max2)) );
+}
+__constant simParams_t *_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr(__constant simParams_t *addr, unsigned size, __constant simParams_t * min0, __constant simParams_t * max0, __constant simParams_t * min1, __constant simParams_t * max1, __constant simParams_t * min2, __constant simParams_t * max2, __constant simParams_t * asnull)
+{
+     return _wcl_addr_check_constant_3__u_uconstant__simPParams_ut__Ptr(addr, size, min0, max0, min1, max1, min2, max2) ? addr : asnull;
+}
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+/*
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ *
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
+ */
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Common definitions
+////////////////////////////////////////////////////////////////////////////////
+
+
+;
+
+;
+
+;
+
+
+;
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Euler integration
+////////////////////////////////////////////////////////////////////////////////
+__kernel void integrate(
+    __global float4 *d_Pos, ulong _wcl_d_Pos_size, //input/output
+    __global float4 *d_Vel, ulong _wcl_d_Vel_size, //input/output
+    __constant simParams_t *params, ulong _wcl_params_size,
+    float deltaTime,
+    uint numParticles
+){
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &d_Pos[0], &d_Pos[_wcl_d_Pos_size],&d_Vel[0], &d_Vel[_wcl_d_Vel_size],0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { &params[0], &params[_wcl_params_size],0, 0,0, 0 },
+        _wcl_constant_null,
+        { 0, 0 },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.integrate__d_Pos_min, _wcl_allocs->gl.integrate__d_Pos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.integrate__d_Vel_min, _wcl_allocs->gl.integrate__d_Vel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.calcHash__d_Hash_min, _wcl_allocs->gl.calcHash__d_Hash_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.calcHash__d_Index_min, _wcl_allocs->gl.calcHash__d_Index_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.calcHash__d_Pos_min, _wcl_allocs->gl.calcHash__d_Pos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Memset__d_Data_min, _wcl_allocs->gl.Memset__d_Data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_Vel_min, _wcl_allocs->gl.collide__d_Vel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_ReorderedPos_min, _wcl_allocs->gl.collide__d_ReorderedPos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_ReorderedVel_min, _wcl_allocs->gl.collide__d_ReorderedVel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_Index_min, _wcl_allocs->gl.collide__d_Index_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_CellStart_min, _wcl_allocs->gl.collide__d_CellStart_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_CellEnd_min, _wcl_allocs->gl.collide__d_CellEnd_max, (__global uint*)0))))))))))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.findCellBoundsAndReorder__localHash_min, _wcl_allocs->ll.findCellBoundsAndReorder__localHash_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    const uint index = get_global_id(0);
+    if(index >= numParticles)
+        return;
+
+    float4 pos = (*(_wcl_addr_clamp_global_20__u_uglobal__float4__Ptr((d_Pos)+(index), 1, (__global float4 *)_wcl_allocs->gl.integrate__d_Pos_min, (__global float4 *)_wcl_allocs->gl.integrate__d_Pos_max, (__global float4 *)_wcl_allocs->gl.integrate__d_Vel_min, (__global float4 *)_wcl_allocs->gl.integrate__d_Vel_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Hash_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Hash_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Index_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Index_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Pos_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Pos_max, (__global float4 *)_wcl_allocs->gl.Memset__d_Data_min, (__global float4 *)_wcl_allocs->gl.Memset__d_Data_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (__global float4 *)_wcl_allocs->gl.collide__d_Vel_min, (__global float4 *)_wcl_allocs->gl.collide__d_Vel_max, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (__global float4 *)_wcl_allocs->gl.collide__d_Index_min, (__global float4 *)_wcl_allocs->gl.collide__d_Index_max, (__global float4 *)_wcl_allocs->gl.collide__d_CellStart_min, (__global float4 *)_wcl_allocs->gl.collide__d_CellStart_max, (__global float4 *)_wcl_allocs->gl.collide__d_CellEnd_min, (__global float4 *)_wcl_allocs->gl.collide__d_CellEnd_max, (__global float4 *)_wcl_allocs->gn)));
+    float4 vel = (*(_wcl_addr_clamp_global_20__u_uglobal__float4__Ptr((d_Vel)+(index), 1, (__global float4 *)_wcl_allocs->gl.integrate__d_Pos_min, (__global float4 *)_wcl_allocs->gl.integrate__d_Pos_max, (__global float4 *)_wcl_allocs->gl.integrate__d_Vel_min, (__global float4 *)_wcl_allocs->gl.integrate__d_Vel_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Hash_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Hash_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Index_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Index_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Pos_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Pos_max, (__global float4 *)_wcl_allocs->gl.Memset__d_Data_min, (__global float4 *)_wcl_allocs->gl.Memset__d_Data_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (__global float4 *)_wcl_allocs->gl.collide__d_Vel_min, (__global float4 *)_wcl_allocs->gl.collide__d_Vel_max, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (__global float4 *)_wcl_allocs->gl.collide__d_Index_min, (__global float4 *)_wcl_allocs->gl.collide__d_Index_max, (__global float4 *)_wcl_allocs->gl.collide__d_CellStart_min, (__global float4 *)_wcl_allocs->gl.collide__d_CellStart_max, (__global float4 *)_wcl_allocs->gl.collide__d_CellEnd_min, (__global float4 *)_wcl_allocs->gl.collide__d_CellEnd_max, (__global float4 *)_wcl_allocs->gn)));
+
+    pos.w = 1.0f;
+    vel.w = 0.0f;
+
+    //Gravity
+    vel += (float4)((*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).gravity.x, (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).gravity.y, (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).gravity.z, 0) * deltaTime;
+    vel *= (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).globalDamping;
+
+    //Advance pos
+    pos += vel * deltaTime;
+
+
+    //Collide with cube
+    if(pos.x < -1.0f + (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).particleRadius){
+        pos.x = -1.0f + (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).particleRadius;
+        vel.x *= (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).boundaryDamping;
+    }
+    if(pos.x > 1.0f - (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).particleRadius){
+        pos.x = 1.0f - (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).particleRadius;
+        vel.x *= (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).boundaryDamping;
+    }
+
+    if(pos.y < -1.0f + (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).particleRadius){
+        pos.y = -1.0f + (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).particleRadius;
+        vel.y *= (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).boundaryDamping;
+    }
+    if(pos.y > 1.0f - (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).particleRadius){
+        pos.y = 1.0f - (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).particleRadius;
+        vel.y *= (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).boundaryDamping;
+    }
+
+    if(pos.z < -1.0f + (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).particleRadius){
+        pos.z = -1.0f + (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).particleRadius;
+        vel.z *= (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).boundaryDamping;
+    }
+    if(pos.z > 1.0f - (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).particleRadius){
+        pos.z = 1.0f - (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).particleRadius;
+        vel.z *= (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).boundaryDamping;
+    }
+
+    //Store new position and velocity
+    (*(_wcl_addr_clamp_global_20__u_uglobal__float4__Ptr((d_Pos)+(index), 1, (__global float4 *)_wcl_allocs->gl.integrate__d_Pos_min, (__global float4 *)_wcl_allocs->gl.integrate__d_Pos_max, (__global float4 *)_wcl_allocs->gl.integrate__d_Vel_min, (__global float4 *)_wcl_allocs->gl.integrate__d_Vel_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Hash_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Hash_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Index_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Index_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Pos_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Pos_max, (__global float4 *)_wcl_allocs->gl.Memset__d_Data_min, (__global float4 *)_wcl_allocs->gl.Memset__d_Data_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (__global float4 *)_wcl_allocs->gl.collide__d_Vel_min, (__global float4 *)_wcl_allocs->gl.collide__d_Vel_max, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (__global float4 *)_wcl_allocs->gl.collide__d_Index_min, (__global float4 *)_wcl_allocs->gl.collide__d_Index_max, (__global float4 *)_wcl_allocs->gl.collide__d_CellStart_min, (__global float4 *)_wcl_allocs->gl.collide__d_CellStart_max, (__global float4 *)_wcl_allocs->gl.collide__d_CellEnd_min, (__global float4 *)_wcl_allocs->gl.collide__d_CellEnd_max, (__global float4 *)_wcl_allocs->gn))) = pos;
+    (*(_wcl_addr_clamp_global_20__u_uglobal__float4__Ptr((d_Vel)+(index), 1, (__global float4 *)_wcl_allocs->gl.integrate__d_Pos_min, (__global float4 *)_wcl_allocs->gl.integrate__d_Pos_max, (__global float4 *)_wcl_allocs->gl.integrate__d_Vel_min, (__global float4 *)_wcl_allocs->gl.integrate__d_Vel_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Hash_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Hash_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Index_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Index_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Pos_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Pos_max, (__global float4 *)_wcl_allocs->gl.Memset__d_Data_min, (__global float4 *)_wcl_allocs->gl.Memset__d_Data_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (__global float4 *)_wcl_allocs->gl.collide__d_Vel_min, (__global float4 *)_wcl_allocs->gl.collide__d_Vel_max, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (__global float4 *)_wcl_allocs->gl.collide__d_Index_min, (__global float4 *)_wcl_allocs->gl.collide__d_Index_max, (__global float4 *)_wcl_allocs->gl.collide__d_CellStart_min, (__global float4 *)_wcl_allocs->gl.collide__d_CellStart_max, (__global float4 *)_wcl_allocs->gl.collide__d_CellEnd_min, (__global float4 *)_wcl_allocs->gl.collide__d_CellEnd_max, (__global float4 *)_wcl_allocs->gn))) = vel;
+}
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Save particle grid cell hashes and indices
+////////////////////////////////////////////////////////////////////////////////
+int4 getGridPos(_WclProgramAllocations *_wcl_allocs, float4 p, __constant simParams_t *params){
+    int4 gridPos;
+    _wcl_allocs->pa._wcl_gridPos.x = (int)floor((p.x - (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).worldOrigin.x) / (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).cellSize.x);
+    _wcl_allocs->pa._wcl_gridPos.y = (int)floor((p.y - (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).worldOrigin.y) / (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).cellSize.y);
+    _wcl_allocs->pa._wcl_gridPos.z = (int)floor((p.z - (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).worldOrigin.z) / (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).cellSize.z);
+    _wcl_allocs->pa._wcl_gridPos.w = 0;
+    return _wcl_allocs->pa._wcl_gridPos;
+}
+
+//Calculate address in grid from position (clamping to edges)
+uint getGridHash(_WclProgramAllocations *_wcl_allocs, int4 gridPos, __constant simParams_t *params){
+    //Wrap addressing, assume power-of-two grid dimensions
+    gridPos.x = gridPos.x & ((*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).gridSize.x - 1);
+    gridPos.y = gridPos.y & ((*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).gridSize.y - 1);
+    gridPos.z = gridPos.z & ((*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).gridSize.z - 1);
+    return ( (( (gridPos.z) * ((*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).gridSize.y) + (gridPos.y) )) * ((*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).gridSize.x) + (gridPos.x) );
+}
+
+
+//Calculate grid hash value for each particle
+__kernel void calcHash(
+    __global uint *d_Hash, ulong _wcl_d_Hash_size, //output
+    __global uint *d_Index, ulong _wcl_d_Index_size, //output
+    __global const float4 *d_Pos, ulong _wcl_d_Pos_size, //input: positions
+    __constant simParams_t *params, ulong _wcl_params_size,
+    uint numParticles
+){
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,&d_Hash[0], &d_Hash[_wcl_d_Hash_size],&d_Index[0], &d_Index[_wcl_d_Index_size],&d_Pos[0], &d_Pos[_wcl_d_Pos_size],0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { 0, 0,&params[0], &params[_wcl_params_size],0, 0 },
+        _wcl_constant_null,
+        { 0, 0 },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.integrate__d_Pos_min, _wcl_allocs->gl.integrate__d_Pos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.integrate__d_Vel_min, _wcl_allocs->gl.integrate__d_Vel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.calcHash__d_Hash_min, _wcl_allocs->gl.calcHash__d_Hash_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.calcHash__d_Index_min, _wcl_allocs->gl.calcHash__d_Index_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.calcHash__d_Pos_min, _wcl_allocs->gl.calcHash__d_Pos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Memset__d_Data_min, _wcl_allocs->gl.Memset__d_Data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_Vel_min, _wcl_allocs->gl.collide__d_Vel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_ReorderedPos_min, _wcl_allocs->gl.collide__d_ReorderedPos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_ReorderedVel_min, _wcl_allocs->gl.collide__d_ReorderedVel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_Index_min, _wcl_allocs->gl.collide__d_Index_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_CellStart_min, _wcl_allocs->gl.collide__d_CellStart_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_CellEnd_min, _wcl_allocs->gl.collide__d_CellEnd_max, (__global uint*)0))))))))))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.findCellBoundsAndReorder__localHash_min, _wcl_allocs->ll.findCellBoundsAndReorder__localHash_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    const uint index = get_global_id(0);
+    if(index >= numParticles)
+        return;
+
+    float4 p = (*(_wcl_addr_clamp_global_20_const___u_uglobal__float4__Ptr((d_Pos)+(index), 1, (const __global float4 *)_wcl_allocs->gl.integrate__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.integrate__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.integrate__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.integrate__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Hash_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Hash_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Index_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Index_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.Memset__d_Data_min, (const __global float4 *)_wcl_allocs->gl.Memset__d_Data_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.collide__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_Index_min, (const __global float4 *)_wcl_allocs->gl.collide__d_Index_max, (const __global float4 *)_wcl_allocs->gl.collide__d_CellStart_min, (const __global float4 *)_wcl_allocs->gl.collide__d_CellStart_max, (const __global float4 *)_wcl_allocs->gl.collide__d_CellEnd_min, (const __global float4 *)_wcl_allocs->gl.collide__d_CellEnd_max, (const __global float4 *)_wcl_allocs->gn)));
+
+    //Get address in grid
+    int4 gridPos = getGridPos(_wcl_allocs, p, params);
+    uint gridHash = getGridHash(_wcl_allocs, gridPos, params);
+
+    //Store grid hash and particle index
+    (*(_wcl_addr_clamp_global_20__u_uglobal__uint__Ptr((d_Hash)+(index), 1, (__global uint *)_wcl_allocs->gl.integrate__d_Pos_min, (__global uint *)_wcl_allocs->gl.integrate__d_Pos_max, (__global uint *)_wcl_allocs->gl.integrate__d_Vel_min, (__global uint *)_wcl_allocs->gl.integrate__d_Vel_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Hash_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Hash_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Index_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Index_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Pos_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Pos_max, (__global uint *)_wcl_allocs->gl.Memset__d_Data_min, (__global uint *)_wcl_allocs->gl.Memset__d_Data_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (__global uint *)_wcl_allocs->gl.collide__d_Vel_min, (__global uint *)_wcl_allocs->gl.collide__d_Vel_max, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (__global uint *)_wcl_allocs->gl.collide__d_Index_min, (__global uint *)_wcl_allocs->gl.collide__d_Index_max, (__global uint *)_wcl_allocs->gl.collide__d_CellStart_min, (__global uint *)_wcl_allocs->gl.collide__d_CellStart_max, (__global uint *)_wcl_allocs->gl.collide__d_CellEnd_min, (__global uint *)_wcl_allocs->gl.collide__d_CellEnd_max, (__global uint *)_wcl_allocs->gn))) = gridHash;
+    (*(_wcl_addr_clamp_global_20__u_uglobal__uint__Ptr((d_Index)+(index), 1, (__global uint *)_wcl_allocs->gl.integrate__d_Pos_min, (__global uint *)_wcl_allocs->gl.integrate__d_Pos_max, (__global uint *)_wcl_allocs->gl.integrate__d_Vel_min, (__global uint *)_wcl_allocs->gl.integrate__d_Vel_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Hash_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Hash_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Index_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Index_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Pos_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Pos_max, (__global uint *)_wcl_allocs->gl.Memset__d_Data_min, (__global uint *)_wcl_allocs->gl.Memset__d_Data_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (__global uint *)_wcl_allocs->gl.collide__d_Vel_min, (__global uint *)_wcl_allocs->gl.collide__d_Vel_max, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (__global uint *)_wcl_allocs->gl.collide__d_Index_min, (__global uint *)_wcl_allocs->gl.collide__d_Index_max, (__global uint *)_wcl_allocs->gl.collide__d_CellStart_min, (__global uint *)_wcl_allocs->gl.collide__d_CellStart_max, (__global uint *)_wcl_allocs->gl.collide__d_CellEnd_min, (__global uint *)_wcl_allocs->gl.collide__d_CellEnd_max, (__global uint *)_wcl_allocs->gn))) = index;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Find cell bounds and reorder positions+velocities by sorted indices
+////////////////////////////////////////////////////////////////////////////////
+__kernel void Memset(
+    __global uint *d_Data, ulong _wcl_d_Data_size,
+    uint val,
+    uint N
+){
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,0, 0,&d_Data[0], &d_Data[_wcl_d_Data_size],0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { 0, 0,0, 0,0, 0 },
+        _wcl_constant_null,
+        { 0, 0 },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.integrate__d_Pos_min, _wcl_allocs->gl.integrate__d_Pos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.integrate__d_Vel_min, _wcl_allocs->gl.integrate__d_Vel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.calcHash__d_Hash_min, _wcl_allocs->gl.calcHash__d_Hash_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.calcHash__d_Index_min, _wcl_allocs->gl.calcHash__d_Index_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.calcHash__d_Pos_min, _wcl_allocs->gl.calcHash__d_Pos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Memset__d_Data_min, _wcl_allocs->gl.Memset__d_Data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_Vel_min, _wcl_allocs->gl.collide__d_Vel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_ReorderedPos_min, _wcl_allocs->gl.collide__d_ReorderedPos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_ReorderedVel_min, _wcl_allocs->gl.collide__d_ReorderedVel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_Index_min, _wcl_allocs->gl.collide__d_Index_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_CellStart_min, _wcl_allocs->gl.collide__d_CellStart_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_CellEnd_min, _wcl_allocs->gl.collide__d_CellEnd_max, (__global uint*)0))))))))))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.findCellBoundsAndReorder__localHash_min, _wcl_allocs->ll.findCellBoundsAndReorder__localHash_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    if(get_global_id(0) < N)
+        (*(_wcl_addr_clamp_global_20__u_uglobal__uint__Ptr((d_Data)+(get_global_id(0)), 1, (__global uint *)_wcl_allocs->gl.integrate__d_Pos_min, (__global uint *)_wcl_allocs->gl.integrate__d_Pos_max, (__global uint *)_wcl_allocs->gl.integrate__d_Vel_min, (__global uint *)_wcl_allocs->gl.integrate__d_Vel_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Hash_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Hash_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Index_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Index_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Pos_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Pos_max, (__global uint *)_wcl_allocs->gl.Memset__d_Data_min, (__global uint *)_wcl_allocs->gl.Memset__d_Data_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (__global uint *)_wcl_allocs->gl.collide__d_Vel_min, (__global uint *)_wcl_allocs->gl.collide__d_Vel_max, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (__global uint *)_wcl_allocs->gl.collide__d_Index_min, (__global uint *)_wcl_allocs->gl.collide__d_Index_max, (__global uint *)_wcl_allocs->gl.collide__d_CellStart_min, (__global uint *)_wcl_allocs->gl.collide__d_CellStart_max, (__global uint *)_wcl_allocs->gl.collide__d_CellEnd_min, (__global uint *)_wcl_allocs->gl.collide__d_CellEnd_max, (__global uint *)_wcl_allocs->gn))) = val;
+}
+
+__kernel void findCellBoundsAndReorder(
+    __global uint *d_CellStart, ulong _wcl_d_CellStart_size, //output: cell start index
+    __global uint *d_CellEnd, ulong _wcl_d_CellEnd_size, //output: cell end index
+    __global float4 *d_ReorderedPos, ulong _wcl_d_ReorderedPos_size, //output: reordered by cell hash positions
+    __global float4 *d_ReorderedVel, ulong _wcl_d_ReorderedVel_size, //output: reordered by cell hash velocities
+
+    __global const uint *d_Hash, ulong _wcl_d_Hash_size, //input: sorted grid hashes
+    __global const uint *d_Index, ulong _wcl_d_Index_size, //input: particle indices sorted by hash
+    __global const float4 *d_Pos, ulong _wcl_d_Pos_size, //input: positions array sorted by hash
+    __global const float4 *d_Vel, ulong _wcl_d_Vel_size, //input: velocity array sorted by hash
+    __local uint *localHash, ulong _wcl_localHash_size, //get_group_size(0) + 1 elements
+    uint numParticles
+){
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,&d_CellStart[0], &d_CellStart[_wcl_d_CellStart_size],&d_CellEnd[0], &d_CellEnd[_wcl_d_CellEnd_size],&d_ReorderedPos[0], &d_ReorderedPos[_wcl_d_ReorderedPos_size],&d_ReorderedVel[0], &d_ReorderedVel[_wcl_d_ReorderedVel_size],&d_Hash[0], &d_Hash[_wcl_d_Hash_size],&d_Index[0], &d_Index[_wcl_d_Index_size],&d_Pos[0], &d_Pos[_wcl_d_Pos_size],&d_Vel[0], &d_Vel[_wcl_d_Vel_size],0, 0,0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { 0, 0,0, 0,0, 0 },
+        _wcl_constant_null,
+        { &localHash[0], &localHash[_wcl_localHash_size] },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.integrate__d_Pos_min, _wcl_allocs->gl.integrate__d_Pos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.integrate__d_Vel_min, _wcl_allocs->gl.integrate__d_Vel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.calcHash__d_Hash_min, _wcl_allocs->gl.calcHash__d_Hash_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.calcHash__d_Index_min, _wcl_allocs->gl.calcHash__d_Index_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.calcHash__d_Pos_min, _wcl_allocs->gl.calcHash__d_Pos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Memset__d_Data_min, _wcl_allocs->gl.Memset__d_Data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_Vel_min, _wcl_allocs->gl.collide__d_Vel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_ReorderedPos_min, _wcl_allocs->gl.collide__d_ReorderedPos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_ReorderedVel_min, _wcl_allocs->gl.collide__d_ReorderedVel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_Index_min, _wcl_allocs->gl.collide__d_Index_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_CellStart_min, _wcl_allocs->gl.collide__d_CellStart_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_CellEnd_min, _wcl_allocs->gl.collide__d_CellEnd_max, (__global uint*)0))))))))))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.findCellBoundsAndReorder__localHash_min, _wcl_allocs->ll.findCellBoundsAndReorder__localHash_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    uint hash;
+    const uint index = get_global_id(0);
+
+    //Handle case when no. of particles not multiple of block size
+    if(index < numParticles){
+        _wcl_allocs->pa._wcl_hash = (*(_wcl_addr_clamp_global_20_const___u_uglobal__uint__Ptr((d_Hash)+(index), 1, (const __global uint *)_wcl_allocs->gl.integrate__d_Pos_min, (const __global uint *)_wcl_allocs->gl.integrate__d_Pos_max, (const __global uint *)_wcl_allocs->gl.integrate__d_Vel_min, (const __global uint *)_wcl_allocs->gl.integrate__d_Vel_max, (const __global uint *)_wcl_allocs->gl.calcHash__d_Hash_min, (const __global uint *)_wcl_allocs->gl.calcHash__d_Hash_max, (const __global uint *)_wcl_allocs->gl.calcHash__d_Index_min, (const __global uint *)_wcl_allocs->gl.calcHash__d_Index_max, (const __global uint *)_wcl_allocs->gl.calcHash__d_Pos_min, (const __global uint *)_wcl_allocs->gl.calcHash__d_Pos_max, (const __global uint *)_wcl_allocs->gl.Memset__d_Data_min, (const __global uint *)_wcl_allocs->gl.Memset__d_Data_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (const __global uint *)_wcl_allocs->gl.collide__d_Vel_min, (const __global uint *)_wcl_allocs->gl.collide__d_Vel_max, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (const __global uint *)_wcl_allocs->gl.collide__d_Index_min, (const __global uint *)_wcl_allocs->gl.collide__d_Index_max, (const __global uint *)_wcl_allocs->gl.collide__d_CellStart_min, (const __global uint *)_wcl_allocs->gl.collide__d_CellStart_max, (const __global uint *)_wcl_allocs->gl.collide__d_CellEnd_min, (const __global uint *)_wcl_allocs->gl.collide__d_CellEnd_max, (const __global uint *)_wcl_allocs->gn)));
+
+        //Load hash data into local memory so that we can look 
+        //at neighboring particle's hash value without loading
+        //two hash values per thread
+        (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((localHash)+(get_local_id(0) + 1), 1, (__local uint *)_wcl_allocs->ll.findCellBoundsAndReorder__localHash_min, (__local uint *)_wcl_allocs->ll.findCellBoundsAndReorder__localHash_max, (__local uint *)_wcl_allocs->ln))) = _wcl_allocs->pa._wcl_hash;
+
+        //First thread in block must load neighbor particle hash
+        if(index > 0 && get_local_id(0) == 0)
+            (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((localHash)+(0), 1, (__local uint *)_wcl_allocs->ll.findCellBoundsAndReorder__localHash_min, (__local uint *)_wcl_allocs->ll.findCellBoundsAndReorder__localHash_max, (__local uint *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_20_const___u_uglobal__uint__Ptr((d_Hash)+(index - 1), 1, (const __global uint *)_wcl_allocs->gl.integrate__d_Pos_min, (const __global uint *)_wcl_allocs->gl.integrate__d_Pos_max, (const __global uint *)_wcl_allocs->gl.integrate__d_Vel_min, (const __global uint *)_wcl_allocs->gl.integrate__d_Vel_max, (const __global uint *)_wcl_allocs->gl.calcHash__d_Hash_min, (const __global uint *)_wcl_allocs->gl.calcHash__d_Hash_max, (const __global uint *)_wcl_allocs->gl.calcHash__d_Index_min, (const __global uint *)_wcl_allocs->gl.calcHash__d_Index_max, (const __global uint *)_wcl_allocs->gl.calcHash__d_Pos_min, (const __global uint *)_wcl_allocs->gl.calcHash__d_Pos_max, (const __global uint *)_wcl_allocs->gl.Memset__d_Data_min, (const __global uint *)_wcl_allocs->gl.Memset__d_Data_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (const __global uint *)_wcl_allocs->gl.collide__d_Vel_min, (const __global uint *)_wcl_allocs->gl.collide__d_Vel_max, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (const __global uint *)_wcl_allocs->gl.collide__d_Index_min, (const __global uint *)_wcl_allocs->gl.collide__d_Index_max, (const __global uint *)_wcl_allocs->gl.collide__d_CellStart_min, (const __global uint *)_wcl_allocs->gl.collide__d_CellStart_max, (const __global uint *)_wcl_allocs->gl.collide__d_CellEnd_min, (const __global uint *)_wcl_allocs->gl.collide__d_CellEnd_max, (const __global uint *)_wcl_allocs->gn)));
+    }
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if(index < numParticles){
+        //Border case
+        if(index == 0)
+            (*(_wcl_addr_clamp_global_20__u_uglobal__uint__Ptr((d_CellStart)+(_wcl_allocs->pa._wcl_hash), 1, (__global uint *)_wcl_allocs->gl.integrate__d_Pos_min, (__global uint *)_wcl_allocs->gl.integrate__d_Pos_max, (__global uint *)_wcl_allocs->gl.integrate__d_Vel_min, (__global uint *)_wcl_allocs->gl.integrate__d_Vel_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Hash_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Hash_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Index_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Index_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Pos_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Pos_max, (__global uint *)_wcl_allocs->gl.Memset__d_Data_min, (__global uint *)_wcl_allocs->gl.Memset__d_Data_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (__global uint *)_wcl_allocs->gl.collide__d_Vel_min, (__global uint *)_wcl_allocs->gl.collide__d_Vel_max, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (__global uint *)_wcl_allocs->gl.collide__d_Index_min, (__global uint *)_wcl_allocs->gl.collide__d_Index_max, (__global uint *)_wcl_allocs->gl.collide__d_CellStart_min, (__global uint *)_wcl_allocs->gl.collide__d_CellStart_max, (__global uint *)_wcl_allocs->gl.collide__d_CellEnd_min, (__global uint *)_wcl_allocs->gl.collide__d_CellEnd_max, (__global uint *)_wcl_allocs->gn))) = 0;
+
+        //Main case
+        else{
+            if(_wcl_allocs->pa._wcl_hash != (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((localHash)+(get_local_id(0)), 1, (__local uint *)_wcl_allocs->ll.findCellBoundsAndReorder__localHash_min, (__local uint *)_wcl_allocs->ll.findCellBoundsAndReorder__localHash_max, (__local uint *)_wcl_allocs->ln))))
+                (*(_wcl_addr_clamp_global_20__u_uglobal__uint__Ptr((d_CellEnd)+((*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((localHash)+(get_local_id(0)), 1, (__local uint *)_wcl_allocs->ll.findCellBoundsAndReorder__localHash_min, (__local uint *)_wcl_allocs->ll.findCellBoundsAndReorder__localHash_max, (__local uint *)_wcl_allocs->ln)))), 1, (__global uint *)_wcl_allocs->gl.integrate__d_Pos_min, (__global uint *)_wcl_allocs->gl.integrate__d_Pos_max, (__global uint *)_wcl_allocs->gl.integrate__d_Vel_min, (__global uint *)_wcl_allocs->gl.integrate__d_Vel_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Hash_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Hash_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Index_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Index_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Pos_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Pos_max, (__global uint *)_wcl_allocs->gl.Memset__d_Data_min, (__global uint *)_wcl_allocs->gl.Memset__d_Data_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (__global uint *)_wcl_allocs->gl.collide__d_Vel_min, (__global uint *)_wcl_allocs->gl.collide__d_Vel_max, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (__global uint *)_wcl_allocs->gl.collide__d_Index_min, (__global uint *)_wcl_allocs->gl.collide__d_Index_max, (__global uint *)_wcl_allocs->gl.collide__d_CellStart_min, (__global uint *)_wcl_allocs->gl.collide__d_CellStart_max, (__global uint *)_wcl_allocs->gl.collide__d_CellEnd_min, (__global uint *)_wcl_allocs->gl.collide__d_CellEnd_max, (__global uint *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_global_20__u_uglobal__uint__Ptr((d_CellStart)+(_wcl_allocs->pa._wcl_hash), 1, (__global uint *)_wcl_allocs->gl.integrate__d_Pos_min, (__global uint *)_wcl_allocs->gl.integrate__d_Pos_max, (__global uint *)_wcl_allocs->gl.integrate__d_Vel_min, (__global uint *)_wcl_allocs->gl.integrate__d_Vel_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Hash_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Hash_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Index_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Index_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Pos_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Pos_max, (__global uint *)_wcl_allocs->gl.Memset__d_Data_min, (__global uint *)_wcl_allocs->gl.Memset__d_Data_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (__global uint *)_wcl_allocs->gl.collide__d_Vel_min, (__global uint *)_wcl_allocs->gl.collide__d_Vel_max, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (__global uint *)_wcl_allocs->gl.collide__d_Index_min, (__global uint *)_wcl_allocs->gl.collide__d_Index_max, (__global uint *)_wcl_allocs->gl.collide__d_CellStart_min, (__global uint *)_wcl_allocs->gl.collide__d_CellStart_max, (__global uint *)_wcl_allocs->gl.collide__d_CellEnd_min, (__global uint *)_wcl_allocs->gl.collide__d_CellEnd_max, (__global uint *)_wcl_allocs->gn))) = index;
+        };
+
+        //Another border case
+        if(index == numParticles - 1)
+            (*(_wcl_addr_clamp_global_20__u_uglobal__uint__Ptr((d_CellEnd)+(_wcl_allocs->pa._wcl_hash), 1, (__global uint *)_wcl_allocs->gl.integrate__d_Pos_min, (__global uint *)_wcl_allocs->gl.integrate__d_Pos_max, (__global uint *)_wcl_allocs->gl.integrate__d_Vel_min, (__global uint *)_wcl_allocs->gl.integrate__d_Vel_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Hash_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Hash_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Index_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Index_max, (__global uint *)_wcl_allocs->gl.calcHash__d_Pos_min, (__global uint *)_wcl_allocs->gl.calcHash__d_Pos_max, (__global uint *)_wcl_allocs->gl.Memset__d_Data_min, (__global uint *)_wcl_allocs->gl.Memset__d_Data_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (__global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (__global uint *)_wcl_allocs->gl.collide__d_Vel_min, (__global uint *)_wcl_allocs->gl.collide__d_Vel_max, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (__global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (__global uint *)_wcl_allocs->gl.collide__d_Index_min, (__global uint *)_wcl_allocs->gl.collide__d_Index_max, (__global uint *)_wcl_allocs->gl.collide__d_CellStart_min, (__global uint *)_wcl_allocs->gl.collide__d_CellStart_max, (__global uint *)_wcl_allocs->gl.collide__d_CellEnd_min, (__global uint *)_wcl_allocs->gl.collide__d_CellEnd_max, (__global uint *)_wcl_allocs->gn))) = numParticles;
+
+
+        //Now use the sorted index to reorder the pos and vel arrays
+        uint sortedIndex = (*(_wcl_addr_clamp_global_20_const___u_uglobal__uint__Ptr((d_Index)+(index), 1, (const __global uint *)_wcl_allocs->gl.integrate__d_Pos_min, (const __global uint *)_wcl_allocs->gl.integrate__d_Pos_max, (const __global uint *)_wcl_allocs->gl.integrate__d_Vel_min, (const __global uint *)_wcl_allocs->gl.integrate__d_Vel_max, (const __global uint *)_wcl_allocs->gl.calcHash__d_Hash_min, (const __global uint *)_wcl_allocs->gl.calcHash__d_Hash_max, (const __global uint *)_wcl_allocs->gl.calcHash__d_Index_min, (const __global uint *)_wcl_allocs->gl.calcHash__d_Index_max, (const __global uint *)_wcl_allocs->gl.calcHash__d_Pos_min, (const __global uint *)_wcl_allocs->gl.calcHash__d_Pos_max, (const __global uint *)_wcl_allocs->gl.Memset__d_Data_min, (const __global uint *)_wcl_allocs->gl.Memset__d_Data_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (const __global uint *)_wcl_allocs->gl.collide__d_Vel_min, (const __global uint *)_wcl_allocs->gl.collide__d_Vel_max, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (const __global uint *)_wcl_allocs->gl.collide__d_Index_min, (const __global uint *)_wcl_allocs->gl.collide__d_Index_max, (const __global uint *)_wcl_allocs->gl.collide__d_CellStart_min, (const __global uint *)_wcl_allocs->gl.collide__d_CellStart_max, (const __global uint *)_wcl_allocs->gl.collide__d_CellEnd_min, (const __global uint *)_wcl_allocs->gl.collide__d_CellEnd_max, (const __global uint *)_wcl_allocs->gn)));
+        float4 pos = (*(_wcl_addr_clamp_global_20_const___u_uglobal__float4__Ptr((d_Pos)+(sortedIndex), 1, (const __global float4 *)_wcl_allocs->gl.integrate__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.integrate__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.integrate__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.integrate__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Hash_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Hash_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Index_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Index_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.Memset__d_Data_min, (const __global float4 *)_wcl_allocs->gl.Memset__d_Data_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.collide__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_Index_min, (const __global float4 *)_wcl_allocs->gl.collide__d_Index_max, (const __global float4 *)_wcl_allocs->gl.collide__d_CellStart_min, (const __global float4 *)_wcl_allocs->gl.collide__d_CellStart_max, (const __global float4 *)_wcl_allocs->gl.collide__d_CellEnd_min, (const __global float4 *)_wcl_allocs->gl.collide__d_CellEnd_max, (const __global float4 *)_wcl_allocs->gn)));
+        float4 vel = (*(_wcl_addr_clamp_global_20_const___u_uglobal__float4__Ptr((d_Vel)+(sortedIndex), 1, (const __global float4 *)_wcl_allocs->gl.integrate__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.integrate__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.integrate__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.integrate__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Hash_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Hash_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Index_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Index_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.Memset__d_Data_min, (const __global float4 *)_wcl_allocs->gl.Memset__d_Data_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.collide__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_Index_min, (const __global float4 *)_wcl_allocs->gl.collide__d_Index_max, (const __global float4 *)_wcl_allocs->gl.collide__d_CellStart_min, (const __global float4 *)_wcl_allocs->gl.collide__d_CellStart_max, (const __global float4 *)_wcl_allocs->gl.collide__d_CellEnd_min, (const __global float4 *)_wcl_allocs->gl.collide__d_CellEnd_max, (const __global float4 *)_wcl_allocs->gn)));
+
+        (*(_wcl_addr_clamp_global_20__u_uglobal__float4__Ptr((d_ReorderedPos)+(index), 1, (__global float4 *)_wcl_allocs->gl.integrate__d_Pos_min, (__global float4 *)_wcl_allocs->gl.integrate__d_Pos_max, (__global float4 *)_wcl_allocs->gl.integrate__d_Vel_min, (__global float4 *)_wcl_allocs->gl.integrate__d_Vel_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Hash_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Hash_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Index_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Index_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Pos_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Pos_max, (__global float4 *)_wcl_allocs->gl.Memset__d_Data_min, (__global float4 *)_wcl_allocs->gl.Memset__d_Data_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (__global float4 *)_wcl_allocs->gl.collide__d_Vel_min, (__global float4 *)_wcl_allocs->gl.collide__d_Vel_max, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (__global float4 *)_wcl_allocs->gl.collide__d_Index_min, (__global float4 *)_wcl_allocs->gl.collide__d_Index_max, (__global float4 *)_wcl_allocs->gl.collide__d_CellStart_min, (__global float4 *)_wcl_allocs->gl.collide__d_CellStart_max, (__global float4 *)_wcl_allocs->gl.collide__d_CellEnd_min, (__global float4 *)_wcl_allocs->gl.collide__d_CellEnd_max, (__global float4 *)_wcl_allocs->gn))) = pos;
+        (*(_wcl_addr_clamp_global_20__u_uglobal__float4__Ptr((d_ReorderedVel)+(index), 1, (__global float4 *)_wcl_allocs->gl.integrate__d_Pos_min, (__global float4 *)_wcl_allocs->gl.integrate__d_Pos_max, (__global float4 *)_wcl_allocs->gl.integrate__d_Vel_min, (__global float4 *)_wcl_allocs->gl.integrate__d_Vel_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Hash_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Hash_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Index_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Index_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Pos_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Pos_max, (__global float4 *)_wcl_allocs->gl.Memset__d_Data_min, (__global float4 *)_wcl_allocs->gl.Memset__d_Data_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (__global float4 *)_wcl_allocs->gl.collide__d_Vel_min, (__global float4 *)_wcl_allocs->gl.collide__d_Vel_max, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (__global float4 *)_wcl_allocs->gl.collide__d_Index_min, (__global float4 *)_wcl_allocs->gl.collide__d_Index_max, (__global float4 *)_wcl_allocs->gl.collide__d_CellStart_min, (__global float4 *)_wcl_allocs->gl.collide__d_CellStart_max, (__global float4 *)_wcl_allocs->gl.collide__d_CellEnd_min, (__global float4 *)_wcl_allocs->gl.collide__d_CellEnd_max, (__global float4 *)_wcl_allocs->gn))) = vel;
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Process collisions (calculate accelerations)
+////////////////////////////////////////////////////////////////////////////////
+float4 collideSpheres(_WclProgramAllocations *_wcl_allocs, 
+    float4 posA,
+    float4 posB,
+    float4 velA,
+    float4 velB,
+    float radiusA,
+    float radiusB,
+    float spring,
+    float damping,
+    float shear,
+    float attraction
+){
+    //Calculate relative position
+    float4 relPos = (float4)(posB.x - posA.x, posB.y - posA.y, posB.z - posA.z, 0);
+    float dist = sqrt(relPos.x * relPos.x + relPos.y * relPos.y + relPos.z * relPos.z);
+    float collideDist = radiusA + radiusB;
+
+    float4 force = (float4)(0, 0, 0, 0);
+    if(dist < collideDist){
+        float4 norm = (float4)(relPos.x / dist, relPos.y / dist, relPos.z / dist, 0);
+
+        //Relative velocity
+        float4 relVel = (float4)(velB.x - velA.x, velB.y - velA.y, velB.z - velA.z, 0);
+
+        //Relative tangential velocity
+        float relVelDotNorm = relVel.x * norm.x + relVel.y * norm.y + relVel.z * norm.z;
+        float4 tanVel = (float4)(relVel.x - relVelDotNorm * norm.x, relVel.y - relVelDotNorm * norm.y, relVel.z - relVelDotNorm * norm.z, 0);
+
+        //Spring force (potential)
+        float springFactor = -spring * (collideDist - dist);
+        force = (float4)(
+            springFactor * norm.x + damping * relVel.x + shear * tanVel.x + attraction * relPos.x,
+            springFactor * norm.y + damping * relVel.y + shear * tanVel.y + attraction * relPos.y,
+            springFactor * norm.z + damping * relVel.z + shear * tanVel.z + attraction * relPos.z,
+            0
+        );
+    }
+
+    return force;
+}
+
+
+
+__kernel void collide(
+    __global float4 *d_Vel, ulong _wcl_d_Vel_size, //output: new velocity
+    __global const float4 *d_ReorderedPos, ulong _wcl_d_ReorderedPos_size, //input: reordered positions
+    __global const float4 *d_ReorderedVel, ulong _wcl_d_ReorderedVel_size, //input: reordered velocities
+    __global const uint *d_Index, ulong _wcl_d_Index_size, //input: reordered particle indices
+    __global const uint *d_CellStart, ulong _wcl_d_CellStart_size, //input: cell boundaries
+    __global const uint *d_CellEnd, ulong _wcl_d_CellEnd_size,
+    __constant simParams_t *params, ulong _wcl_params_size,
+    uint numParticles
+){
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,&d_Vel[0], &d_Vel[_wcl_d_Vel_size],&d_ReorderedPos[0], &d_ReorderedPos[_wcl_d_ReorderedPos_size],&d_ReorderedVel[0], &d_ReorderedVel[_wcl_d_ReorderedVel_size],&d_Index[0], &d_Index[_wcl_d_Index_size],&d_CellStart[0], &d_CellStart[_wcl_d_CellStart_size],&d_CellEnd[0], &d_CellEnd[_wcl_d_CellEnd_size] },
+        0,
+        { 0, 0,0, 0,&params[0], &params[_wcl_params_size] },
+        _wcl_constant_null,
+        { 0, 0 },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.integrate__d_Pos_min, _wcl_allocs->gl.integrate__d_Pos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.integrate__d_Vel_min, _wcl_allocs->gl.integrate__d_Vel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.calcHash__d_Hash_min, _wcl_allocs->gl.calcHash__d_Hash_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.calcHash__d_Index_min, _wcl_allocs->gl.calcHash__d_Index_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.calcHash__d_Pos_min, _wcl_allocs->gl.calcHash__d_Pos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.Memset__d_Data_min, _wcl_allocs->gl.Memset__d_Data_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, _wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_Vel_min, _wcl_allocs->gl.collide__d_Vel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_ReorderedPos_min, _wcl_allocs->gl.collide__d_ReorderedPos_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_ReorderedVel_min, _wcl_allocs->gl.collide__d_ReorderedVel_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_Index_min, _wcl_allocs->gl.collide__d_Index_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_CellStart_min, _wcl_allocs->gl.collide__d_CellStart_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.collide__d_CellEnd_min, _wcl_allocs->gl.collide__d_CellEnd_max, (__global uint*)0))))))))))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.findCellBoundsAndReorder__localHash_min, _wcl_allocs->ll.findCellBoundsAndReorder__localHash_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    uint index = get_global_id(0);
+    if(index >= numParticles)
+        return;
+
+    float4 pos = (*(_wcl_addr_clamp_global_20_const___u_uglobal__float4__Ptr((d_ReorderedPos)+(index), 1, (const __global float4 *)_wcl_allocs->gl.integrate__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.integrate__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.integrate__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.integrate__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Hash_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Hash_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Index_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Index_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.Memset__d_Data_min, (const __global float4 *)_wcl_allocs->gl.Memset__d_Data_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.collide__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_Index_min, (const __global float4 *)_wcl_allocs->gl.collide__d_Index_max, (const __global float4 *)_wcl_allocs->gl.collide__d_CellStart_min, (const __global float4 *)_wcl_allocs->gl.collide__d_CellStart_max, (const __global float4 *)_wcl_allocs->gl.collide__d_CellEnd_min, (const __global float4 *)_wcl_allocs->gl.collide__d_CellEnd_max, (const __global float4 *)_wcl_allocs->gn)));
+    float4 vel = (*(_wcl_addr_clamp_global_20_const___u_uglobal__float4__Ptr((d_ReorderedVel)+(index), 1, (const __global float4 *)_wcl_allocs->gl.integrate__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.integrate__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.integrate__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.integrate__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Hash_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Hash_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Index_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Index_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.Memset__d_Data_min, (const __global float4 *)_wcl_allocs->gl.Memset__d_Data_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.collide__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_Index_min, (const __global float4 *)_wcl_allocs->gl.collide__d_Index_max, (const __global float4 *)_wcl_allocs->gl.collide__d_CellStart_min, (const __global float4 *)_wcl_allocs->gl.collide__d_CellStart_max, (const __global float4 *)_wcl_allocs->gl.collide__d_CellEnd_min, (const __global float4 *)_wcl_allocs->gl.collide__d_CellEnd_max, (const __global float4 *)_wcl_allocs->gn)));
+    float4 force = (float4)(0, 0, 0, 0);
+
+    //Get address in grid
+    int4 gridPos = getGridPos(_wcl_allocs, pos, params);
+
+    //Accumulate surrounding cells
+    for(int z = -1; z <= 1; z++)
+        for(int y = -1; y <= 1; y++)
+            for(int x = -1; x <= 1; x++){
+                //Get start particle index for this cell
+                uint hash = getGridHash(_wcl_allocs, gridPos + (int4)(x, y, z, 0), params);
+                uint startI = (*(_wcl_addr_clamp_global_20_const___u_uglobal__uint__Ptr((d_CellStart)+(hash), 1, (const __global uint *)_wcl_allocs->gl.integrate__d_Pos_min, (const __global uint *)_wcl_allocs->gl.integrate__d_Pos_max, (const __global uint *)_wcl_allocs->gl.integrate__d_Vel_min, (const __global uint *)_wcl_allocs->gl.integrate__d_Vel_max, (const __global uint *)_wcl_allocs->gl.calcHash__d_Hash_min, (const __global uint *)_wcl_allocs->gl.calcHash__d_Hash_max, (const __global uint *)_wcl_allocs->gl.calcHash__d_Index_min, (const __global uint *)_wcl_allocs->gl.calcHash__d_Index_max, (const __global uint *)_wcl_allocs->gl.calcHash__d_Pos_min, (const __global uint *)_wcl_allocs->gl.calcHash__d_Pos_max, (const __global uint *)_wcl_allocs->gl.Memset__d_Data_min, (const __global uint *)_wcl_allocs->gl.Memset__d_Data_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (const __global uint *)_wcl_allocs->gl.collide__d_Vel_min, (const __global uint *)_wcl_allocs->gl.collide__d_Vel_max, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (const __global uint *)_wcl_allocs->gl.collide__d_Index_min, (const __global uint *)_wcl_allocs->gl.collide__d_Index_max, (const __global uint *)_wcl_allocs->gl.collide__d_CellStart_min, (const __global uint *)_wcl_allocs->gl.collide__d_CellStart_max, (const __global uint *)_wcl_allocs->gl.collide__d_CellEnd_min, (const __global uint *)_wcl_allocs->gl.collide__d_CellEnd_max, (const __global uint *)_wcl_allocs->gn)));
+
+                //Skip empty cell
+                if(startI == 0xFFFFFFFFU)
+                    continue;
+
+                //Iterate over particles in this cell
+                uint endI = (*(_wcl_addr_clamp_global_20_const___u_uglobal__uint__Ptr((d_CellEnd)+(hash), 1, (const __global uint *)_wcl_allocs->gl.integrate__d_Pos_min, (const __global uint *)_wcl_allocs->gl.integrate__d_Pos_max, (const __global uint *)_wcl_allocs->gl.integrate__d_Vel_min, (const __global uint *)_wcl_allocs->gl.integrate__d_Vel_max, (const __global uint *)_wcl_allocs->gl.calcHash__d_Hash_min, (const __global uint *)_wcl_allocs->gl.calcHash__d_Hash_max, (const __global uint *)_wcl_allocs->gl.calcHash__d_Index_min, (const __global uint *)_wcl_allocs->gl.calcHash__d_Index_max, (const __global uint *)_wcl_allocs->gl.calcHash__d_Pos_min, (const __global uint *)_wcl_allocs->gl.calcHash__d_Pos_max, (const __global uint *)_wcl_allocs->gl.Memset__d_Data_min, (const __global uint *)_wcl_allocs->gl.Memset__d_Data_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (const __global uint *)_wcl_allocs->gl.collide__d_Vel_min, (const __global uint *)_wcl_allocs->gl.collide__d_Vel_max, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (const __global uint *)_wcl_allocs->gl.collide__d_Index_min, (const __global uint *)_wcl_allocs->gl.collide__d_Index_max, (const __global uint *)_wcl_allocs->gl.collide__d_CellStart_min, (const __global uint *)_wcl_allocs->gl.collide__d_CellStart_max, (const __global uint *)_wcl_allocs->gl.collide__d_CellEnd_min, (const __global uint *)_wcl_allocs->gl.collide__d_CellEnd_max, (const __global uint *)_wcl_allocs->gn)));
+                for(uint j = startI; j < endI; j++){
+                    if(j == index)
+                        continue;
+
+                    float4 pos2 = (*(_wcl_addr_clamp_global_20_const___u_uglobal__float4__Ptr((d_ReorderedPos)+(j), 1, (const __global float4 *)_wcl_allocs->gl.integrate__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.integrate__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.integrate__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.integrate__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Hash_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Hash_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Index_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Index_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.Memset__d_Data_min, (const __global float4 *)_wcl_allocs->gl.Memset__d_Data_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.collide__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_Index_min, (const __global float4 *)_wcl_allocs->gl.collide__d_Index_max, (const __global float4 *)_wcl_allocs->gl.collide__d_CellStart_min, (const __global float4 *)_wcl_allocs->gl.collide__d_CellStart_max, (const __global float4 *)_wcl_allocs->gl.collide__d_CellEnd_min, (const __global float4 *)_wcl_allocs->gl.collide__d_CellEnd_max, (const __global float4 *)_wcl_allocs->gn)));
+                    float4 vel2 = (*(_wcl_addr_clamp_global_20_const___u_uglobal__float4__Ptr((d_ReorderedVel)+(j), 1, (const __global float4 *)_wcl_allocs->gl.integrate__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.integrate__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.integrate__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.integrate__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Hash_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Hash_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Index_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Index_max, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.calcHash__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.Memset__d_Data_min, (const __global float4 *)_wcl_allocs->gl.Memset__d_Data_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_Vel_min, (const __global float4 *)_wcl_allocs->gl.collide__d_Vel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (const __global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (const __global float4 *)_wcl_allocs->gl.collide__d_Index_min, (const __global float4 *)_wcl_allocs->gl.collide__d_Index_max, (const __global float4 *)_wcl_allocs->gl.collide__d_CellStart_min, (const __global float4 *)_wcl_allocs->gl.collide__d_CellStart_max, (const __global float4 *)_wcl_allocs->gl.collide__d_CellEnd_min, (const __global float4 *)_wcl_allocs->gl.collide__d_CellEnd_max, (const __global float4 *)_wcl_allocs->gn)));
+
+                    //Collide two spheres
+                    force += collideSpheres(_wcl_allocs, 
+                        pos, pos2,
+                        vel, vel2,
+                        (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).particleRadius, (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).particleRadius,
+                        (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).spring, (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).damping, (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).shear, (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).attraction
+                    );
+                }
+            }
+
+    //Collide with cursor sphere
+    force += collideSpheres(_wcl_allocs, 
+        pos, (float4)((*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).colliderPos.x, (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).colliderPos.y, (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).colliderPos.z, 0),
+        vel, (float4)(0, 0, 0, 0),
+        (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).particleRadius, (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).colliderRadius,
+        (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).spring, (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).damping, (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).shear, (*(_wcl_addr_clamp_constant_3__u_uconstant__simPParams_ut__Ptr((params), 1, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_min, (__constant simParams_t *)_wcl_allocs->cl.integrate__params_max, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_min, (__constant simParams_t *)_wcl_allocs->cl.calcHash__params_max, (__constant simParams_t *)_wcl_allocs->cl.collide__params_min, (__constant simParams_t *)_wcl_allocs->cl.collide__params_max, (__constant simParams_t *)_wcl_allocs->cn))).attraction
+    );
+
+    //Write new velocity back to original unsorted location
+    (*(_wcl_addr_clamp_global_20__u_uglobal__float4__Ptr((d_Vel)+((*(_wcl_addr_clamp_global_20_const___u_uglobal__uint__Ptr((d_Index)+(index), 1, (const __global uint *)_wcl_allocs->gl.integrate__d_Pos_min, (const __global uint *)_wcl_allocs->gl.integrate__d_Pos_max, (const __global uint *)_wcl_allocs->gl.integrate__d_Vel_min, (const __global uint *)_wcl_allocs->gl.integrate__d_Vel_max, (const __global uint *)_wcl_allocs->gl.calcHash__d_Hash_min, (const __global uint *)_wcl_allocs->gl.calcHash__d_Hash_max, (const __global uint *)_wcl_allocs->gl.calcHash__d_Index_min, (const __global uint *)_wcl_allocs->gl.calcHash__d_Index_max, (const __global uint *)_wcl_allocs->gl.calcHash__d_Pos_min, (const __global uint *)_wcl_allocs->gl.calcHash__d_Pos_max, (const __global uint *)_wcl_allocs->gl.Memset__d_Data_min, (const __global uint *)_wcl_allocs->gl.Memset__d_Data_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (const __global uint *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (const __global uint *)_wcl_allocs->gl.collide__d_Vel_min, (const __global uint *)_wcl_allocs->gl.collide__d_Vel_max, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (const __global uint *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (const __global uint *)_wcl_allocs->gl.collide__d_Index_min, (const __global uint *)_wcl_allocs->gl.collide__d_Index_max, (const __global uint *)_wcl_allocs->gl.collide__d_CellStart_min, (const __global uint *)_wcl_allocs->gl.collide__d_CellStart_max, (const __global uint *)_wcl_allocs->gl.collide__d_CellEnd_min, (const __global uint *)_wcl_allocs->gl.collide__d_CellEnd_max, (const __global uint *)_wcl_allocs->gn)))), 1, (__global float4 *)_wcl_allocs->gl.integrate__d_Pos_min, (__global float4 *)_wcl_allocs->gl.integrate__d_Pos_max, (__global float4 *)_wcl_allocs->gl.integrate__d_Vel_min, (__global float4 *)_wcl_allocs->gl.integrate__d_Vel_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Hash_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Hash_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Index_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Index_max, (__global float4 *)_wcl_allocs->gl.calcHash__d_Pos_min, (__global float4 *)_wcl_allocs->gl.calcHash__d_Pos_max, (__global float4 *)_wcl_allocs->gl.Memset__d_Data_min, (__global float4 *)_wcl_allocs->gl.Memset__d_Data_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellStart_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_CellEnd_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedPos_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_ReorderedVel_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Hash_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Index_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Pos_max, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_min, (__global float4 *)_wcl_allocs->gl.findCellBoundsAndReorder__d_Vel_max, (__global float4 *)_wcl_allocs->gl.collide__d_Vel_min, (__global float4 *)_wcl_allocs->gl.collide__d_Vel_max, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_min, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedPos_max, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_min, (__global float4 *)_wcl_allocs->gl.collide__d_ReorderedVel_max, (__global float4 *)_wcl_allocs->gl.collide__d_Index_min, (__global float4 *)_wcl_allocs->gl.collide__d_Index_max, (__global float4 *)_wcl_allocs->gl.collide__d_CellStart_min, (__global float4 *)_wcl_allocs->gl.collide__d_CellStart_max, (__global float4 *)_wcl_allocs->gl.collide__d_CellEnd_min, (__global float4 *)_wcl_allocs->gl.collide__d_CellEnd_max, (__global float4 *)_wcl_allocs->gn))) = vel + force;
+}

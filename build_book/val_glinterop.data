@@ -1,0 +1,221 @@
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "init_vbo_kernel" :
+                {
+                    "vbo" :
+                        {
+                            "index" : 0,
+                            "type" : "float4 *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_vbo_size"
+                        },
+                    "_wcl_vbo_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "w" :
+                        {
+                            "index" : 2,
+                            "type" : "int"
+                        },
+                    "h" :
+                        {
+                            "index" : 3,
+                            "type" : "int"
+                        },
+                    "seq" :
+                        {
+                            "index" : 4,
+                            "type" : "int"
+                        }
+                },
+            "init_texture_kernel" :
+                {
+                    "im" :
+                        {
+                            "index" : 0,
+                            "type" : "image2d_t",
+                            "access" : "write_only"
+                        },
+                    "w" :
+                        {
+                            "index" : 1,
+                            "type" : "int"
+                        },
+                    "h" :
+                        {
+                            "index" : 2,
+                            "type" : "int"
+                        },
+                    "seq" :
+                        {
+                            "index" : 3,
+                            "type" : "int"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((128 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (128/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+typedef struct {
+    float4 _wcl_linepts;
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
+
+typedef struct {
+    __global float4 *init_vbo_kernel__vbo_min;
+    __global float4 *init_vbo_kernel__vbo_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+    _WclPrivates pa;
+    __private uint *pn;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+// be careful to edit this, this has been carefully tuned to work on every OpenCL driver
+// e.g. % item_count was added to start[(items_offset+i)] = _WCL_FILLCHAR;
+// to prevent compiler crash on Apple GeForce 640M
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[(items_offset+i) % item_count] = _WCL_FILLCHAR;           \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+constant int hd4k_workaround_constant = 0;
+
+// <= General code that doesn't depend on input.
+
+bool _wcl_addr_check_global_1__u_uglobal__float4__Ptr(__global float4 *addr, unsigned size, __global float4 * min0, __global float4 * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global float4 *, max0)) );
+}
+__global float4 *_wcl_addr_clamp_global_1__u_uglobal__float4__Ptr(__global float4 *addr, unsigned size, __global float4 * min0, __global float4 * max0, __global float4 * asnull)
+{
+     return _wcl_addr_check_global_1__u_uglobal__float4__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+
+void _wcl_write_imagef_0(write_only image2d_t arg0, int2 arg1, float4 arg2)
+{
+    int2 size = get_image_dim(arg0);
+    if (arg1.x >= 0 && arg1.y >= 0 && arg1.x < size.x && arg1.y < size.y)
+        write_imagef(arg0, arg1, arg2);
+}
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+
+__kernel void init_vbo_kernel(__global float4 *vbo, ulong _wcl_vbo_size, int w, int h, int seq)
+{
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &vbo[0], &vbo[_wcl_vbo_size] },
+        0,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.init_vbo_kernel__vbo_min, _wcl_allocs->gl.init_vbo_kernel__vbo_max, (__global uint*)0);
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    int gid = get_global_id(0);
+ float4 linepts;
+ float f = 1.0f;
+ float a = (float)h/4.0f;
+ float b = w/2.0f;
+
+ _wcl_allocs->pa._wcl_linepts.x = gid;
+ _wcl_allocs->pa._wcl_linepts.y = b + a*sin(3.14*2.0*((float)gid/(float)w*f + (float)seq/(float)w));
+ _wcl_allocs->pa._wcl_linepts.z = gid+1.0f;
+ _wcl_allocs->pa._wcl_linepts.w = b + a*sin(3.14*2.0*((float)(gid+1.0f)/(float)w*f + (float)seq/(float)w));
+
+ (*(_wcl_addr_clamp_global_1__u_uglobal__float4__Ptr((vbo)+(gid), 1, (__global float4 *)_wcl_allocs->gl.init_vbo_kernel__vbo_min, (__global float4 *)_wcl_allocs->gl.init_vbo_kernel__vbo_max, (__global float4 *)_wcl_allocs->gn))) = _wcl_allocs->pa._wcl_linepts;
+}
+
+__kernel void init_texture_kernel(__write_only image2d_t im, int w, int h, int seq )
+{
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0 },
+        0,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.init_vbo_kernel__vbo_min, _wcl_allocs->gl.init_vbo_kernel__vbo_max, (__global uint*)0);
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+ int2 coord = { get_global_id(0), get_global_id(1) };
+ float4 color = {
+       (float)coord.x/(float)w,
+       (float)coord.y/(float)h,
+       (float)abs(seq-w)/(float)w,
+       1.0f};
+ _wcl_write_imagef_0( im, coord, color );
+}

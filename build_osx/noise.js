@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-osx-sample/js/noise.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'noise.data';
     var REMOTE_PACKAGE_SIZE = 23200;
-    var PACKAGE_UUID = '9a94718e-d26e-4fec-b326-a78b631f5282';
+    var PACKAGE_UUID = '0b0264af-01be-47da-a7b7-355128cb5161';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -247,7 +247,6 @@ else if (ENVIRONMENT_IS_SHELL) {
 
   this['Module'] = Module;
 
-  eval("if (typeof gc === 'function' && gc.toString().indexOf('[native code]') > 0) var gc = undefined"); // wipe out the SpiderMonkey shell 'gc' function, which can confuse closure (uses it as a minified name, and it is then initted to a non-falsey value unexpectedly)
 }
 else if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
   Module['read'] = function read(url) {
@@ -722,10 +721,11 @@ var globalScope = this;
 
 // Returns the C function with a specified identifier (for C++, you need to do manual name mangling)
 function getCFunc(ident) {
-  try {
-    var func = Module['_' + ident]; // closure exported function
-    if (!func) func = eval('_' + ident); // explicit lookup
-  } catch(e) {
+  var func = Module['_' + ident]; // closure exported function
+  if (!func) {
+    try {
+      func = eval('_' + ident); // explicit lookup
+    } catch(e) {}
   }
   assert(func, 'Cannot call unknown function ' + ident + ' (perhaps LLVM optimizations or closure removed it?)');
   return func;
@@ -804,7 +804,7 @@ var cwrap, ccall;
     return ret;
   }
 
-  var sourceRegex = /^function \((.*)\)\s*{\s*([^]*?)[\s;]*(?:return\s*(.*?)[;\s]*)?}$/;
+  var sourceRegex = /^function\s*\(([^)]*)\)\s*{\s*([^*]*?)[\s;]*(?:return\s*(.*?)[;\s]*)?}$/;
   function parseJSFunc(jsfunc) {
     // Match the body and the return value of a javascript function source
     var parsed = jsfunc.toString().match(sourceRegex).slice(1);
@@ -1965,21 +1965,33 @@ function copyTempDouble(ptr) {
                 sizePerPixel = 2;
                 break;
               default:
-                throw 'Invalid format (' + format + ')';
+                GL.recordError(0x0500); // GL_INVALID_ENUM
+                return {
+                  pixels: null,
+                  internalFormat: 0x0
+                };
             }
             break;
           case 0x1403 /* GL_UNSIGNED_SHORT */:
             if (format == 0x1902 /* GL_DEPTH_COMPONENT */) {
               sizePerPixel = 2;
             } else {
-              throw 'Invalid format (' + format + ')';
+              GL.recordError(0x0500); // GL_INVALID_ENUM
+              return {
+                pixels: null,
+                internalFormat: 0x0
+              };
             }
             break;
           case 0x1405 /* GL_UNSIGNED_INT */:
             if (format == 0x1902 /* GL_DEPTH_COMPONENT */) {
               sizePerPixel = 4;
             } else {
-              throw 'Invalid format (' + format + ')';
+              GL.recordError(0x0500); // GL_INVALID_ENUM
+              return {
+                pixels: null,
+                internalFormat: 0x0
+              };
             }
             break;
           case 0x84FA /* UNSIGNED_INT_24_8_WEBGL */:
@@ -2000,12 +2012,20 @@ function copyTempDouble(ptr) {
                 sizePerPixel = 4*4;
                 break;
               default:
-                throw 'Invalid format (' + format + ')';
+                GL.recordError(0x0500); // GL_INVALID_ENUM
+                return {
+                  pixels: null,
+                  internalFormat: 0x0
+                };
             }
             internalFormat = GLctx.RGBA;
             break;
           default:
-            throw 'Invalid type (' + type + ')';
+            GL.recordError(0x0500); // GL_INVALID_ENUM
+            return {
+              pixels: null,
+              internalFormat: 0x0
+            };
         }
         var bytes = GL.computeImageSize(width, height, sizePerPixel, GL.unpackAlignment);
         if (type == 0x1401 /* GL_UNSIGNED_BYTE */) {
@@ -2020,7 +2040,7 @@ function copyTempDouble(ptr) {
         return {
           pixels: pixels,
           internalFormat: internalFormat
-        }
+        };
       },enabledClientAttribIndices:[],enableVertexAttribArray:function enableVertexAttribArray(index) {
         if (!GL.enabledClientAttribIndices[index]) {
           GL.enabledClientAttribIndices[index] = true;
@@ -2137,33 +2157,6 @@ function copyTempDouble(ptr) {
       GLImmediate.vertexData[GLImmediate.vertexCounter++] = u;
       GLImmediate.vertexData[GLImmediate.vertexCounter++] = v;
       GLImmediate.addRendererComponent(GLImmediate.TEXTURE0, 2, GLctx.FLOAT);
-    }
-
-  
-  function _emscripten_glColor4f(r, g, b, a) {
-      r = Math.max(Math.min(r, 1), 0);
-      g = Math.max(Math.min(g, 1), 0);
-      b = Math.max(Math.min(b, 1), 0);
-      a = Math.max(Math.min(a, 1), 0);
-  
-      // TODO: make ub the default, not f, save a few mathops
-      if (GLImmediate.mode >= 0) {
-        var start = GLImmediate.vertexCounter << 2;
-        GLImmediate.vertexDataU8[start + 0] = r * 255;
-        GLImmediate.vertexDataU8[start + 1] = g * 255;
-        GLImmediate.vertexDataU8[start + 2] = b * 255;
-        GLImmediate.vertexDataU8[start + 3] = a * 255;
-        GLImmediate.vertexCounter++;
-        GLImmediate.addRendererComponent(GLImmediate.COLOR, 4, GLctx.UNSIGNED_BYTE);
-      } else {
-        GLImmediate.clientColor[0] = r;
-        GLImmediate.clientColor[1] = g;
-        GLImmediate.clientColor[2] = b;
-        GLImmediate.clientColor[3] = a;
-        GLctx.vertexAttrib4fv(GLImmediate.COLOR, GLImmediate.clientColor);
-      }
-    }function _glColor3f(r, g, b) {
-      _emscripten_glColor4f(r, g, b, 1);
     }
 
   function _glClearColor(x0, x1, x2, x3) { GLctx.clearColor(x0, x1, x2, x3) }
@@ -11817,38 +11810,6 @@ function copyTempDouble(ptr) {
       }
     }
 
-  function _clReleaseProgram(program) {
-  
-  
-      // If is an object retain don't release it until retains > 0...
-      if (program in CL.cl_objects_retains) {
-  
-        var _retain = CL.cl_objects_retains[program] - 1;
-  
-        CL.cl_objects_retains[program] = _retain;
-  
-        if (_retain >= 0) {
-          return webcl.SUCCESS;
-        }
-      }
-  
-      try {
-  
-          CL.cl_objects[program].release();
-          delete CL.cl_objects[program]; 
-  
-      } catch (e) {
-        var _error = CL.catchError(e);
-  
-  
-        return _error;
-      }
-  
-  
-      return webcl.SUCCESS;
-  
-    }
-
   function _clEnqueueReleaseGLObjects(command_queue,num_objects,mem_objects,num_events_in_wait_list,event_wait_list,event) {
         
       var _event_wait_list = [];
@@ -12087,21 +12048,74 @@ function copyTempDouble(ptr) {
   
     }
 
-  function _frexp(x, exp_addr) {
-      var sig = 0, exp_ = 0;
-      if (x !== 0) {
-        var sign = 1;
-        if (x < 0) {
-          x = -x;
-          sign = -1;
+  function _clReleaseProgram(program) {
+  
+  
+      // If is an object retain don't release it until retains > 0...
+      if (program in CL.cl_objects_retains) {
+  
+        var _retain = CL.cl_objects_retains[program] - 1;
+  
+        CL.cl_objects_retains[program] = _retain;
+  
+        if (_retain >= 0) {
+          return webcl.SUCCESS;
         }
-        var raw_exp = Math.log(x)/Math.log(2);
-        exp_ = Math.ceil(raw_exp);
-        if (exp_ === raw_exp) exp_ += 1;
-        sig = sign*x/Math.pow(2, exp_);
       }
-      HEAP32[((exp_addr)>>2)]=exp_;
-      return sig;
+  
+      try {
+  
+          CL.cl_objects[program].release();
+          delete CL.cl_objects[program]; 
+  
+      } catch (e) {
+        var _error = CL.catchError(e);
+  
+  
+        return _error;
+      }
+  
+  
+      return webcl.SUCCESS;
+  
+    }
+
+  function _clCreateKernel(program,kernel_name,cl_errcode_ret) {
+      
+  
+      var _id = null;
+      var _kernel = null;
+      var _name = (kernel_name == 0) ? "" : Pointer_stringify(kernel_name);
+  
+      // program must be created
+      try {
+      
+  
+        _kernel = CL.cl_objects[program].createKernel(_name);
+        
+        Object.defineProperty(_kernel, "name", { value : _name,writable : false });
+        Object.defineProperty(_kernel, "sig", { value : CL.cl_kernels_sig[_name],writable : false });
+  
+  
+        
+      } catch (e) {
+        var _error = CL.catchError(e);
+      
+        if (cl_errcode_ret != 0) {
+          HEAP32[((cl_errcode_ret)>>2)]=_error;
+        }
+  
+        return 0; // NULL Pointer
+      }
+  
+      if (cl_errcode_ret != 0) {
+        HEAP32[((cl_errcode_ret)>>2)]=0;
+      }
+  
+      _id = CL.udid(_kernel);
+  
+  
+      return _id;
     }
 
 
@@ -12128,6 +12142,14 @@ function copyTempDouble(ptr) {
                              GLUT.initWindowHeight = height );
     }
 
+  
+  function __exit(status) {
+      // void _exit(int status);
+      // http://pubs.opengroup.org/onlinepubs/000095399/functions/exit.html
+      Module['exit'](status);
+    }function _exit(status) {
+      __exit(status);
+    }
 
   function _glutMotionFunc(func) {
       GLUT.motionFunc = func;
@@ -12177,59 +12199,8 @@ function copyTempDouble(ptr) {
       return _stat(stream.path, buf);
     }
 
-  function _clSetKernelArg(kernel,arg_index,arg_size,arg_value) {
-      if (CL.cl_objects[kernel].sig.length < arg_index) {
-        return webcl.INVALID_KERNEL;          
-      }
-  
-      var _kernel = CL.cl_objects[kernel];
-  
-      var _posarg = arg_index;
-  
-      var _sig = _kernel.sig[_posarg];
-      
-      try {
-  
-        // LOCAL ARG
-        if (_sig == webcl.LOCAL) {
-  
-          var _array = new Uint32Array([arg_size]);
-  
-          _kernel.setArg(_posarg,_array);
-  
-  
-        } else {
-  
-          var _value = HEAP32[((arg_value)>>2)];
-  
-          // WEBCL OBJECT ARG
-          if (_value in CL.cl_objects) {
-  
-            _kernel.setArg(_posarg,CL.cl_objects[_value]);
-            
-            if (! (CL.cl_objects[_value] instanceof WebCLSampler)) {
-  
-            }
-            
-          } else {
-    
-            var _array = CL.getCopyPointerToArrayPowTwo(arg_value,arg_size,[[_sig,1]]);
-           
-            _kernel.setArg(_posarg,_array);
-  
-          }
-        }
-      } catch (e) {
-  
-        var _error = CL.catchError(e);
-  
-  
-        return _error;
-      }
-  
-  
-      return webcl.SUCCESS;
-    }
+   
+  Module["_bitshift64Lshr"] = _bitshift64Lshr;
 
   function _clReleaseCommandQueue(command_queue) {
   
@@ -12314,6 +12285,8 @@ function copyTempDouble(ptr) {
         return -1;
       }
     }
+
+  var _BDtoIHigh=true;
 
   function _glDisableClientState(cap) {
       var attrib = GLEmulation.getAttributeFromCapability(cap);
@@ -12518,9 +12491,49 @@ function copyTempDouble(ptr) {
       GLUT.mouseFunc = func;
     }
 
-  function ___errno_location() {
-      return ___errno_state;
+  function _clReleaseMemObject(memobj) {
+  
+      // If is an object retain don't release it until retains > 0...
+      if (memobj in CL.cl_objects_retains) {
+  
+        var _retain = CL.cl_objects_retains[memobj] - 1;
+  
+        CL.cl_objects_retains[memobj] = _retain;
+  
+        if (_retain >= 0) {
+          
+          // Call the callback 
+          if (memobj in CL.cl_objects_mem_callback) {
+            if (CL.cl_objects_mem_callback[memobj].length > 0)
+              CL.cl_objects_mem_callback[memobj].pop()();
+          }
+  
+          return webcl.SUCCESS;
+        }
+      }
+  
+      try {
+  
+        // Call the callback 
+        if (memobj in CL.cl_objects_mem_callback) {
+          if (CL.cl_objects_mem_callback[memobj].length > 0)
+            CL.cl_objects_mem_callback[memobj].pop()();
+        }
+  
+        CL.cl_objects[memobj].release();
+        delete CL.cl_objects[memobj];  
+  
+      } catch (e) {
+        var _error = CL.catchError(e);
+  
+  
+        return _error;
+      }
+  
+      return webcl.SUCCESS;
     }
+
+  var _BItoD=true;
 
   
   function _clEnqueueWriteBuffer(command_queue,buffer,blocking_write,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event) {
@@ -12869,53 +12882,82 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;
     }
 
-  function _clReleaseMemObject(memobj) {
-  
-      // If is an object retain don't release it until retains > 0...
-      if (memobj in CL.cl_objects_retains) {
-  
-        var _retain = CL.cl_objects_retains[memobj] - 1;
-  
-        CL.cl_objects_retains[memobj] = _retain;
-  
-        if (_retain >= 0) {
-          
-          // Call the callback 
-          if (memobj in CL.cl_objects_mem_callback) {
-            if (CL.cl_objects_mem_callback[memobj].length > 0)
-              CL.cl_objects_mem_callback[memobj].pop()();
-          }
-  
-          return webcl.SUCCESS;
-        }
+  function ___errno_location() {
+      return ___errno_state;
+    }
+
+   
+  Module["_memset"] = _memset;
+
+  var _BDtoILow=true;
+
+  function _clSetKernelArg(kernel,arg_index,arg_size,arg_value) {
+      if (CL.cl_objects[kernel].sig.length < arg_index) {
+        return webcl.INVALID_KERNEL;          
       }
   
+      var _kernel = CL.cl_objects[kernel];
+  
+      var _posarg = arg_index;
+  
+      var _sig = _kernel.sig[_posarg];
+      
       try {
   
-        // Call the callback 
-        if (memobj in CL.cl_objects_mem_callback) {
-          if (CL.cl_objects_mem_callback[memobj].length > 0)
-            CL.cl_objects_mem_callback[memobj].pop()();
+        // LOCAL ARG
+        if (_sig == webcl.LOCAL) {
+  
+          var _array = new Uint32Array([arg_size]);
+  
+          _kernel.setArg(_posarg,_array);
+  
+  
+        } else {
+  
+          var _value = HEAP32[((arg_value)>>2)];
+  
+          // WEBCL OBJECT ARG
+          if (_value in CL.cl_objects) {
+  
+            _kernel.setArg(_posarg,CL.cl_objects[_value]);
+            
+            if (! (CL.cl_objects[_value] instanceof WebCLSampler)) {
+  
+            }
+            
+          } else {
+    
+            var _array = CL.getCopyPointerToArrayPowTwo(arg_value,arg_size,[[_sig,1]]);
+           
+            _kernel.setArg(_posarg,_array);
+  
+          }
         }
-  
-        CL.cl_objects[memobj].release();
-        delete CL.cl_objects[memobj];  
-  
       } catch (e) {
+  
         var _error = CL.catchError(e);
   
   
         return _error;
       }
   
+  
       return webcl.SUCCESS;
     }
 
-   
-  Module["_memset"] = _memset;
-
-  function _glutReshapeFunc(func) {
-      GLUT.reshapeFunc = func;
+  function _glEnd() {
+      GLImmediate.prepareClientAttributes(GLImmediate.rendererComponents[GLImmediate.VERTEX], true);
+      GLImmediate.firstVertex = 0;
+      GLImmediate.lastVertex = GLImmediate.vertexCounter / (GLImmediate.stride >> 2);
+      GLImmediate.flush();
+      GLImmediate.disableBeginEndClientAttributes();
+      GLImmediate.mode = -1;
+  
+      // Pop the old state:
+      GLImmediate.enabledClientAttributes = GLImmediate.enabledClientAttributes_preBegin;
+      GLImmediate.clientAttributes = GLImmediate.clientAttributes_preBegin;
+      GLImmediate.currentRenderer = null; // The set of active client attributes changed, we must re-lookup the renderer to use.
+      GLImmediate.modifiedClientAttributes = true;
     }
 
   function _atexit(func, arg) {
@@ -13120,6 +13162,44 @@ function copyTempDouble(ptr) {
       return webcl.SUCCESS;
     }
 
+  function _clGetKernelWorkGroupInfo(kernel,device,param_name,param_value_size,param_value,param_value_size_ret) {
+  
+      try {
+  
+        var _info = CL.cl_objects[kernel].getWorkGroupInfo(CL.cl_objects[device], param_name);
+  
+        if(typeof(_info) == "number") {
+  
+          if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+  
+        } else if (_info instanceof Int32Array) {
+         
+          for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
+            if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_info[i];
+          }
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length * 4;
+        
+        } else {
+  
+          console.error("clGetKernelWorkGroupInfo: unknow type of info '"+_info+"'")
+          
+          if (param_value != 0) HEAP32[((param_value)>>2)]=0;
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
+  
+        }
+  
+      } catch (e) {
+        var _error = CL.catchError(e);
+  
+        if (param_value != 0) HEAP32[((param_value)>>2)]=0;
+        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
+        
+        return _error;
+      }
+  
+      return webcl.SUCCESS;
+    }
 
   function _clCreateCommandQueue(context,device,properties_1,properties_2,cl_errcode_ret) {
       // Assume the properties is i32 
@@ -13228,44 +13308,6 @@ function copyTempDouble(ptr) {
   
     }
 
-  function _clGetKernelWorkGroupInfo(kernel,device,param_name,param_value_size,param_value,param_value_size_ret) {
-  
-      try {
-  
-        var _info = CL.cl_objects[kernel].getWorkGroupInfo(CL.cl_objects[device], param_name);
-  
-        if(typeof(_info) == "number") {
-  
-          if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
-          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-  
-        } else if (_info instanceof Int32Array) {
-         
-          for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
-            if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_info[i];
-          }
-          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length * 4;
-        
-        } else {
-  
-          console.error("clGetKernelWorkGroupInfo: unknow type of info '"+_info+"'")
-          
-          if (param_value != 0) HEAP32[((param_value)>>2)]=0;
-          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
-  
-        }
-  
-      } catch (e) {
-        var _error = CL.catchError(e);
-  
-        if (param_value != 0) HEAP32[((param_value)>>2)]=0;
-        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
-        
-        return _error;
-      }
-  
-      return webcl.SUCCESS;
-    }
 
   function _glutDisplayFunc(func) {
       GLUT.displayFunc = func;
@@ -13330,71 +13372,6 @@ function copyTempDouble(ptr) {
       } });
     }
 
-  
-  function __exit(status) {
-      // void _exit(int status);
-      // http://pubs.opengroup.org/onlinepubs/000095399/functions/exit.html
-      Module['exit'](status);
-    }function _exit(status) {
-      __exit(status);
-    }
-
-  function _glViewport(x0, x1, x2, x3) { GLctx.viewport(x0, x1, x2, x3) }
-
-  function _glLoadIdentity() {
-      GLImmediate.matricesModified = true;
-      GLImmediate.matrixVersion[GLImmediate.currentMatrix] = (GLImmediate.matrixVersion[GLImmediate.currentMatrix] + 1)|0;
-      GLImmediate.matrixLib.mat4.identity(GLImmediate.matrix[GLImmediate.currentMatrix]);
-    }
-
-  function _glFinish() { GLctx.finish() }
-
-  function _clCreateKernel(program,kernel_name,cl_errcode_ret) {
-      
-  
-      var _id = null;
-      var _kernel = null;
-      var _name = (kernel_name == 0) ? "" : Pointer_stringify(kernel_name);
-  
-      // program must be created
-      try {
-      
-  
-        _kernel = CL.cl_objects[program].createKernel(_name);
-        
-        Object.defineProperty(_kernel, "name", { value : _name,writable : false });
-        Object.defineProperty(_kernel, "sig", { value : CL.cl_kernels_sig[_name],writable : false });
-  
-  
-        
-      } catch (e) {
-        var _error = CL.catchError(e);
-      
-        if (cl_errcode_ret != 0) {
-          HEAP32[((cl_errcode_ret)>>2)]=_error;
-        }
-  
-        return 0; // NULL Pointer
-      }
-  
-      if (cl_errcode_ret != 0) {
-        HEAP32[((cl_errcode_ret)>>2)]=0;
-      }
-  
-      _id = CL.udid(_kernel);
-  
-  
-      return _id;
-    }
-
-  function _glVertex3f(x, y, z) {
-      assert(GLImmediate.mode >= 0); // must be in begin/end
-      GLImmediate.vertexData[GLImmediate.vertexCounter++] = x;
-      GLImmediate.vertexData[GLImmediate.vertexCounter++] = y;
-      GLImmediate.vertexData[GLImmediate.vertexCounter++] = z || 0;
-      assert(GLImmediate.vertexCounter << 2 < GL.MAX_TEMP_BUFFER_SIZE);
-      GLImmediate.addRendererComponent(GLImmediate.VERTEX, 3, GLctx.FLOAT);
-    }
 
   function _clCreateProgramWithSource(context,count,strings,lengths,cl_errcode_ret) {
       
@@ -13446,18 +13423,58 @@ function copyTempDouble(ptr) {
       return _id;
     }
 
+  function _glLoadIdentity() {
+      GLImmediate.matricesModified = true;
+      GLImmediate.matrixVersion[GLImmediate.currentMatrix] = (GLImmediate.matrixVersion[GLImmediate.currentMatrix] + 1)|0;
+      GLImmediate.matrixLib.mat4.identity(GLImmediate.matrix[GLImmediate.currentMatrix]);
+    }
+
+  function _glFinish() { GLctx.finish() }
+
   
-  function _glutReshapeWindow(width, height) {
-      GLUT.cancelFullScreen();
-      Browser.setCanvasSize(width, height);
-      if (GLUT.reshapeFunc) {
-        Runtime.dynCall('vii', GLUT.reshapeFunc, [width, height]);
+  function _emscripten_glColor4f(r, g, b, a) {
+      r = Math.max(Math.min(r, 1), 0);
+      g = Math.max(Math.min(g, 1), 0);
+      b = Math.max(Math.min(b, 1), 0);
+      a = Math.max(Math.min(a, 1), 0);
+  
+      // TODO: make ub the default, not f, save a few mathops
+      if (GLImmediate.mode >= 0) {
+        var start = GLImmediate.vertexCounter << 2;
+        GLImmediate.vertexDataU8[start + 0] = r * 255;
+        GLImmediate.vertexDataU8[start + 1] = g * 255;
+        GLImmediate.vertexDataU8[start + 2] = b * 255;
+        GLImmediate.vertexDataU8[start + 3] = a * 255;
+        GLImmediate.vertexCounter++;
+        GLImmediate.addRendererComponent(GLImmediate.COLOR, 4, GLctx.UNSIGNED_BYTE);
+      } else {
+        GLImmediate.clientColor[0] = r;
+        GLImmediate.clientColor[1] = g;
+        GLImmediate.clientColor[2] = b;
+        GLImmediate.clientColor[3] = a;
+        GLctx.vertexAttrib4fv(GLImmediate.COLOR, GLImmediate.clientColor);
       }
-      _glutPostRedisplay();
-    }function _glutMainLoop() {
-      _glutReshapeWindow(Module['canvas'].width, Module['canvas'].height);
-      _glutPostRedisplay();
-      throw 'SimulateInfiniteLoop';
+    }function _glColor3f(r, g, b) {
+      _emscripten_glColor4f(r, g, b, 1);
+    }
+
+  function _glVertex3f(x, y, z) {
+      assert(GLImmediate.mode >= 0); // must be in begin/end
+      GLImmediate.vertexData[GLImmediate.vertexCounter++] = x;
+      GLImmediate.vertexData[GLImmediate.vertexCounter++] = y;
+      GLImmediate.vertexData[GLImmediate.vertexCounter++] = z || 0;
+      assert(GLImmediate.vertexCounter << 2 < GL.MAX_TEMP_BUFFER_SIZE);
+      GLImmediate.addRendererComponent(GLImmediate.VERTEX, 3, GLctx.FLOAT);
+    }
+
+  function _glViewport(x0, x1, x2, x3) { GLctx.viewport(x0, x1, x2, x3) }
+
+  function _time(ptr) {
+      var ret = Math.floor(Date.now()/1000);
+      if (ptr) {
+        HEAP32[((ptr)>>2)]=ret;
+      }
+      return ret;
     }
 
   function _glEnableClientState(cap) {
@@ -13506,19 +13523,8 @@ function copyTempDouble(ptr) {
       }
     }
 
-  function _glEnd() {
-      GLImmediate.prepareClientAttributes(GLImmediate.rendererComponents[GLImmediate.VERTEX], true);
-      GLImmediate.firstVertex = 0;
-      GLImmediate.lastVertex = GLImmediate.vertexCounter / (GLImmediate.stride >> 2);
-      GLImmediate.flush();
-      GLImmediate.disableBeginEndClientAttributes();
-      GLImmediate.mode = -1;
-  
-      // Pop the old state:
-      GLImmediate.enabledClientAttributes = GLImmediate.enabledClientAttributes_preBegin;
-      GLImmediate.clientAttributes = GLImmediate.clientAttributes_preBegin;
-      GLImmediate.currentRenderer = null; // The set of active client attributes changed, we must re-lookup the renderer to use.
-      GLImmediate.modifiedClientAttributes = true;
+  function _glutReshapeFunc(func) {
+      GLUT.reshapeFunc = func;
     }
 
   function _clFinish(command_queue) {
@@ -13542,12 +13548,18 @@ function copyTempDouble(ptr) {
       GLUT.initDisplayMode = mode;
     }
 
-  function _time(ptr) {
-      var ret = Math.floor(Date.now()/1000);
-      if (ptr) {
-        HEAP32[((ptr)>>2)]=ret;
+  
+  function _glutReshapeWindow(width, height) {
+      GLUT.cancelFullScreen();
+      Browser.setCanvasSize(width, height);
+      if (GLUT.reshapeFunc) {
+        Runtime.dynCall('vii', GLUT.reshapeFunc, [width, height]);
       }
-      return ret;
+      _glutPostRedisplay();
+    }function _glutMainLoop() {
+      _glutReshapeWindow(Module['canvas'].width, Module['canvas'].height);
+      _glutPostRedisplay();
+      throw 'SimulateInfiniteLoop';
     }
 
   function _glutKeyboardFunc(func) {
@@ -13694,7 +13706,6 @@ function invoke_v(index) {
   var invoke_v=env.invoke_v;
   var _glUseProgram=env._glUseProgram;
   var _fabs=env._fabs;
-  var _frexp=env._frexp;
   var _clReleaseProgram=env._clReleaseProgram;
   var _fstat=env._fstat;
   var _clEnqueueNDRangeKernel=env._clEnqueueNDRangeKernel;
@@ -15496,7 +15507,7 @@ function _FloorPow2($n) {
  $1 = $0;
  $2 = (+($1|0));
  $3 = $2;
- (+_frexp((+$3),($exp|0)));
+ (+_frexp($3,$exp));
  $4 = HEAP32[$exp>>2]|0;
  $5 = (($4) - 1)|0;
  $6 = 1 << $5;
@@ -15630,129 +15641,6 @@ function _CreateTexture($width,$height) {
  _free($34);
  HEAP32[624>>2] = 0;
  STACKTOP = sp;return;
-}
-function _memchr($src,$c,$n) {
- $src = $src|0;
- $c = $c|0;
- $n = $n|0;
- var $$0$lcssa = 0, $$0$lcssa34 = 0, $$013 = 0, $$1$lcssa = 0, $$17 = 0, $$24 = 0, $$3 = 0, $$lcssa = 0, $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0;
- var $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0, $27 = 0, $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $4 = 0;
- var $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $or$cond = 0, $or$cond12 = 0, $s$0$lcssa = 0, $s$0$lcssa33 = 0, $s$014 = 0, $s$15 = 0, $s$2 = 0, $w$0$lcssa = 0, $w$08 = 0, label = 0, sp = 0;
- sp = STACKTOP;
- $0 = $c & 255;
- $1 = $src;
- $2 = $1 & 3;
- $3 = ($2|0)==(0);
- $4 = ($n|0)==(0);
- $or$cond12 = $3 | $4;
- L1: do {
-  if ($or$cond12) {
-   $$0$lcssa = $n;$$lcssa = $4;$s$0$lcssa = $src;
-   label = 5;
-  } else {
-   $5 = $c&255;
-   $$013 = $n;$s$014 = $src;
-   while(1) {
-    $6 = HEAP8[$s$014>>0]|0;
-    $7 = ($6<<24>>24)==($5<<24>>24);
-    if ($7) {
-     $$0$lcssa34 = $$013;$s$0$lcssa33 = $s$014;
-     label = 6;
-     break L1;
-    }
-    $8 = (($s$014) + 1|0);
-    $9 = (($$013) + -1)|0;
-    $10 = $8;
-    $11 = $10 & 3;
-    $12 = ($11|0)==(0);
-    $13 = ($9|0)==(0);
-    $or$cond = $12 | $13;
-    if ($or$cond) {
-     $$0$lcssa = $9;$$lcssa = $13;$s$0$lcssa = $8;
-     label = 5;
-     break;
-    } else {
-     $$013 = $9;$s$014 = $8;
-    }
-   }
-  }
- } while(0);
- if ((label|0) == 5) {
-  if ($$lcssa) {
-   $$3 = 0;$s$2 = $s$0$lcssa;
-  } else {
-   $$0$lcssa34 = $$0$lcssa;$s$0$lcssa33 = $s$0$lcssa;
-   label = 6;
-  }
- }
- L8: do {
-  if ((label|0) == 6) {
-   $14 = HEAP8[$s$0$lcssa33>>0]|0;
-   $15 = $c&255;
-   $16 = ($14<<24>>24)==($15<<24>>24);
-   if ($16) {
-    $$3 = $$0$lcssa34;$s$2 = $s$0$lcssa33;
-   } else {
-    $17 = Math_imul($0, 16843009)|0;
-    $18 = ($$0$lcssa34>>>0)>(3);
-    L11: do {
-     if ($18) {
-      $$17 = $$0$lcssa34;$w$08 = $s$0$lcssa33;
-      while(1) {
-       $19 = HEAP32[$w$08>>2]|0;
-       $20 = $19 ^ $17;
-       $21 = (($20) + -16843009)|0;
-       $22 = $20 & -2139062144;
-       $23 = $22 ^ -2139062144;
-       $24 = $23 & $21;
-       $25 = ($24|0)==(0);
-       if (!($25)) {
-        $$1$lcssa = $$17;$w$0$lcssa = $w$08;
-        break L11;
-       }
-       $26 = (($w$08) + 4|0);
-       $27 = (($$17) + -4)|0;
-       $28 = ($27>>>0)>(3);
-       if ($28) {
-        $$17 = $27;$w$08 = $26;
-       } else {
-        $$1$lcssa = $27;$w$0$lcssa = $26;
-        break;
-       }
-      }
-     } else {
-      $$1$lcssa = $$0$lcssa34;$w$0$lcssa = $s$0$lcssa33;
-     }
-    } while(0);
-    $29 = ($$1$lcssa|0)==(0);
-    if ($29) {
-     $$3 = 0;$s$2 = $w$0$lcssa;
-    } else {
-     $$24 = $$1$lcssa;$s$15 = $w$0$lcssa;
-     while(1) {
-      $30 = HEAP8[$s$15>>0]|0;
-      $31 = ($30<<24>>24)==($15<<24>>24);
-      if ($31) {
-       $$3 = $$24;$s$2 = $s$15;
-       break L8;
-      }
-      $32 = (($s$15) + 1|0);
-      $33 = (($$24) + -1)|0;
-      $34 = ($33|0)==(0);
-      if ($34) {
-       $$3 = 0;$s$2 = $32;
-       break;
-      } else {
-       $$24 = $33;$s$15 = $32;
-      }
-     }
-    }
-   }
-  }
- } while(0);
- $35 = ($$3|0)!=(0);
- $36 = $35 ? $s$2 : 0;
- STACKTOP = sp;return ($36|0);
 }
 function _strchr($s,$c) {
  $s = $s|0;
@@ -19847,6 +19735,167 @@ function _calloc($n_elements,$elem_size) {
  _memset(($6|0),0,($req$0|0))|0;
  STACKTOP = sp;return ($6|0);
 }
+function _frexp($x,$e) {
+ $x = +$x;
+ $e = $e|0;
+ var $$0 = 0.0, $$01 = 0.0, $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0.0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0.0, $7 = 0.0, $8 = 0, $9 = 0, $storemerge = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ HEAPF64[tempDoublePtr>>3] = $x;$0 = HEAP32[tempDoublePtr>>2]|0;
+ $1 = HEAP32[tempDoublePtr+4>>2]|0;
+ $2 = (_bitshift64Lshr(($0|0),($1|0),52)|0);
+ $3 = tempRet0;
+ $4 = $2 & 2047;
+ if ((($4|0) == 2047)) {
+  $$0 = $x;
+  STACKTOP = sp;return (+$$0);
+ } else if ((($4|0) == 0)) {
+  $5 = $x != 0.0;
+  if ($5) {
+   $6 = $x * 18446744073709551616.0;
+   $7 = (+_frexp($6,$e));
+   $8 = HEAP32[$e>>2]|0;
+   $9 = (($8) + -64)|0;
+   $$01 = $7;$storemerge = $9;
+  } else {
+   $$01 = $x;$storemerge = 0;
+  }
+  HEAP32[$e>>2] = $storemerge;
+  $$0 = $$01;
+  STACKTOP = sp;return (+$$0);
+ } else {
+  $10 = (($4) + -1022)|0;
+  HEAP32[$e>>2] = $10;
+  $11 = $1 & -2146435073;
+  $12 = $11 | 1071644672;
+  HEAP32[tempDoublePtr>>2] = $0;HEAP32[tempDoublePtr+4>>2] = $12;$13 = +HEAPF64[tempDoublePtr>>3];
+  $$0 = $13;
+  STACKTOP = sp;return (+$$0);
+ }
+ return +0;
+}
+function _memchr($src,$c,$n) {
+ $src = $src|0;
+ $c = $c|0;
+ $n = $n|0;
+ var $$0$lcssa = 0, $$0$lcssa34 = 0, $$013 = 0, $$1$lcssa = 0, $$17 = 0, $$24 = 0, $$3 = 0, $$lcssa = 0, $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0;
+ var $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0, $27 = 0, $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $4 = 0;
+ var $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $or$cond = 0, $or$cond12 = 0, $s$0$lcssa = 0, $s$0$lcssa33 = 0, $s$014 = 0, $s$15 = 0, $s$2 = 0, $w$0$lcssa = 0, $w$08 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ $0 = $c & 255;
+ $1 = $src;
+ $2 = $1 & 3;
+ $3 = ($2|0)==(0);
+ $4 = ($n|0)==(0);
+ $or$cond12 = $3 | $4;
+ L1: do {
+  if ($or$cond12) {
+   $$0$lcssa = $n;$$lcssa = $4;$s$0$lcssa = $src;
+   label = 5;
+  } else {
+   $5 = $c&255;
+   $$013 = $n;$s$014 = $src;
+   while(1) {
+    $6 = HEAP8[$s$014>>0]|0;
+    $7 = ($6<<24>>24)==($5<<24>>24);
+    if ($7) {
+     $$0$lcssa34 = $$013;$s$0$lcssa33 = $s$014;
+     label = 6;
+     break L1;
+    }
+    $8 = (($s$014) + 1|0);
+    $9 = (($$013) + -1)|0;
+    $10 = $8;
+    $11 = $10 & 3;
+    $12 = ($11|0)==(0);
+    $13 = ($9|0)==(0);
+    $or$cond = $12 | $13;
+    if ($or$cond) {
+     $$0$lcssa = $9;$$lcssa = $13;$s$0$lcssa = $8;
+     label = 5;
+     break;
+    } else {
+     $$013 = $9;$s$014 = $8;
+    }
+   }
+  }
+ } while(0);
+ if ((label|0) == 5) {
+  if ($$lcssa) {
+   $$3 = 0;$s$2 = $s$0$lcssa;
+  } else {
+   $$0$lcssa34 = $$0$lcssa;$s$0$lcssa33 = $s$0$lcssa;
+   label = 6;
+  }
+ }
+ L8: do {
+  if ((label|0) == 6) {
+   $14 = HEAP8[$s$0$lcssa33>>0]|0;
+   $15 = $c&255;
+   $16 = ($14<<24>>24)==($15<<24>>24);
+   if ($16) {
+    $$3 = $$0$lcssa34;$s$2 = $s$0$lcssa33;
+   } else {
+    $17 = Math_imul($0, 16843009)|0;
+    $18 = ($$0$lcssa34>>>0)>(3);
+    L11: do {
+     if ($18) {
+      $$17 = $$0$lcssa34;$w$08 = $s$0$lcssa33;
+      while(1) {
+       $19 = HEAP32[$w$08>>2]|0;
+       $20 = $19 ^ $17;
+       $21 = (($20) + -16843009)|0;
+       $22 = $20 & -2139062144;
+       $23 = $22 ^ -2139062144;
+       $24 = $23 & $21;
+       $25 = ($24|0)==(0);
+       if (!($25)) {
+        $$1$lcssa = $$17;$w$0$lcssa = $w$08;
+        break L11;
+       }
+       $26 = (($w$08) + 4|0);
+       $27 = (($$17) + -4)|0;
+       $28 = ($27>>>0)>(3);
+       if ($28) {
+        $$17 = $27;$w$08 = $26;
+       } else {
+        $$1$lcssa = $27;$w$0$lcssa = $26;
+        break;
+       }
+      }
+     } else {
+      $$1$lcssa = $$0$lcssa34;$w$0$lcssa = $s$0$lcssa33;
+     }
+    } while(0);
+    $29 = ($$1$lcssa|0)==(0);
+    if ($29) {
+     $$3 = 0;$s$2 = $w$0$lcssa;
+    } else {
+     $$24 = $$1$lcssa;$s$15 = $w$0$lcssa;
+     while(1) {
+      $30 = HEAP8[$s$15>>0]|0;
+      $31 = ($30<<24>>24)==($15<<24>>24);
+      if ($31) {
+       $$3 = $$24;$s$2 = $s$15;
+       break L8;
+      }
+      $32 = (($s$15) + 1|0);
+      $33 = (($$24) + -1)|0;
+      $34 = ($33|0)==(0);
+      if ($34) {
+       $$3 = 0;$s$2 = $32;
+       break;
+      } else {
+       $$24 = $33;$s$15 = $32;
+      }
+     }
+    }
+   }
+  }
+ } while(0);
+ $35 = ($$3|0)!=(0);
+ $36 = $35 ? $s$2 : 0;
+ STACKTOP = sp;return ($36|0);
+}
 function _memcmp($vl,$vr,$n) {
  $vl = $vl|0;
  $vr = $vr|0;
@@ -19896,6 +19945,17 @@ function _strlen(ptr) {
       curr = (curr + 1)|0;
     }
     return (curr - ptr)|0;
+}
+function _bitshift64Lshr(low, high, bits) {
+    low = low|0; high = high|0; bits = bits|0;
+    var ander = 0;
+    if ((bits|0) < 32) {
+      ander = ((1 << bits) - 1)|0;
+      tempRet0 = high >>> bits;
+      return (low >>> bits) | ((high&ander) << (32 - bits));
+    }
+    tempRet0 = 0;
+    return (high >>> (bits - 32))|0;
 }
 function _memcpy(dest, src, num) {
     dest = dest|0; src = src|0; num = num|0;
@@ -19994,16 +20054,17 @@ function b0(p0,p1,p2,p3) { p0 = p0|0;p1 = p1|0;p2 = p2|0;p3 = p3|0; nullFunc_vii
   var FUNCTION_TABLE_viii = [b2,b2,b2,_Keyboard];
   var FUNCTION_TABLE_v = [b3,_Display,b3,b3,b3,b3,_ShutdownCompute,b3];
 
-    return { _strlen: _strlen, _free: _free, _main: _main, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, _calloc: _calloc, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, setThrew: setThrew, setTempRet0: setTempRet0, getTempRet0: getTempRet0, dynCall_viiii: dynCall_viiii, dynCall_vii: dynCall_vii, dynCall_viii: dynCall_viii, dynCall_v: dynCall_v };
+    return { _strlen: _strlen, _free: _free, _main: _main, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, _bitshift64Lshr: _bitshift64Lshr, _calloc: _calloc, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, setThrew: setThrew, setTempRet0: setTempRet0, getTempRet0: getTempRet0, dynCall_viiii: dynCall_viiii, dynCall_vii: dynCall_vii, dynCall_viii: dynCall_viii, dynCall_v: dynCall_v };
   })
   // EMSCRIPTEN_END_ASM
-  ({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "nullFunc_viiii": nullFunc_viiii, "nullFunc_vii": nullFunc_vii, "nullFunc_viii": nullFunc_viii, "nullFunc_v": nullFunc_v, "invoke_viiii": invoke_viiii, "invoke_vii": invoke_vii, "invoke_viii": invoke_viii, "invoke_v": invoke_v, "_glUseProgram": _glUseProgram, "_fabs": _fabs, "_frexp": _frexp, "_clReleaseProgram": _clReleaseProgram, "_fstat": _fstat, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_clCreateContext": _clCreateContext, "_glDeleteProgram": _glDeleteProgram, "_clCreateProgramWithSource": _clCreateProgramWithSource, "_glBindBuffer": _glBindBuffer, "_sbrk": _sbrk, "_glutReshapeWindow": _glutReshapeWindow, "_glDisableVertexAttribArray": _glDisableVertexAttribArray, "_glCreateShader": _glCreateShader, "_glutSwapBuffers": _glutSwapBuffers, "_sysconf": _sysconf, "_close": _close, "_glTexCoord2f": _glTexCoord2f, "_clCreateCommandQueue": _clCreateCommandQueue, "_glLoadIdentity": _glLoadIdentity, "_clEnqueueReleaseGLObjects": _clEnqueueReleaseGLObjects, "_write": _write, "_glShaderSource": _glShaderSource, "_glutMotionFunc": _glutMotionFunc, "_glVertexPointer": _glVertexPointer, "_clCreateFromGLTexture2D": _clCreateFromGLTexture2D, "_glutCreateWindow": _glutCreateWindow, "_glVertexAttribPointer": _glVertexAttribPointer, "_glHint": _glHint, "_send": _send, "_clReleaseKernel": _clReleaseKernel, "_glutDisplayFunc": _glutDisplayFunc, "_clSetTypePointer": _clSetTypePointer, "_glBegin": _glBegin, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "_glutInitDisplayMode": _glutInitDisplayMode, "_glViewport": _glViewport, "_glGetBooleanv": _glGetBooleanv, "___setErrNo": ___setErrNo, "_glutPostRedisplay": _glutPostRedisplay, "_glutReshapeFunc": _glutReshapeFunc, "_glEnable": _glEnable, "_printf": _printf, "_glGenTextures": _glGenTextures, "_clReleaseCommandQueue": _clReleaseCommandQueue, "_glGetIntegerv": _glGetIntegerv, "_glGetString": _glGetString, "_emscripten_get_now": _emscripten_get_now, "_stat": _stat, "_glAttachShader": _glAttachShader, "_read": _read, "_clSetKernelArg": _clSetKernelArg, "_fwrite": _fwrite, "_time": _time, "_glColor3f": _glColor3f, "_glDetachShader": _glDetachShader, "_glutInitWindowPosition": _glutInitWindowPosition, "_exit": _exit, "_glutGetModifiers": _glutGetModifiers, "_emscripten_glOrtho": _emscripten_glOrtho, "_glEnableClientState": _glEnableClientState, "_pwrite": _pwrite, "_glFinish": _glFinish, "_open": _open, "_glClearColor": _glClearColor, "_glIsEnabled": _glIsEnabled, "_glBindTexture": _glBindTexture, "___errno_location": ___errno_location, "_glGetFloatv": _glGetFloatv, "_glutIdleFunc": _glutIdleFunc, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_clFinish": _clFinish, "_clGetDeviceIDs": _clGetDeviceIDs, "_glutMouseFunc": _glutMouseFunc, "_glActiveTexture": _glActiveTexture, "_clGetKernelWorkGroupInfo": _clGetKernelWorkGroupInfo, "_clCreateBuffer": _clCreateBuffer, "_glTexCoordPointer": _glTexCoordPointer, "_recv": _recv, "_glCompileShader": _glCompileShader, "_glEnableVertexAttribArray": _glEnableVertexAttribArray, "_abort": _abort, "_clBuildProgram": _clBuildProgram, "_glTexImage2D": _glTexImage2D, "_glutMainLoop": _glutMainLoop, "_clGetContextInfo": _clGetContextInfo, "_clCreateKernel": _clCreateKernel, "_glDisableClientState": _glDisableClientState, "_glutKeyboardFunc": _glutKeyboardFunc, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_glLinkProgram": _glLinkProgram, "_fprintf": _fprintf, "__reallyNegative": __reallyNegative, "_glutInitWindowSize": _glutInitWindowSize, "_glClear": _glClear, "_fileno": _fileno, "_glMatrixMode": _glMatrixMode, "__exit": __exit, "_glBindAttribLocation": _glBindAttribLocation, "_emscripten_glColor4f": _emscripten_glColor4f, "_clEnqueueCopyBufferToImage": _clEnqueueCopyBufferToImage, "_glVertex3f": _glVertex3f, "_pread": _pread, "_mkport": _mkport, "_glEnd": _glEnd, "_clReleaseMemObject": _clReleaseMemObject, "_clGetDeviceInfo": _clGetDeviceInfo, "_fflush": _fflush, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_gluOrtho2D": _gluOrtho2D, "_clEnqueueAcquireGLObjects": _clEnqueueAcquireGLObjects, "_glClientActiveTexture": _glClientActiveTexture, "_glutInit": _glutInit, "_glDisable": _glDisable, "_glTexParameteri": _glTexParameteri, "__formatString": __formatString, "_atexit": _atexit, "_glTexSubImage2D": _glTexSubImage2D, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "NaN": NaN, "Infinity": Infinity }, buffer);
+  ({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "nullFunc_viiii": nullFunc_viiii, "nullFunc_vii": nullFunc_vii, "nullFunc_viii": nullFunc_viii, "nullFunc_v": nullFunc_v, "invoke_viiii": invoke_viiii, "invoke_vii": invoke_vii, "invoke_viii": invoke_viii, "invoke_v": invoke_v, "_glUseProgram": _glUseProgram, "_fabs": _fabs, "_clReleaseProgram": _clReleaseProgram, "_fstat": _fstat, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_clCreateContext": _clCreateContext, "_glDeleteProgram": _glDeleteProgram, "_clCreateProgramWithSource": _clCreateProgramWithSource, "_glBindBuffer": _glBindBuffer, "_sbrk": _sbrk, "_glutReshapeWindow": _glutReshapeWindow, "_glDisableVertexAttribArray": _glDisableVertexAttribArray, "_glCreateShader": _glCreateShader, "_glutSwapBuffers": _glutSwapBuffers, "_sysconf": _sysconf, "_close": _close, "_glTexCoord2f": _glTexCoord2f, "_clCreateCommandQueue": _clCreateCommandQueue, "_glLoadIdentity": _glLoadIdentity, "_clEnqueueReleaseGLObjects": _clEnqueueReleaseGLObjects, "_write": _write, "_glShaderSource": _glShaderSource, "_glutMotionFunc": _glutMotionFunc, "_glVertexPointer": _glVertexPointer, "_clCreateFromGLTexture2D": _clCreateFromGLTexture2D, "_glutCreateWindow": _glutCreateWindow, "_glVertexAttribPointer": _glVertexAttribPointer, "_glHint": _glHint, "_send": _send, "_clReleaseKernel": _clReleaseKernel, "_glutDisplayFunc": _glutDisplayFunc, "_clSetTypePointer": _clSetTypePointer, "_glBegin": _glBegin, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "_glutInitDisplayMode": _glutInitDisplayMode, "_glViewport": _glViewport, "_glGetBooleanv": _glGetBooleanv, "___setErrNo": ___setErrNo, "_glutPostRedisplay": _glutPostRedisplay, "_glutReshapeFunc": _glutReshapeFunc, "_glEnable": _glEnable, "_printf": _printf, "_glGenTextures": _glGenTextures, "_clReleaseCommandQueue": _clReleaseCommandQueue, "_glGetIntegerv": _glGetIntegerv, "_glGetString": _glGetString, "_emscripten_get_now": _emscripten_get_now, "_stat": _stat, "_glAttachShader": _glAttachShader, "_read": _read, "_clSetKernelArg": _clSetKernelArg, "_fwrite": _fwrite, "_time": _time, "_glColor3f": _glColor3f, "_glDetachShader": _glDetachShader, "_glutInitWindowPosition": _glutInitWindowPosition, "_exit": _exit, "_glutGetModifiers": _glutGetModifiers, "_emscripten_glOrtho": _emscripten_glOrtho, "_glEnableClientState": _glEnableClientState, "_pwrite": _pwrite, "_glFinish": _glFinish, "_open": _open, "_glClearColor": _glClearColor, "_glIsEnabled": _glIsEnabled, "_glBindTexture": _glBindTexture, "___errno_location": ___errno_location, "_glGetFloatv": _glGetFloatv, "_glutIdleFunc": _glutIdleFunc, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_clFinish": _clFinish, "_clGetDeviceIDs": _clGetDeviceIDs, "_glutMouseFunc": _glutMouseFunc, "_glActiveTexture": _glActiveTexture, "_clGetKernelWorkGroupInfo": _clGetKernelWorkGroupInfo, "_clCreateBuffer": _clCreateBuffer, "_glTexCoordPointer": _glTexCoordPointer, "_recv": _recv, "_glCompileShader": _glCompileShader, "_glEnableVertexAttribArray": _glEnableVertexAttribArray, "_abort": _abort, "_clBuildProgram": _clBuildProgram, "_glTexImage2D": _glTexImage2D, "_glutMainLoop": _glutMainLoop, "_clGetContextInfo": _clGetContextInfo, "_clCreateKernel": _clCreateKernel, "_glDisableClientState": _glDisableClientState, "_glutKeyboardFunc": _glutKeyboardFunc, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_glLinkProgram": _glLinkProgram, "_fprintf": _fprintf, "__reallyNegative": __reallyNegative, "_glutInitWindowSize": _glutInitWindowSize, "_glClear": _glClear, "_fileno": _fileno, "_glMatrixMode": _glMatrixMode, "__exit": __exit, "_glBindAttribLocation": _glBindAttribLocation, "_emscripten_glColor4f": _emscripten_glColor4f, "_clEnqueueCopyBufferToImage": _clEnqueueCopyBufferToImage, "_glVertex3f": _glVertex3f, "_pread": _pread, "_mkport": _mkport, "_glEnd": _glEnd, "_clReleaseMemObject": _clReleaseMemObject, "_clGetDeviceInfo": _clGetDeviceInfo, "_fflush": _fflush, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_gluOrtho2D": _gluOrtho2D, "_clEnqueueAcquireGLObjects": _clEnqueueAcquireGLObjects, "_glClientActiveTexture": _glClientActiveTexture, "_glutInit": _glutInit, "_glDisable": _glDisable, "_glTexParameteri": _glTexParameteri, "__formatString": __formatString, "_atexit": _atexit, "_glTexSubImage2D": _glTexSubImage2D, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "NaN": NaN, "Infinity": Infinity }, buffer);
   var _strlen = Module["_strlen"] = asm["_strlen"];
 var _free = Module["_free"] = asm["_free"];
 var _main = Module["_main"] = asm["_main"];
 var _memset = Module["_memset"] = asm["_memset"];
 var _malloc = Module["_malloc"] = asm["_malloc"];
 var _memcpy = Module["_memcpy"] = asm["_memcpy"];
+var _bitshift64Lshr = Module["_bitshift64Lshr"] = asm["_bitshift64Lshr"];
 var _calloc = Module["_calloc"] = asm["_calloc"];
 var runPostSets = Module["runPostSets"] = asm["runPostSets"];
 var dynCall_viiii = Module["dynCall_viiii"] = asm["dynCall_viiii"];

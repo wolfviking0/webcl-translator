@@ -1,0 +1,314 @@
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "transpose" :
+                {
+                    "output" :
+                        {
+                            "index" : 0,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_output_size"
+                        },
+                    "_wcl_output_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "input" :
+                        {
+                            "index" : 2,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_input_size"
+                        },
+                    "_wcl_input_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "tile" :
+                        {
+                            "index" : 4,
+                            "type" : "float *",
+                            "address-space" : "local",
+                            "size-parameter" : "_wcl_tile_size"
+                        },
+                    "_wcl_tile_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+typedef struct {
+    __global float *transpose__output_min;
+    __global float *transpose__output_max;
+    __global float *transpose__input_min;
+    __global float *transpose__input_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    __local float *transpose__tile_min;
+    __local float *transpose__tile_max;
+} _WclLocalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+    _WclLocalLimits ll;
+    __local uint *ln;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+// be careful to edit this, this has been carefully tuned to work on every OpenCL driver
+// e.g. % item_count was added to start[(items_offset+i)] = _WCL_FILLCHAR;
+// to prevent compiler crash on Apple GeForce 640M
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[(items_offset+i) % item_count] = _WCL_FILLCHAR;           \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+constant int hd4k_workaround_constant = 0;
+
+// <= General code that doesn't depend on input.
+
+bool _wcl_addr_check_global_2__u_uglobal__float__Ptr(__global float *addr, unsigned size, __global float * min0, __global float * max0, __global float * min1, __global float * max1)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max1)) );
+}
+__global float *_wcl_addr_clamp_global_2__u_uglobal__float__Ptr(__global float *addr, unsigned size, __global float * min0, __global float * max0, __global float * min1, __global float * max1, __global float * asnull)
+{
+     return _wcl_addr_check_global_2__u_uglobal__float__Ptr(addr, size, min0, max0, min1, max1) ? addr : asnull;
+}
+
+bool _wcl_addr_check_local_1__u_ulocal__float__Ptr(__local float *addr, unsigned size, __local float * min0, __local float * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__local float *, max0)) );
+}
+__local float *_wcl_addr_clamp_local_1__u_ulocal__float__Ptr(__local float *addr, unsigned size, __local float * min0, __local float * max0, __local float * asnull)
+{
+     return _wcl_addr_check_local_1__u_ulocal__float__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+//
+// File:       transpose.c
+//
+// Abstract:   This example shows how to efficiently perform a transpose of a matrix composed
+//             of M x N power-of-two elements for GPU architectures which require specific
+//             memory addressing to avoid memory bank conflicts. 
+//
+//             Transposing large power-of-two matrices naively can easily cause bank 
+//             conflicts which can severly affect the performance.
+//
+//             With appropriate padding and choice of local block size, good performance 
+//             can be ensured.
+//
+//             In this example 64 work items are issued per work-group which individually 
+//             operate small 32x2 sections to fill a 32x32 sub-matrix (over 8 iterations). 
+//             The final 32 x 32 sub-matrix is transposed locally using local memory 
+//             with one column padding to avoid bank conflicts.   Performing the transpose 
+//             in local memory allows the reads and writes to global memory to be coalesced.
+//
+//             The extra column padding is used to offset the write addresses, so that
+//             they don't conflict with the read requests. 
+//
+//             Using a padding of 32 (or any odd multiple of GROUP_DIMX = 32) ensures that
+//             the reads and writes for each element in global memory will be offset and 
+//             not operate on the same memory bank/channel/port.  
+//
+//             This is important for the global memory write operations, since the column 
+//             major indices are non-sequential and can cause global memory bank conflicts.
+//
+//             Global memory read requests will operate on sequential indices for the 
+//             row-major elements, and will not conflict.
+//
+// Version:    <1.0>
+//
+// Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple Inc. ("Apple")
+//             in consideration of your agreement to the following terms, and your use,
+//             installation, modification or redistribution of this Apple software
+//             constitutes acceptance of these terms.  If you do not agree with these
+//             terms, please do not use, install, modify or redistribute this Apple
+//             software.
+//
+//             In consideration of your agreement to abide by the following terms, and
+//             subject to these terms, Apple grants you a personal, non - exclusive
+//             license, under Apple's copyrights in this original Apple software ( the
+//             "Apple Software" ), to use, reproduce, modify and redistribute the Apple
+//             Software, with or without modifications, in source and / or binary forms;
+//             provided that if you redistribute the Apple Software in its entirety and
+//             without modifications, you must retain this notice and the following text
+//             and disclaimers in all such redistributions of the Apple Software. Neither
+//             the name, trademarks, service marks or logos of Apple Inc. may be used to
+//             endorse or promote products derived from the Apple Software without specific
+//             prior written permission from Apple.  Except as expressly stated in this
+//             notice, no other rights or licenses, express or implied, are granted by
+//             Apple herein, including but not limited to any patent rights that may be
+//             infringed by your derivative works or by other works in which the Apple
+//             Software may be incorporated.
+//
+//             The Apple Software is provided by Apple on an "AS IS" basis.  APPLE MAKES NO
+//             WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION THE IMPLIED
+//             WARRANTIES OF NON - INFRINGEMENT, MERCHANTABILITY AND FITNESS FOR A
+//             PARTICULAR PURPOSE, REGARDING THE APPLE SOFTWARE OR ITS USE AND OPERATION
+//             ALONE OR IN COMBINATION WITH YOUR PRODUCTS.
+//
+//             IN NO EVENT SHALL APPLE BE LIABLE FOR ANY SPECIAL, INDIRECT, INCIDENTAL OR
+//             CONSEQUENTIAL DAMAGES ( INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//             SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//             INTERRUPTION ) ARISING IN ANY WAY OUT OF THE USE, REPRODUCTION, MODIFICATION
+//             AND / OR DISTRIBUTION OF THE APPLE SOFTWARE, HOWEVER CAUSED AND WHETHER
+//             UNDER THEORY OF CONTRACT, TORT ( INCLUDING NEGLIGENCE ), STRICT LIABILITY OR
+//             OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+// Copyright ( C ) 2008 Apple Inc. All Rights Reserved.
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+__kernel void transpose(
+    __global float *output, ulong _wcl_output_size,
+    __global float *input, ulong _wcl_input_size,
+    __local float *tile, ulong _wcl_tile_size)
+{
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &output[0], &output[_wcl_output_size],&input[0], &input[_wcl_input_size] },
+        0,
+        { &tile[0], &tile[_wcl_tile_size] },
+        _wcl_local_null
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.transpose__output_min, _wcl_allocs->gl.transpose__output_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.transpose__input_min, _wcl_allocs->gl.transpose__input_max, (__global uint*)0));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll.transpose__tile_min, _wcl_allocs->ll.transpose__tile_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+
+ int block_x = get_group_id(0);
+ int block_y = get_group_id(1);
+
+ int local_x = get_local_id(0) & ((32) - 1);
+ int local_y = get_local_id(0) >> (5);
+
+ int local_input = mad24(local_y, (32) + 1, local_x);
+ int local_output = mad24(local_x, (32) + 1, local_y);
+
+ int in_x = mad24(block_x, (32), local_x);
+ int in_y = mad24(block_y, (32), local_y);
+ int input_index = mad24(in_y, (256), in_x);
+
+ int out_x = mad24(block_y, (32), local_x);
+ int out_y = mad24(block_x, (32), local_y);
+
+ int output_index = mad24(out_y, (4096) + (32), out_x);
+
+ int global_input_stride = (256) * (2);
+ int global_output_stride = ((4096) + (32)) * (2);
+
+ int local_input_stride = (2) * ((32) + 1);
+ int local_output_stride = (2);
+
+ (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_input), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((input)+(input_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))); local_input += local_input_stride; input_index += global_input_stride;
+ (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_input), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((input)+(input_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))); local_input += local_input_stride; input_index += global_input_stride;
+ (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_input), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((input)+(input_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))); local_input += local_input_stride; input_index += global_input_stride;
+ (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_input), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((input)+(input_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))); local_input += local_input_stride; input_index += global_input_stride;
+ (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_input), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((input)+(input_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))); local_input += local_input_stride; input_index += global_input_stride;
+ (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_input), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((input)+(input_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))); local_input += local_input_stride; input_index += global_input_stride;
+ (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_input), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((input)+(input_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))); local_input += local_input_stride; input_index += global_input_stride;
+ (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_input), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((input)+(input_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))); local_input += local_input_stride; input_index += global_input_stride;
+ (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_input), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((input)+(input_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))); local_input += local_input_stride; input_index += global_input_stride;
+ (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_input), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((input)+(input_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))); local_input += local_input_stride; input_index += global_input_stride;
+ (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_input), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((input)+(input_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))); local_input += local_input_stride; input_index += global_input_stride;
+ (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_input), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((input)+(input_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))); local_input += local_input_stride; input_index += global_input_stride;
+ (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_input), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((input)+(input_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))); local_input += local_input_stride; input_index += global_input_stride;
+ (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_input), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((input)+(input_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))); local_input += local_input_stride; input_index += global_input_stride;
+ (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_input), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((input)+(input_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))); local_input += local_input_stride; input_index += global_input_stride;
+ (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_input), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((input)+(input_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn)));
+
+ barrier(CLK_LOCAL_MEM_FENCE);
+
+ (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((output)+(output_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_output), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))); local_output += local_output_stride; output_index += global_output_stride;
+ (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((output)+(output_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_output), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))); local_output += local_output_stride; output_index += global_output_stride;
+ (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((output)+(output_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_output), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))); local_output += local_output_stride; output_index += global_output_stride;
+ (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((output)+(output_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_output), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))); local_output += local_output_stride; output_index += global_output_stride;
+ (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((output)+(output_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_output), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))); local_output += local_output_stride; output_index += global_output_stride;
+ (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((output)+(output_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_output), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))); local_output += local_output_stride; output_index += global_output_stride;
+ (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((output)+(output_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_output), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))); local_output += local_output_stride; output_index += global_output_stride;
+ (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((output)+(output_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_output), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))); local_output += local_output_stride; output_index += global_output_stride;
+ (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((output)+(output_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_output), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))); local_output += local_output_stride; output_index += global_output_stride;
+ (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((output)+(output_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_output), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))); local_output += local_output_stride; output_index += global_output_stride;
+ (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((output)+(output_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_output), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))); local_output += local_output_stride; output_index += global_output_stride;
+ (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((output)+(output_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_output), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))); local_output += local_output_stride; output_index += global_output_stride;
+ (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((output)+(output_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_output), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))); local_output += local_output_stride; output_index += global_output_stride;
+ (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((output)+(output_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_output), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))); local_output += local_output_stride; output_index += global_output_stride;
+ (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((output)+(output_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_output), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln))); local_output += local_output_stride; output_index += global_output_stride;
+ (*(_wcl_addr_clamp_global_2__u_uglobal__float__Ptr((output)+(output_index), 1, (__global float *)_wcl_allocs->gl.transpose__output_min, (__global float *)_wcl_allocs->gl.transpose__output_max, (__global float *)_wcl_allocs->gl.transpose__input_min, (__global float *)_wcl_allocs->gl.transpose__input_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((tile)+(local_output), 1, (__local float *)_wcl_allocs->ll.transpose__tile_min, (__local float *)_wcl_allocs->ll.transpose__tile_max, (__local float *)_wcl_allocs->ln)));
+
+}

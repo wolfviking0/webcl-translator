@@ -1,0 +1,444 @@
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "convolutionRows" :
+                {
+                    "d_Dst" :
+                        {
+                            "index" : 0,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Dst_size"
+                        },
+                    "_wcl_d_Dst_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "d_Src" :
+                        {
+                            "index" : 2,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Src_size"
+                        },
+                    "_wcl_d_Src_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "c_Kernel" :
+                        {
+                            "index" : 4,
+                            "type" : "float *",
+                            "address-space" : "constant",
+                            "size-parameter" : "_wcl_c_Kernel_size"
+                        },
+                    "_wcl_c_Kernel_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "imageW" :
+                        {
+                            "index" : 6,
+                            "type" : "int"
+                        },
+                    "imageH" :
+                        {
+                            "index" : 7,
+                            "type" : "int"
+                        },
+                    "pitch" :
+                        {
+                            "index" : 8,
+                            "type" : "int"
+                        }
+                },
+            "convolutionColumns" :
+                {
+                    "d_Dst" :
+                        {
+                            "index" : 0,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Dst_size"
+                        },
+                    "_wcl_d_Dst_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "d_Src" :
+                        {
+                            "index" : 2,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_Src_size"
+                        },
+                    "_wcl_d_Src_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "c_Kernel" :
+                        {
+                            "index" : 4,
+                            "type" : "float *",
+                            "address-space" : "constant",
+                            "size-parameter" : "_wcl_c_Kernel_size"
+                        },
+                    "_wcl_c_Kernel_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "imageW" :
+                        {
+                            "index" : 6,
+                            "type" : "int"
+                        },
+                    "imageH" :
+                        {
+                            "index" : 7,
+                            "type" : "int"
+                        },
+                    "pitch" :
+                        {
+                            "index" : 8,
+                            "type" : "int"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((5120 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (4096/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (32/CHAR_BIT)
+typedef struct {
+    float [160] _wcl_l_Data[4];
+    float [81] _wcl_2_l_Data[16];
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_local_ALIGNMENT))) _WclLocals;
+
+typedef struct {
+    __global float *convolutionRows__d_Dst_min;
+    __global float *convolutionRows__d_Dst_max;
+    __global float *convolutionRows__d_Src_min;
+    __global float *convolutionRows__d_Src_max;
+    __global float *convolutionColumns__d_Dst_min;
+    __global float *convolutionColumns__d_Dst_max;
+    __global float *convolutionColumns__d_Src_min;
+    __global float *convolutionColumns__d_Src_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    __constant float *convolutionRows__c_Kernel_min;
+    __constant float *convolutionRows__c_Kernel_max;
+    __constant float *convolutionColumns__c_Kernel_min;
+    __constant float *convolutionColumns__c_Kernel_max;
+} _WclConstantLimits;
+
+typedef struct {
+    __local _WclLocals * _wcl_locals_min;
+    __local _WclLocals * _wcl_locals_max;
+} _WclLocalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+    _WclConstantLimits cl;
+    __constant uint *cn;
+    _WclLocalLimits ll;
+    __local uint *ln;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+// be careful to edit this, this has been carefully tuned to work on every OpenCL driver
+// e.g. % item_count was added to start[(items_offset+i)] = _WCL_FILLCHAR;
+// to prevent compiler crash on Apple GeForce 640M
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[(items_offset+i) % item_count] = _WCL_FILLCHAR;           \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+constant int hd4k_workaround_constant = 0;
+
+// <= General code that doesn't depend on input.
+
+bool _wcl_addr_check_global_4__u_uglobal__float__Ptr(__global float *addr, unsigned size, __global float * min0, __global float * max0, __global float * min1, __global float * max1, __global float * min2, __global float * max2, __global float * min3, __global float * max3)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max3)) );
+}
+__global float *_wcl_addr_clamp_global_4__u_uglobal__float__Ptr(__global float *addr, unsigned size, __global float * min0, __global float * max0, __global float * min1, __global float * max1, __global float * min2, __global float * max2, __global float * min3, __global float * max3, __global float * asnull)
+{
+     return _wcl_addr_check_global_4__u_uglobal__float__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3) ? addr : asnull;
+}
+
+bool _wcl_addr_check_local_1__u_ulocal__float__(Ptr)[160](__local float (*)[160]addr, unsigned size, __local float (*)[160] min0, __local float (*)[160] max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__local float (*)[160], max0)) );
+}
+__local float (*)[160]_wcl_addr_clamp_local_1__u_ulocal__float__(Ptr)[160](__local float (*)[160]addr, unsigned size, __local float (*)[160] min0, __local float (*)[160] max0, __local float (*)[160] asnull)
+{
+     return _wcl_addr_check_local_1__u_ulocal__float__(Ptr)[160](addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_local_1__u_ulocal__float__(Ptr)[81](__local float (*)[81]addr, unsigned size, __local float (*)[81] min0, __local float (*)[81] max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__local float (*)[81], max0)) );
+}
+__local float (*)[81]_wcl_addr_clamp_local_1__u_ulocal__float__(Ptr)[81](__local float (*)[81]addr, unsigned size, __local float (*)[81] min0, __local float (*)[81] max0, __local float (*)[81] asnull)
+{
+     return _wcl_addr_check_local_1__u_ulocal__float__(Ptr)[81](addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_local_1__u_ulocal__float__Ptr(__local float *addr, unsigned size, __local float * min0, __local float * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__local float *, max0)) );
+}
+__local float *_wcl_addr_clamp_local_1__u_ulocal__float__Ptr(__local float *addr, unsigned size, __local float * min0, __local float * max0, __local float * asnull)
+{
+     return _wcl_addr_check_local_1__u_ulocal__float__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_constant_2__u_uconstant__float__Ptr(__constant float *addr, unsigned size, __constant float * min0, __constant float * max0, __constant float * min1, __constant float * max1)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__constant float *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__constant float *, max1)) );
+}
+__constant float *_wcl_addr_clamp_constant_2__u_uconstant__float__Ptr(__constant float *addr, unsigned size, __constant float * min0, __constant float * max0, __constant float * min1, __constant float * max1, __constant float * asnull)
+{
+     return _wcl_addr_check_constant_2__u_uconstant__float__Ptr(addr, size, min0, max0, min1, max1) ? addr : asnull;
+}
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+/*
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ *
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
+ */
+
+
+//Passed down by clBuildProgram
+/*
+#define KERNEL_RADIUS 8
+
+#define      ROWS_BLOCKDIM_X 16
+#define      ROWS_BLOCKDIM_Y 4
+#define   COLUMNS_BLOCKDIM_X 16
+#define   COLUMNS_BLOCKDIM_Y 8
+
+#define    ROWS_RESULT_STEPS 4
+#define      ROWS_HALO_STEPS 1
+#define COLUMNS_RESULT_STEPS 4
+#define   COLUMNS_HALO_STEPS 1
+*/
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Row convolution filter
+////////////////////////////////////////////////////////////////////////////////
+__kernel __attribute__((reqd_work_group_size(16, 4, 1)))
+void convolutionRows(
+    __global float *d_Dst, ulong _wcl_d_Dst_size,
+    __global float *d_Src, ulong _wcl_d_Src_size,
+    __constant float *c_Kernel, ulong _wcl_c_Kernel_size,
+    int imageW,
+    int imageH,
+    int pitch
+){
+
+    __local _WclLocals _wcl_locals;
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &d_Dst[0], &d_Dst[_wcl_d_Dst_size],&d_Src[0], &d_Src[_wcl_d_Src_size],0, 0,0, 0 },
+        0,
+        { &c_Kernel[0], &c_Kernel[_wcl_c_Kernel_size],0, 0 },
+        _wcl_constant_null,
+        { &(&_wcl_locals)[0], &(&_wcl_locals)[1] },
+        _wcl_local_null
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.convolutionRows__d_Dst_min, _wcl_allocs->gl.convolutionRows__d_Dst_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.convolutionRows__d_Src_min, _wcl_allocs->gl.convolutionRows__d_Src_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.convolutionColumns__d_Dst_min, _wcl_allocs->gl.convolutionColumns__d_Dst_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.convolutionColumns__d_Src_min, _wcl_allocs->gl.convolutionColumns__d_Src_max, (__global uint*)0))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll._wcl_locals_min, _wcl_allocs->ll._wcl_locals_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    __local float l_Data[4][(8 + 2 * 1) * 16];
+
+    //Offset to the left halo edge
+    const int baseX = (get_group_id(0) * 8 - 1) * 16 + get_local_id(0);
+    const int baseY = get_group_id(1) * 4 + get_local_id(1);
+
+    d_Src += baseY * pitch + baseX;
+    d_Dst += baseY * pitch + baseX;
+
+    //Load main data
+    for(int i = 1; i < 1 + 8; i++)
+        (*(_wcl_addr_clamp_local_1__u_ulocal__float__(Ptr)[160]((_wcl_locals._wcl_l_Data)+(get_local_id(1)), 1, (__local float (*)[160])_wcl_allocs->ll._wcl_locals_min, (__local float (*)[160])_wcl_allocs->ll._wcl_locals_max, (__local float (*)[160])_wcl_allocs->ln)))[get_local_id(0) + i * 16] = (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((d_Src)+(i * 16), 1, (__global float *)_wcl_allocs->gl.convolutionRows__d_Dst_min, (__global float *)_wcl_allocs->gl.convolutionRows__d_Dst_max, (__global float *)_wcl_allocs->gl.convolutionRows__d_Src_min, (__global float *)_wcl_allocs->gl.convolutionRows__d_Src_max, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Dst_min, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Dst_max, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Src_min, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Src_max, (__global float *)_wcl_allocs->gn)));
+
+    //Load left halo
+    for(int i = 0; i < 1; i++)
+        (*(_wcl_addr_clamp_local_1__u_ulocal__float__(Ptr)[160]((_wcl_locals._wcl_l_Data)+(get_local_id(1)), 1, (__local float (*)[160])_wcl_allocs->ll._wcl_locals_min, (__local float (*)[160])_wcl_allocs->ll._wcl_locals_max, (__local float (*)[160])_wcl_allocs->ln)))[get_local_id(0) + i * 16] = (baseX + i * 16 >= 0) ? (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((d_Src)+(i * 16), 1, (__global float *)_wcl_allocs->gl.convolutionRows__d_Dst_min, (__global float *)_wcl_allocs->gl.convolutionRows__d_Dst_max, (__global float *)_wcl_allocs->gl.convolutionRows__d_Src_min, (__global float *)_wcl_allocs->gl.convolutionRows__d_Src_max, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Dst_min, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Dst_max, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Src_min, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Src_max, (__global float *)_wcl_allocs->gn))) : 0;
+
+    //Load right halo
+    for(int i = 1 + 8; i < 1 + 8 + 1; i++)
+        (*(_wcl_addr_clamp_local_1__u_ulocal__float__(Ptr)[160]((_wcl_locals._wcl_l_Data)+(get_local_id(1)), 1, (__local float (*)[160])_wcl_allocs->ll._wcl_locals_min, (__local float (*)[160])_wcl_allocs->ll._wcl_locals_max, (__local float (*)[160])_wcl_allocs->ln)))[get_local_id(0) + i * 16] = (baseX + i * 16 < imageW) ? (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((d_Src)+(i * 16), 1, (__global float *)_wcl_allocs->gl.convolutionRows__d_Dst_min, (__global float *)_wcl_allocs->gl.convolutionRows__d_Dst_max, (__global float *)_wcl_allocs->gl.convolutionRows__d_Src_min, (__global float *)_wcl_allocs->gl.convolutionRows__d_Src_max, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Dst_min, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Dst_max, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Src_min, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Src_max, (__global float *)_wcl_allocs->gn))) : 0;
+
+    //Compute and store results
+    barrier(CLK_LOCAL_MEM_FENCE);
+    for(int i = 1; i < 1 + 8; i++){
+        float sum = 0;
+
+        for(int j = -8; j <= 8; j++)
+            sum += (*(_wcl_addr_clamp_constant_2__u_uconstant__float__Ptr((c_Kernel)+(8 - j), 1, (__constant float *)_wcl_allocs->cl.convolutionRows__c_Kernel_min, (__constant float *)_wcl_allocs->cl.convolutionRows__c_Kernel_max, (__constant float *)_wcl_allocs->cl.convolutionColumns__c_Kernel_min, (__constant float *)_wcl_allocs->cl.convolutionColumns__c_Kernel_max, (__constant float *)_wcl_allocs->cn))) * (*(_wcl_addr_clamp_local_1__u_ulocal__float__(Ptr)[160]((_wcl_locals._wcl_l_Data)+(get_local_id(1)), 1, (__local float (*)[160])_wcl_allocs->ll._wcl_locals_min, (__local float (*)[160])_wcl_allocs->ll._wcl_locals_max, (__local float (*)[160])_wcl_allocs->ln)))[get_local_id(0) + i * 16 + j];
+
+        (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((d_Dst)+(i * 16), 1, (__global float *)_wcl_allocs->gl.convolutionRows__d_Dst_min, (__global float *)_wcl_allocs->gl.convolutionRows__d_Dst_max, (__global float *)_wcl_allocs->gl.convolutionRows__d_Src_min, (__global float *)_wcl_allocs->gl.convolutionRows__d_Src_max, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Dst_min, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Dst_max, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Src_min, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Src_max, (__global float *)_wcl_allocs->gn))) = sum;
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Column convolution filter
+////////////////////////////////////////////////////////////////////////////////
+__kernel __attribute__((reqd_work_group_size(16, 8, 1)))
+void convolutionColumns(
+    __global float *d_Dst, ulong _wcl_d_Dst_size,
+    __global float *d_Src, ulong _wcl_d_Src_size,
+    __constant float *c_Kernel, ulong _wcl_c_Kernel_size,
+    int imageW,
+    int imageH,
+    int pitch
+){
+
+    __local _WclLocals _wcl_locals;
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,&d_Dst[0], &d_Dst[_wcl_d_Dst_size],&d_Src[0], &d_Src[_wcl_d_Src_size] },
+        0,
+        { 0, 0,&c_Kernel[0], &c_Kernel[_wcl_c_Kernel_size] },
+        _wcl_constant_null,
+        { &(&_wcl_locals)[0], &(&_wcl_locals)[1] },
+        _wcl_local_null
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.convolutionRows__d_Dst_min, _wcl_allocs->gl.convolutionRows__d_Dst_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.convolutionRows__d_Src_min, _wcl_allocs->gl.convolutionRows__d_Src_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.convolutionColumns__d_Dst_min, _wcl_allocs->gl.convolutionColumns__d_Dst_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.convolutionColumns__d_Src_min, _wcl_allocs->gl.convolutionColumns__d_Src_max, (__global uint*)0))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll._wcl_locals_min, _wcl_allocs->ll._wcl_locals_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    __local float l_Data[16][(8 + 2 * 1) * 8 + 1];
+
+    //Offset to the upper halo edge
+    const int baseX = get_group_id(0) * 16 + get_local_id(0);
+    const int baseY = (get_group_id(1) * 8 - 1) * 8 + get_local_id(1);
+    d_Src += baseY * pitch + baseX;
+    d_Dst += baseY * pitch + baseX;
+
+    //Load main data
+    for(int i = 1; i < 1 + 8; i++)
+        (*(_wcl_addr_clamp_local_1__u_ulocal__float__(Ptr)[81]((_wcl_locals._wcl_2_l_Data)+(get_local_id(0)), 1, (__local float (*)[81])_wcl_allocs->ll._wcl_locals_min, (__local float (*)[81])_wcl_allocs->ll._wcl_locals_max, (__local float (*)[81])_wcl_allocs->ln)))[get_local_id(1) + i * 8] = (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((d_Src)+(i * 8 * pitch), 1, (__global float *)_wcl_allocs->gl.convolutionRows__d_Dst_min, (__global float *)_wcl_allocs->gl.convolutionRows__d_Dst_max, (__global float *)_wcl_allocs->gl.convolutionRows__d_Src_min, (__global float *)_wcl_allocs->gl.convolutionRows__d_Src_max, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Dst_min, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Dst_max, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Src_min, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Src_max, (__global float *)_wcl_allocs->gn)));
+
+    //Load upper halo
+    for(int i = 0; i < 1; i++)
+        (*(_wcl_addr_clamp_local_1__u_ulocal__float__(Ptr)[81]((_wcl_locals._wcl_2_l_Data)+(get_local_id(0)), 1, (__local float (*)[81])_wcl_allocs->ll._wcl_locals_min, (__local float (*)[81])_wcl_allocs->ll._wcl_locals_max, (__local float (*)[81])_wcl_allocs->ln)))[get_local_id(1) + i * 8] = (baseY + i * 8 >= 0) ? (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((d_Src)+(i * 8 * pitch), 1, (__global float *)_wcl_allocs->gl.convolutionRows__d_Dst_min, (__global float *)_wcl_allocs->gl.convolutionRows__d_Dst_max, (__global float *)_wcl_allocs->gl.convolutionRows__d_Src_min, (__global float *)_wcl_allocs->gl.convolutionRows__d_Src_max, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Dst_min, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Dst_max, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Src_min, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Src_max, (__global float *)_wcl_allocs->gn))) : 0;
+
+    //Load lower halo
+    for(int i = 1 + 8; i < 1 + 8 + 1; i++)
+        (*(_wcl_addr_clamp_local_1__u_ulocal__float__(Ptr)[81]((_wcl_locals._wcl_2_l_Data)+(get_local_id(0)), 1, (__local float (*)[81])_wcl_allocs->ll._wcl_locals_min, (__local float (*)[81])_wcl_allocs->ll._wcl_locals_max, (__local float (*)[81])_wcl_allocs->ln)))[get_local_id(1) + i * 8] = (baseY + i * 8 < imageH) ? (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((d_Src)+(i * 8 * pitch), 1, (__global float *)_wcl_allocs->gl.convolutionRows__d_Dst_min, (__global float *)_wcl_allocs->gl.convolutionRows__d_Dst_max, (__global float *)_wcl_allocs->gl.convolutionRows__d_Src_min, (__global float *)_wcl_allocs->gl.convolutionRows__d_Src_max, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Dst_min, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Dst_max, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Src_min, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Src_max, (__global float *)_wcl_allocs->gn))) : 0;
+
+    //Compute and store results
+    barrier(CLK_LOCAL_MEM_FENCE);
+    for(int i = 1; i < 1 + 8; i++){
+        float sum = 0;
+
+        for(int j = -8; j <= 8; j++)
+            sum += (*(_wcl_addr_clamp_constant_2__u_uconstant__float__Ptr((c_Kernel)+(8 - j), 1, (__constant float *)_wcl_allocs->cl.convolutionRows__c_Kernel_min, (__constant float *)_wcl_allocs->cl.convolutionRows__c_Kernel_max, (__constant float *)_wcl_allocs->cl.convolutionColumns__c_Kernel_min, (__constant float *)_wcl_allocs->cl.convolutionColumns__c_Kernel_max, (__constant float *)_wcl_allocs->cn))) * (*(_wcl_addr_clamp_local_1__u_ulocal__float__(Ptr)[81]((_wcl_locals._wcl_2_l_Data)+(get_local_id(0)), 1, (__local float (*)[81])_wcl_allocs->ll._wcl_locals_min, (__local float (*)[81])_wcl_allocs->ll._wcl_locals_max, (__local float (*)[81])_wcl_allocs->ln)))[get_local_id(1) + i * 8 + j];
+
+        (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((d_Dst)+(i * 8 * pitch), 1, (__global float *)_wcl_allocs->gl.convolutionRows__d_Dst_min, (__global float *)_wcl_allocs->gl.convolutionRows__d_Dst_max, (__global float *)_wcl_allocs->gl.convolutionRows__d_Src_min, (__global float *)_wcl_allocs->gl.convolutionRows__d_Src_max, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Dst_min, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Dst_max, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Src_min, (__global float *)_wcl_allocs->gl.convolutionColumns__d_Src_max, (__global float *)_wcl_allocs->gn))) = sum;
+    }
+}
