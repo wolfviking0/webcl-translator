@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-osx-sample/js/qjulia.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'qjulia.data';
     var REMOTE_PACKAGE_SIZE = 10531;
-    var PACKAGE_UUID = '38121538-0208-40e4-ba89-254fd99185cf';
+    var PACKAGE_UUID = '0abbe0f7-cad9-4fde-b800-00c288650c0b';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -17176,7 +17176,7 @@ function _malloc($bytes) {
      $276 = ((3392 + ($idx$0$i<<2)|0) + 304|0);
      $277 = HEAP32[$276>>2]|0;
      $278 = ($277|0)==(0|0);
-     L126: do {
+     L9: do {
       if ($278) {
        $rsize$2$i = $250;$t$1$i = 0;$v$2$i = 0;
       } else {
@@ -17200,7 +17200,7 @@ function _malloc($bytes) {
          $289 = ($286|0)==($247|0);
          if ($289) {
           $rsize$2$i = $287;$t$1$i = $t$0$i14;$v$2$i = $t$0$i14;
-          break L126;
+          break L9;
          } else {
           $rsize$1$i = $287;$v$1$i = $t$0$i14;
          }
@@ -17485,7 +17485,7 @@ function _malloc($bytes) {
         }
        } while(0);
        $412 = ($rsize$3$lcssa$i>>>0)<(16);
-       L204: do {
+       L87: do {
         if ($412) {
          $413 = (($rsize$3$lcssa$i) + ($247))|0;
          $414 = $413 | 3;
@@ -17624,7 +17624,7 @@ function _malloc($bytes) {
          $482 = HEAP32[$481>>2]|0;
          $483 = $482 & -8;
          $484 = ($483|0)==($rsize$3$lcssa$i|0);
-         L225: do {
+         L108: do {
           if ($484) {
            $T$0$lcssa$i = $477;
           } else {
@@ -17645,7 +17645,7 @@ function _malloc($bytes) {
             $492 = ($491|0)==($rsize$3$lcssa$i|0);
             if ($492) {
              $T$0$lcssa$i = $489;
-             break L225;
+             break L108;
             } else {
              $K12$025$i = $487;$T$024$i = $489;
             }
@@ -17666,7 +17666,7 @@ function _malloc($bytes) {
             $$sum13$i = (($247) + 8)|0;
             $500 = (($v$3$lcssa$i) + ($$sum13$i)|0);
             HEAP32[$500>>2] = $349;
-            break L204;
+            break L87;
            }
           }
          } while(0);
@@ -18212,7 +18212,7 @@ function _malloc($bytes) {
       HEAP32[$728>>2] = $727;
       $729 = HEAP32[((3392 + 24|0))>>2]|0;
       $730 = ($721|0)==($729|0);
-      L348: do {
+      L338: do {
        if ($730) {
         $731 = HEAP32[((3392 + 12|0))>>2]|0;
         $732 = (($731) + ($726))|0;
@@ -18249,7 +18249,7 @@ function _malloc($bytes) {
          $746 = $743 & -8;
          $747 = $743 >>> 3;
          $748 = ($743>>>0)<(256);
-         L356: do {
+         L346: do {
           if ($748) {
            $$sum3738$i$i = $720 | 8;
            $$sum119$i = (($$sum3738$i$i) + ($tsize$246$i))|0;
@@ -18428,7 +18428,7 @@ function _malloc($bytes) {
              $810 = HEAP32[((3392 + 4|0))>>2]|0;
              $811 = $810 & $809;
              HEAP32[((3392 + 4|0))>>2] = $811;
-             break L356;
+             break L346;
             } else {
              $812 = HEAP32[((3392 + 16|0))>>2]|0;
              $813 = ($774>>>0)<($812>>>0);
@@ -18447,7 +18447,7 @@ function _malloc($bytes) {
              }
              $818 = ($R$1$i$i|0)==(0|0);
              if ($818) {
-              break L356;
+              break L346;
              }
             }
            } while(0);
@@ -18639,7 +18639,7 @@ function _malloc($bytes) {
         $902 = HEAP32[$901>>2]|0;
         $903 = $902 & -8;
         $904 = ($903|0)==($qsize$0$i$i|0);
-        L445: do {
+        L435: do {
          if ($904) {
           $T$0$lcssa$i28$i = $897;
          } else {
@@ -18660,7 +18660,7 @@ function _malloc($bytes) {
            $912 = ($911|0)==($qsize$0$i$i|0);
            if ($912) {
             $T$0$lcssa$i28$i = $909;
-            break L445;
+            break L435;
            } else {
             $K8$052$i$i = $907;$T$051$i$i = $909;
            }
@@ -18681,7 +18681,7 @@ function _malloc($bytes) {
            $$sum25$i$i = (($$sum$i21$i) + 8)|0;
            $920 = (($tbase$247$i) + ($$sum25$i$i)|0);
            HEAP32[$920>>2] = $725;
-           break L348;
+           break L338;
           }
          }
         } while(0);
@@ -18931,7 +18931,7 @@ function _malloc($bytes) {
      $1041 = HEAP32[$1040>>2]|0;
      $1042 = $1041 & -8;
      $1043 = ($1042|0)==($976|0);
-     L499: do {
+     L489: do {
       if ($1043) {
        $T$0$lcssa$i$i = $1036;
       } else {
@@ -18952,7 +18952,7 @@ function _malloc($bytes) {
         $1051 = ($1050|0)==($976|0);
         if ($1051) {
          $T$0$lcssa$i$i = $1048;
-         break L499;
+         break L489;
         } else {
          $K2$014$i$i = $1046;$T$013$i$i = $1048;
         }
@@ -19907,7 +19907,10 @@ function _frexp($x,$e) {
  $2 = (_bitshift64Lshr(($0|0),($1|0),52)|0);
  $3 = tempRet0;
  $4 = $2 & 2047;
- if ((($4|0) == 0)) {
+ if ((($4|0) == 2047)) {
+  $$0 = $x;
+  STACKTOP = sp;return (+$$0);
+ } else if ((($4|0) == 0)) {
   $5 = $x != 0.0;
   if ($5) {
    $6 = $x * 18446744073709551616.0;
@@ -19920,9 +19923,6 @@ function _frexp($x,$e) {
   }
   HEAP32[$e>>2] = $storemerge;
   $$0 = $$01;
-  STACKTOP = sp;return (+$$0);
- } else if ((($4|0) == 2047)) {
-  $$0 = $x;
   STACKTOP = sp;return (+$$0);
  } else {
   $10 = (($4) + -1022)|0;
@@ -23034,7 +23034,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
    }
    $986 = (($nl_arg) + ($i$291<<3)|0);
    $987 = ($984>>>0)>(20);
-   L523: do {
+   L532: do {
     if (!($987)) {
      do {
       switch ($984|0) {
@@ -23044,7 +23044,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $arglist_next36 = (($arglist_current35) + 4|0);
        HEAP32[$ap>>2] = $arglist_next36;
        HEAP32[$986>>2] = $988;
-       break L523;
+       break L532;
        break;
       }
       case 10:  {
@@ -23060,7 +23060,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $994 = (($992) + 4)|0;
        $995 = $994;
        HEAP32[$995>>2] = $991;
-       break L523;
+       break L532;
        break;
       }
       case 11:  {
@@ -23074,7 +23074,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $999 = (($997) + 4)|0;
        $1000 = $999;
        HEAP32[$1000>>2] = 0;
-       break L523;
+       break L532;
        break;
       }
       case 12:  {
@@ -23093,7 +23093,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $1009 = (($1007) + 4)|0;
        $1010 = $1009;
        HEAP32[$1010>>2] = $1006;
-       break L523;
+       break L532;
        break;
       }
       case 13:  {
@@ -23111,7 +23111,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $1018 = (($1016) + 4)|0;
        $1019 = $1018;
        HEAP32[$1019>>2] = $1015;
-       break L523;
+       break L532;
        break;
       }
       case 14:  {
@@ -23126,7 +23126,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $1023 = (($1021) + 4)|0;
        $1024 = $1023;
        HEAP32[$1024>>2] = 0;
-       break L523;
+       break L532;
        break;
       }
       case 15:  {
@@ -23144,7 +23144,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $1032 = (($1030) + 4)|0;
        $1033 = $1032;
        HEAP32[$1033>>2] = $1029;
-       break L523;
+       break L532;
        break;
       }
       case 16:  {
@@ -23159,7 +23159,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $1037 = (($1035) + 4)|0;
        $1038 = $1037;
        HEAP32[$1038>>2] = 0;
-       break L523;
+       break L532;
        break;
       }
       case 17:  {
@@ -23168,7 +23168,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $arglist_next60 = (($arglist_current59) + 8|0);
        HEAP32[$ap>>2] = $arglist_next60;
        HEAPF64[$986>>3] = $1039;
-       break L523;
+       break L532;
        break;
       }
       case 18:  {
@@ -23177,11 +23177,11 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $arglist_next63 = (($arglist_current62) + 8|0);
        HEAP32[$ap>>2] = $arglist_next63;
        HEAPF64[$986>>3] = $1040;
-       break L523;
+       break L532;
        break;
       }
       default: {
-       break L523;
+       break L532;
       }
       }
      } while(0);

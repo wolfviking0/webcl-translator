@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-davibu/js/val_juliagpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_juliagpu.data';
     var REMOTE_PACKAGE_SIZE = 35306;
-    var PACKAGE_UUID = '89a4254f-c4ae-4837-956d-e7519f941490';
+    var PACKAGE_UUID = 'd4168060-52f1-4f61-b619-246546c9a3a9';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -16488,6 +16488,10 @@ function _specialFunc($key,$x,$y) {
   HEAPF32[((2224 + 72|0))>>2] = $5;
   break;
  }
+ case 103:  {
+  _rotateCameraX(0.0349065847694873809814);
+  break;
+ }
  case 100:  {
   _rotateCameraY(-0.0349065847694873809814);
   break;
@@ -16498,10 +16502,6 @@ function _specialFunc($key,$x,$y) {
  }
  case 101:  {
   _rotateCameraX(-0.0349065847694873809814);
-  break;
- }
- case 103:  {
-  _rotateCameraX(0.0349065847694873809814);
   break;
  }
  default: {
@@ -19112,7 +19112,7 @@ function _malloc($bytes) {
       HEAP32[$728>>2] = $727;
       $729 = HEAP32[((3712 + 24|0))>>2]|0;
       $730 = ($721|0)==($729|0);
-      L348: do {
+      L338: do {
        if ($730) {
         $731 = HEAP32[((3712 + 12|0))>>2]|0;
         $732 = (($731) + ($726))|0;
@@ -19149,7 +19149,7 @@ function _malloc($bytes) {
          $746 = $743 & -8;
          $747 = $743 >>> 3;
          $748 = ($743>>>0)<(256);
-         L356: do {
+         L346: do {
           if ($748) {
            $$sum3738$i$i = $720 | 8;
            $$sum119$i = (($$sum3738$i$i) + ($tsize$246$i))|0;
@@ -19328,7 +19328,7 @@ function _malloc($bytes) {
              $810 = HEAP32[((3712 + 4|0))>>2]|0;
              $811 = $810 & $809;
              HEAP32[((3712 + 4|0))>>2] = $811;
-             break L356;
+             break L346;
             } else {
              $812 = HEAP32[((3712 + 16|0))>>2]|0;
              $813 = ($774>>>0)<($812>>>0);
@@ -19347,7 +19347,7 @@ function _malloc($bytes) {
              }
              $818 = ($R$1$i$i|0)==(0|0);
              if ($818) {
-              break L356;
+              break L346;
              }
             }
            } while(0);
@@ -19539,7 +19539,7 @@ function _malloc($bytes) {
         $902 = HEAP32[$901>>2]|0;
         $903 = $902 & -8;
         $904 = ($903|0)==($qsize$0$i$i|0);
-        L445: do {
+        L435: do {
          if ($904) {
           $T$0$lcssa$i28$i = $897;
          } else {
@@ -19560,7 +19560,7 @@ function _malloc($bytes) {
            $912 = ($911|0)==($qsize$0$i$i|0);
            if ($912) {
             $T$0$lcssa$i28$i = $909;
-            break L445;
+            break L435;
            } else {
             $K8$052$i$i = $907;$T$051$i$i = $909;
            }
@@ -19581,7 +19581,7 @@ function _malloc($bytes) {
            $$sum25$i$i = (($$sum$i21$i) + 8)|0;
            $920 = (($tbase$247$i) + ($$sum25$i$i)|0);
            HEAP32[$920>>2] = $725;
-           break L348;
+           break L338;
           }
          }
         } while(0);
@@ -19831,7 +19831,7 @@ function _malloc($bytes) {
      $1041 = HEAP32[$1040>>2]|0;
      $1042 = $1041 & -8;
      $1043 = ($1042|0)==($976|0);
-     L499: do {
+     L489: do {
       if ($1043) {
        $T$0$lcssa$i$i = $1036;
       } else {
@@ -19852,7 +19852,7 @@ function _malloc($bytes) {
         $1051 = ($1050|0)==($976|0);
         if ($1051) {
          $T$0$lcssa$i$i = $1048;
-         break L499;
+         break L489;
         } else {
          $K2$014$i$i = $1046;$T$013$i$i = $1048;
         }
@@ -20795,7 +20795,10 @@ function _frexp($x,$e) {
  $2 = (_bitshift64Lshr(($0|0),($1|0),52)|0);
  $3 = tempRet0;
  $4 = $2 & 2047;
- if ((($4|0) == 0)) {
+ if ((($4|0) == 2047)) {
+  $$0 = $x;
+  STACKTOP = sp;return (+$$0);
+ } else if ((($4|0) == 0)) {
   $5 = $x != 0.0;
   if ($5) {
    $6 = $x * 18446744073709551616.0;
@@ -20808,9 +20811,6 @@ function _frexp($x,$e) {
   }
   HEAP32[$e>>2] = $storemerge;
   $$0 = $$01;
-  STACKTOP = sp;return (+$$0);
- } else if ((($4|0) == 2047)) {
-  $$0 = $x;
   STACKTOP = sp;return (+$$0);
  } else {
   $10 = (($4) + -1022)|0;
@@ -21272,12 +21272,12 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
    $1050 = $21;$25 = $22;
   }
   while(1) {
-   if ((($1050<<24>>24) == 0)) {
-    $$lcssa94 = $25;$z$0$lcssa = $25;
-    break;
-   } else if ((($1050<<24>>24) == 37)) {
+   if ((($1050<<24>>24) == 37)) {
     $27 = $25;$z$095 = $25;
     label = 9;
+    break;
+   } else if ((($1050<<24>>24) == 0)) {
+    $$lcssa94 = $25;$z$0$lcssa = $25;
     break;
    }
    $24 = (($25) + 1|0);
@@ -21618,33 +21618,6 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
       }
       do {
        switch ($142|0) {
-       case 13:  {
-        $arglist_current17 = HEAP32[$ap>>2]|0;
-        $171 = HEAP32[$arglist_current17>>2]|0;
-        $arglist_next18 = (($arglist_current17) + 4|0);
-        HEAP32[$ap>>2] = $arglist_next18;
-        $172 = $171&65535;
-        $173 = $172 << 16 >> 16;
-        $174 = ($173|0)<(0);
-        $175 = $174 << 31 >> 31;
-        $sext86 = $171 << 16;
-        $176 = $sext86 >> 16;
-        $177 = $176;
-        $1052 = $177;$1053 = $175;
-        break L69;
-        break;
-       }
-       case 14:  {
-        $arglist_current20 = HEAP32[$ap>>2]|0;
-        $178 = HEAP32[$arglist_current20>>2]|0;
-        $arglist_next21 = (($arglist_current20) + 4|0);
-        HEAP32[$ap>>2] = $arglist_next21;
-        $$mask1$i30 = $178 & 65535;
-        $179 = $$mask1$i30;
-        $1052 = $179;$1053 = 0;
-        break L69;
-        break;
-       }
        case 15:  {
         $arglist_current23 = HEAP32[$ap>>2]|0;
         $180 = HEAP32[$arglist_current23>>2]|0;
@@ -21693,6 +21666,33 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
         $195 = HEAP32[tempDoublePtr+4>>2]|0;
         $$sink = $194;$$sink300$off32 = $195;
         label = 64;
+        break L69;
+        break;
+       }
+       case 13:  {
+        $arglist_current17 = HEAP32[$ap>>2]|0;
+        $171 = HEAP32[$arglist_current17>>2]|0;
+        $arglist_next18 = (($arglist_current17) + 4|0);
+        HEAP32[$ap>>2] = $arglist_next18;
+        $172 = $171&65535;
+        $173 = $172 << 16 >> 16;
+        $174 = ($173|0)<(0);
+        $175 = $174 << 31 >> 31;
+        $sext86 = $171 << 16;
+        $176 = $sext86 >> 16;
+        $177 = $176;
+        $1052 = $177;$1053 = $175;
+        break L69;
+        break;
+       }
+       case 14:  {
+        $arglist_current20 = HEAP32[$ap>>2]|0;
+        $178 = HEAP32[$arglist_current20>>2]|0;
+        $arglist_next21 = (($arglist_current20) + 4|0);
+        HEAP32[$ap>>2] = $arglist_next21;
+        $$mask1$i30 = $178 & 65535;
+        $179 = $$mask1$i30;
+        $1052 = $179;$1053 = 0;
         break L69;
         break;
        }
@@ -21861,76 +21861,31 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     }
     break;
    }
-   case 110:  {
-    switch ($st$0|0) {
-    case 7:  {
-     $215 = ($cnt$1|0)<(0);
-     $216 = $215 << 31 >> 31;
-     $217 = $206;
-     $218 = $217;
-     HEAP32[$218>>2] = $cnt$1;
-     $219 = (($217) + 4)|0;
-     $220 = $219;
-     HEAP32[$220>>2] = $216;
-     $1048 = $228;$1049 = $206;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    case 0:  {
-     HEAP32[$206>>2] = $cnt$1;
-     $1048 = $228;$1049 = $206;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    case 1:  {
-     HEAP32[$206>>2] = $cnt$1;
-     $1048 = $228;$1049 = $206;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    case 2:  {
-     $207 = ($cnt$1|0)<(0);
-     $208 = $207 << 31 >> 31;
-     $209 = $206;
-     $210 = $209;
-     HEAP32[$210>>2] = $cnt$1;
-     $211 = (($209) + 4)|0;
-     $212 = $211;
-     HEAP32[$212>>2] = $208;
-     $1048 = $228;$1049 = $206;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    case 3:  {
-     $213 = $cnt$1&65535;
-     HEAP16[$206>>1] = $213;
-     $1048 = $228;$1049 = $206;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    case 4:  {
-     $214 = $cnt$1&255;
-     HEAP8[$206>>0] = $214;
-     $1048 = $228;$1049 = $206;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    case 6:  {
-     HEAP32[$206>>2] = $cnt$1;
-     $1048 = $228;$1049 = $206;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    default: {
-     $1048 = $228;$1049 = $206;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-    }
-    }
-    break;
-   }
    case 117:  {
     $276 = $206;$278 = $228;$pl$0 = 0;$prefix$0 = 4672;
     label = 90;
+    break;
+   }
+   case 99:  {
+    $318 = $206;
+    $319 = $318&255;
+    HEAP8[$4>>0] = $319;
+    $1054 = $228;$1055 = $206;$a$2 = $4;$fl$6 = $205;$p$5 = 1;$pl$2 = 0;$prefix$2 = 4672;$z$2 = $2;
+    break;
+   }
+   case 109:  {
+    $320 = (___errno_location()|0);
+    $321 = HEAP32[$320>>2]|0;
+    $322 = (_strerror(($321|0))|0);
+    $a$1 = $322;
+    label = 100;
+    break;
+   }
+   case 115:  {
+    $323 = ($206|0)==(0|0);
+    $$18 = $323 ? 4688 : $206;
+    $a$1 = $$18;
+    label = 100;
     break;
    }
    case 67:  {
@@ -22553,7 +22508,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
      $$pr147$i = $$pr$i;$a$1$lcssa$i = $$32$i;$z$1$lcssa$i = $583;
     }
     $616 = ($$pr147$i|0)<(0);
-    L248: do {
+    L242: do {
      if ($616) {
       $617 = ($411|0)==(102);
       $618 = (($$p$i|0) / 9)&-1;
@@ -22621,7 +22576,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
          $623 = $640;$a$3245$us$i = $$a$3$us320$i;$z$3244$us$i = $$z$4$us$i;
         } else {
          $a$3$lcssa$i = $$a$3$us320$i;$z$3$lcssa$i = $$z$4$us$i;
-         break L248;
+         break L242;
         }
        }
       } else {
@@ -23478,26 +23433,71 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     continue L1;
     break;
    }
-   case 99:  {
-    $318 = $206;
-    $319 = $318&255;
-    HEAP8[$4>>0] = $319;
-    $1054 = $228;$1055 = $206;$a$2 = $4;$fl$6 = $205;$p$5 = 1;$pl$2 = 0;$prefix$2 = 4672;$z$2 = $2;
-    break;
-   }
-   case 109:  {
-    $320 = (___errno_location()|0);
-    $321 = HEAP32[$320>>2]|0;
-    $322 = (_strerror(($321|0))|0);
-    $a$1 = $322;
-    label = 100;
-    break;
-   }
-   case 115:  {
-    $323 = ($206|0)==(0|0);
-    $$18 = $323 ? 4688 : $206;
-    $a$1 = $$18;
-    label = 100;
+   case 110:  {
+    switch ($st$0|0) {
+    case 0:  {
+     HEAP32[$206>>2] = $cnt$1;
+     $1048 = $228;$1049 = $206;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    case 1:  {
+     HEAP32[$206>>2] = $cnt$1;
+     $1048 = $228;$1049 = $206;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    case 2:  {
+     $207 = ($cnt$1|0)<(0);
+     $208 = $207 << 31 >> 31;
+     $209 = $206;
+     $210 = $209;
+     HEAP32[$210>>2] = $cnt$1;
+     $211 = (($209) + 4)|0;
+     $212 = $211;
+     HEAP32[$212>>2] = $208;
+     $1048 = $228;$1049 = $206;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    case 3:  {
+     $213 = $cnt$1&65535;
+     HEAP16[$206>>1] = $213;
+     $1048 = $228;$1049 = $206;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    case 4:  {
+     $214 = $cnt$1&255;
+     HEAP8[$206>>0] = $214;
+     $1048 = $228;$1049 = $206;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    case 6:  {
+     HEAP32[$206>>2] = $cnt$1;
+     $1048 = $228;$1049 = $206;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    case 7:  {
+     $215 = ($cnt$1|0)<(0);
+     $216 = $215 << 31 >> 31;
+     $217 = $206;
+     $218 = $217;
+     HEAP32[$218>>2] = $cnt$1;
+     $219 = (($217) + 4)|0;
+     $220 = $219;
+     HEAP32[$220>>2] = $216;
+     $1048 = $228;$1049 = $206;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    default: {
+     $1048 = $228;$1049 = $206;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+    }
+    }
     break;
    }
    default: {
@@ -23724,20 +23724,20 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     (___fwritex($pad$i,$$0$lcssa$i60,$f)|0);
    }
    $351 = ($i$0167|0)==(0);
-   L471: do {
+   L473: do {
     if (!($351)) {
      $i$1175 = 0;$ws$1176 = $1058;
      while(1) {
       $352 = HEAP32[$ws$1176>>2]|0;
       $353 = ($352|0)==(0);
       if ($353) {
-       break L471;
+       break L473;
       }
       $354 = (_wctomb($mb,$352)|0);
       $355 = (($354) + ($i$1175))|0;
       $356 = ($355|0)>($i$0167|0);
       if ($356) {
-       break L471;
+       break L473;
       }
       $357 = (($ws$1176) + 4|0);
       (___fwritex($mb,$354,$f)|0);

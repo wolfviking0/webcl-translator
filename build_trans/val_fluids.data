@@ -694,14 +694,14 @@
 #define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
 #define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
 typedef struct {
+    float _wcl_traced_q;
     float3 _wcl_halfway_vel;
     float3 _wcl_backtraced_position;
-    float3 _wcl_traced_velocity;
-    float3 _wcl_new_vel;
-    float _wcl_traced_q;
-    float _wcl_2_traced_q;
     float3 _wcl_2_halfway_vel;
     float3 _wcl_2_backtraced_position;
+    float3 _wcl_traced_velocity;
+    float _wcl_2_traced_q;
+    float3 _wcl_new_vel;
 } __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
 
 typedef struct {
@@ -1170,26 +1170,26 @@ hd4k_workaround_local = hd4k_workaround_constant;
 
 
   float3 halfway_vel;
-  _wcl_allocs->pa._wcl_2_halfway_vel.x = get_interpolated_value(_wcl_allocs, u_prev, halfway_position,H);
-  _wcl_allocs->pa._wcl_2_halfway_vel.y = get_interpolated_value(_wcl_allocs, v_prev, halfway_position,H);
-  _wcl_allocs->pa._wcl_2_halfway_vel.z = get_interpolated_value(_wcl_allocs, w_prev, halfway_position,H);
+  _wcl_allocs->pa._wcl_halfway_vel.x = get_interpolated_value(_wcl_allocs, u_prev, halfway_position,H);
+  _wcl_allocs->pa._wcl_halfway_vel.y = get_interpolated_value(_wcl_allocs, v_prev, halfway_position,H);
+  _wcl_allocs->pa._wcl_halfway_vel.z = get_interpolated_value(_wcl_allocs, w_prev, halfway_position,H);
 
   float3 backtraced_position;
-  _wcl_allocs->pa._wcl_2_backtraced_position.x = pos.x + dt*_wcl_allocs->pa._wcl_2_halfway_vel.x;
-  _wcl_allocs->pa._wcl_2_backtraced_position.y = pos.y + dt*_wcl_allocs->pa._wcl_2_halfway_vel.y;
-  _wcl_allocs->pa._wcl_2_backtraced_position.z = pos.z + dt*_wcl_allocs->pa._wcl_2_halfway_vel.z;
+  _wcl_allocs->pa._wcl_backtraced_position.x = pos.x + dt*_wcl_allocs->pa._wcl_halfway_vel.x;
+  _wcl_allocs->pa._wcl_backtraced_position.y = pos.y + dt*_wcl_allocs->pa._wcl_halfway_vel.y;
+  _wcl_allocs->pa._wcl_backtraced_position.z = pos.z + dt*_wcl_allocs->pa._wcl_halfway_vel.z;
 
 
 
-  _wcl_allocs->pa._wcl_2_backtraced_position.x = clamp(_wcl_allocs->pa._wcl_2_backtraced_position.x,0.0f,96 -1.0f);
-  _wcl_allocs->pa._wcl_2_backtraced_position.y = clamp(_wcl_allocs->pa._wcl_2_backtraced_position.y,0.0f,96 -1.0f);
-  _wcl_allocs->pa._wcl_2_backtraced_position.z = clamp(_wcl_allocs->pa._wcl_2_backtraced_position.z,0.0f,1 -1.0f);
+  _wcl_allocs->pa._wcl_backtraced_position.x = clamp(_wcl_allocs->pa._wcl_backtraced_position.x,0.0f,96 -1.0f);
+  _wcl_allocs->pa._wcl_backtraced_position.y = clamp(_wcl_allocs->pa._wcl_backtraced_position.y,0.0f,96 -1.0f);
+  _wcl_allocs->pa._wcl_backtraced_position.z = clamp(_wcl_allocs->pa._wcl_backtraced_position.z,0.0f,1 -1.0f);
 
 
 
   //Have to interpolate at new point
   float traced_q;
-  _wcl_allocs->pa._wcl_2_traced_q = get_interpolated_value(_wcl_allocs, q_prev, _wcl_allocs->pa._wcl_2_backtraced_position,H);
+  _wcl_allocs->pa._wcl_2_traced_q = get_interpolated_value(_wcl_allocs, q_prev, _wcl_allocs->pa._wcl_backtraced_position,H);
 
   //Has to be set on u
   (*(_wcl_addr_clamp_global_44__u_uglobal__float__Ptr((q)+(((i) + ((j)*(96)) + ((k)*(96)*(96)))), 1, (__global float *)_wcl_allocs->gl.advect_forward_euler__q_min, (__global float *)_wcl_allocs->gl.advect_forward_euler__q_max, (__global float *)_wcl_allocs->gl.advect_forward_euler__q_prev_min, (__global float *)_wcl_allocs->gl.advect_forward_euler__q_prev_max, (__global float *)_wcl_allocs->gl.advect_forward_euler__u_prev_min, (__global float *)_wcl_allocs->gl.advect_forward_euler__u_prev_max, (__global float *)_wcl_allocs->gl.advect_forward_euler__v_prev_min, (__global float *)_wcl_allocs->gl.advect_forward_euler__v_prev_max, (__global float *)_wcl_allocs->gl.advect_forward_euler__w_prev_min, (__global float *)_wcl_allocs->gl.advect_forward_euler__w_prev_max, (__global float *)_wcl_allocs->gl.advectRK2__q_min, (__global float *)_wcl_allocs->gl.advectRK2__q_max, (__global float *)_wcl_allocs->gl.advectRK2__q_prev_min, (__global float *)_wcl_allocs->gl.advectRK2__q_prev_max, (__global float *)_wcl_allocs->gl.advectRK2__u_prev_min, (__global float *)_wcl_allocs->gl.advectRK2__u_prev_max, (__global float *)_wcl_allocs->gl.advectRK2__v_prev_min, (__global float *)_wcl_allocs->gl.advectRK2__v_prev_max, (__global float *)_wcl_allocs->gl.advectRK2__w_prev_min, (__global float *)_wcl_allocs->gl.advectRK2__w_prev_max, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__u_min, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__u_max, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__v_min, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__v_max, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__w_min, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__w_max, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__u_prev_min, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__u_prev_max, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__v_prev_min, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__v_prev_max, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__w_prev_min, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__w_prev_max, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__u_min, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__u_max, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__v_min, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__v_max, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__w_min, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__w_max, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__u_prev_min, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__u_prev_max, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__v_prev_min, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__v_prev_max, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__w_prev_min, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__w_prev_max, (__global float *)_wcl_allocs->gl.vorticity_confinement__u_min, (__global float *)_wcl_allocs->gl.vorticity_confinement__u_max, (__global float *)_wcl_allocs->gl.vorticity_confinement__v_min, (__global float *)_wcl_allocs->gl.vorticity_confinement__v_max, (__global float *)_wcl_allocs->gl.vorticity_confinement__w_min, (__global float *)_wcl_allocs->gl.vorticity_confinement__w_max, (__global float *)_wcl_allocs->gl.vorticity_confinement__u_prev_min, (__global float *)_wcl_allocs->gl.vorticity_confinement__u_prev_max, (__global float *)_wcl_allocs->gl.vorticity_confinement__v_prev_min, (__global float *)_wcl_allocs->gl.vorticity_confinement__v_prev_max, (__global float *)_wcl_allocs->gl.vorticity_confinement__w_prev_min, (__global float *)_wcl_allocs->gl.vorticity_confinement__w_prev_max, (__global float *)_wcl_allocs->gl.calculate_divergence__divergence_min, (__global float *)_wcl_allocs->gl.calculate_divergence__divergence_max, (__global float *)_wcl_allocs->gl.calculate_divergence__u_min, (__global float *)_wcl_allocs->gl.calculate_divergence__u_max, (__global float *)_wcl_allocs->gl.calculate_divergence__v_min, (__global float *)_wcl_allocs->gl.calculate_divergence__v_max, (__global float *)_wcl_allocs->gl.calculate_divergence__w_min, (__global float *)_wcl_allocs->gl.calculate_divergence__w_max, (__global float *)_wcl_allocs->gl.zero_pressure__pressure_min, (__global float *)_wcl_allocs->gl.zero_pressure__pressure_max, (__global float *)_wcl_allocs->gl.vector_dot_product__a_min, (__global float *)_wcl_allocs->gl.vector_dot_product__a_max, (__global float *)_wcl_allocs->gl.vector_dot_product__b_min, (__global float *)_wcl_allocs->gl.vector_dot_product__b_max, (__global float *)_wcl_allocs->gl.laplacian_mtx_vec_mult__out_min, (__global float *)_wcl_allocs->gl.laplacian_mtx_vec_mult__out_max, (__global float *)_wcl_allocs->gl.laplacian_mtx_vec_mult__x_min, (__global float *)_wcl_allocs->gl.laplacian_mtx_vec_mult__x_max, (__global float *)_wcl_allocs->gl.pressure_solve__pressure_min, (__global float *)_wcl_allocs->gl.pressure_solve__pressure_max, (__global float *)_wcl_allocs->gl.pressure_solve__pressure_prev_min, (__global float *)_wcl_allocs->gl.pressure_solve__pressure_prev_max, (__global float *)_wcl_allocs->gl.pressure_solve__divergence_min, (__global float *)_wcl_allocs->gl.pressure_solve__divergence_max, (__global float *)_wcl_allocs->gl.pressure_apply__u_min, (__global float *)_wcl_allocs->gl.pressure_apply__u_max, (__global float *)_wcl_allocs->gl.pressure_apply__v_min, (__global float *)_wcl_allocs->gl.pressure_apply__v_max, (__global float *)_wcl_allocs->gl.pressure_apply__w_min, (__global float *)_wcl_allocs->gl.pressure_apply__w_max, (__global float *)_wcl_allocs->gl.pressure_apply__pressure_min, (__global float *)_wcl_allocs->gl.pressure_apply__pressure_max, (__global float *)_wcl_allocs->gn))) = _wcl_allocs->pa._wcl_2_traced_q;
@@ -1264,28 +1264,28 @@ hd4k_workaround_local = hd4k_workaround_constant;
 
 
   float3 halfway_vel;
-  _wcl_allocs->pa._wcl_halfway_vel.x = get_interpolated_value(_wcl_allocs, u_prev, halfway_position,H);
-  _wcl_allocs->pa._wcl_halfway_vel.y = get_interpolated_value(_wcl_allocs, v_prev, halfway_position,H);
-  _wcl_allocs->pa._wcl_halfway_vel.z = get_interpolated_value(_wcl_allocs, w_prev, halfway_position,H);
+  _wcl_allocs->pa._wcl_2_halfway_vel.x = get_interpolated_value(_wcl_allocs, u_prev, halfway_position,H);
+  _wcl_allocs->pa._wcl_2_halfway_vel.y = get_interpolated_value(_wcl_allocs, v_prev, halfway_position,H);
+  _wcl_allocs->pa._wcl_2_halfway_vel.z = get_interpolated_value(_wcl_allocs, w_prev, halfway_position,H);
 
   float3 backtraced_position;
-  _wcl_allocs->pa._wcl_backtraced_position.x = pos.x + dt*_wcl_allocs->pa._wcl_halfway_vel.x;
-  _wcl_allocs->pa._wcl_backtraced_position.y = pos.y + dt*_wcl_allocs->pa._wcl_halfway_vel.y;
-  _wcl_allocs->pa._wcl_backtraced_position.z = pos.z + dt*_wcl_allocs->pa._wcl_halfway_vel.z;
+  _wcl_allocs->pa._wcl_2_backtraced_position.x = pos.x + dt*_wcl_allocs->pa._wcl_2_halfway_vel.x;
+  _wcl_allocs->pa._wcl_2_backtraced_position.y = pos.y + dt*_wcl_allocs->pa._wcl_2_halfway_vel.y;
+  _wcl_allocs->pa._wcl_2_backtraced_position.z = pos.z + dt*_wcl_allocs->pa._wcl_2_halfway_vel.z;
 
 
 
-  _wcl_allocs->pa._wcl_backtraced_position.x = clamp(_wcl_allocs->pa._wcl_backtraced_position.x,0.0f,96 -1.0f);
-  _wcl_allocs->pa._wcl_backtraced_position.y = clamp(_wcl_allocs->pa._wcl_backtraced_position.y,0.0f,96 -1.0f);
-  _wcl_allocs->pa._wcl_backtraced_position.z = clamp(_wcl_allocs->pa._wcl_backtraced_position.z,0.0f,1 -1.0f);
+  _wcl_allocs->pa._wcl_2_backtraced_position.x = clamp(_wcl_allocs->pa._wcl_2_backtraced_position.x,0.0f,96 -1.0f);
+  _wcl_allocs->pa._wcl_2_backtraced_position.y = clamp(_wcl_allocs->pa._wcl_2_backtraced_position.y,0.0f,96 -1.0f);
+  _wcl_allocs->pa._wcl_2_backtraced_position.z = clamp(_wcl_allocs->pa._wcl_2_backtraced_position.z,0.0f,1 -1.0f);
 
 
 
   //Have to interpolate at new point
   float3 traced_velocity;
-  _wcl_allocs->pa._wcl_traced_velocity.x = get_interpolated_value(_wcl_allocs, u_prev, _wcl_allocs->pa._wcl_backtraced_position,H);
-  _wcl_allocs->pa._wcl_traced_velocity.y = get_interpolated_value(_wcl_allocs, v_prev, _wcl_allocs->pa._wcl_backtraced_position,H);
-  _wcl_allocs->pa._wcl_traced_velocity.z = get_interpolated_value(_wcl_allocs, w_prev, _wcl_allocs->pa._wcl_backtraced_position,H);
+  _wcl_allocs->pa._wcl_traced_velocity.x = get_interpolated_value(_wcl_allocs, u_prev, _wcl_allocs->pa._wcl_2_backtraced_position,H);
+  _wcl_allocs->pa._wcl_traced_velocity.y = get_interpolated_value(_wcl_allocs, v_prev, _wcl_allocs->pa._wcl_2_backtraced_position,H);
+  _wcl_allocs->pa._wcl_traced_velocity.z = get_interpolated_value(_wcl_allocs, w_prev, _wcl_allocs->pa._wcl_2_backtraced_position,H);
 
   //Has to be set on u
   (*(_wcl_addr_clamp_global_44__u_uglobal__float__Ptr((u)+(((i) + ((j)*(96)) + ((k)*(96)*(96)))), 1, (__global float *)_wcl_allocs->gl.advect_forward_euler__q_min, (__global float *)_wcl_allocs->gl.advect_forward_euler__q_max, (__global float *)_wcl_allocs->gl.advect_forward_euler__q_prev_min, (__global float *)_wcl_allocs->gl.advect_forward_euler__q_prev_max, (__global float *)_wcl_allocs->gl.advect_forward_euler__u_prev_min, (__global float *)_wcl_allocs->gl.advect_forward_euler__u_prev_max, (__global float *)_wcl_allocs->gl.advect_forward_euler__v_prev_min, (__global float *)_wcl_allocs->gl.advect_forward_euler__v_prev_max, (__global float *)_wcl_allocs->gl.advect_forward_euler__w_prev_min, (__global float *)_wcl_allocs->gl.advect_forward_euler__w_prev_max, (__global float *)_wcl_allocs->gl.advectRK2__q_min, (__global float *)_wcl_allocs->gl.advectRK2__q_max, (__global float *)_wcl_allocs->gl.advectRK2__q_prev_min, (__global float *)_wcl_allocs->gl.advectRK2__q_prev_max, (__global float *)_wcl_allocs->gl.advectRK2__u_prev_min, (__global float *)_wcl_allocs->gl.advectRK2__u_prev_max, (__global float *)_wcl_allocs->gl.advectRK2__v_prev_min, (__global float *)_wcl_allocs->gl.advectRK2__v_prev_max, (__global float *)_wcl_allocs->gl.advectRK2__w_prev_min, (__global float *)_wcl_allocs->gl.advectRK2__w_prev_max, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__u_min, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__u_max, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__v_min, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__v_max, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__w_min, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__w_max, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__u_prev_min, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__u_prev_max, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__v_prev_min, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__v_prev_max, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__w_prev_min, (__global float *)_wcl_allocs->gl.advect_velocity_RK2__w_prev_max, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__u_min, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__u_max, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__v_min, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__v_max, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__w_min, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__w_max, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__u_prev_min, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__u_prev_max, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__v_prev_min, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__v_prev_max, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__w_prev_min, (__global float *)_wcl_allocs->gl.advect_velocity_forward_euler__w_prev_max, (__global float *)_wcl_allocs->gl.vorticity_confinement__u_min, (__global float *)_wcl_allocs->gl.vorticity_confinement__u_max, (__global float *)_wcl_allocs->gl.vorticity_confinement__v_min, (__global float *)_wcl_allocs->gl.vorticity_confinement__v_max, (__global float *)_wcl_allocs->gl.vorticity_confinement__w_min, (__global float *)_wcl_allocs->gl.vorticity_confinement__w_max, (__global float *)_wcl_allocs->gl.vorticity_confinement__u_prev_min, (__global float *)_wcl_allocs->gl.vorticity_confinement__u_prev_max, (__global float *)_wcl_allocs->gl.vorticity_confinement__v_prev_min, (__global float *)_wcl_allocs->gl.vorticity_confinement__v_prev_max, (__global float *)_wcl_allocs->gl.vorticity_confinement__w_prev_min, (__global float *)_wcl_allocs->gl.vorticity_confinement__w_prev_max, (__global float *)_wcl_allocs->gl.calculate_divergence__divergence_min, (__global float *)_wcl_allocs->gl.calculate_divergence__divergence_max, (__global float *)_wcl_allocs->gl.calculate_divergence__u_min, (__global float *)_wcl_allocs->gl.calculate_divergence__u_max, (__global float *)_wcl_allocs->gl.calculate_divergence__v_min, (__global float *)_wcl_allocs->gl.calculate_divergence__v_max, (__global float *)_wcl_allocs->gl.calculate_divergence__w_min, (__global float *)_wcl_allocs->gl.calculate_divergence__w_max, (__global float *)_wcl_allocs->gl.zero_pressure__pressure_min, (__global float *)_wcl_allocs->gl.zero_pressure__pressure_max, (__global float *)_wcl_allocs->gl.vector_dot_product__a_min, (__global float *)_wcl_allocs->gl.vector_dot_product__a_max, (__global float *)_wcl_allocs->gl.vector_dot_product__b_min, (__global float *)_wcl_allocs->gl.vector_dot_product__b_max, (__global float *)_wcl_allocs->gl.laplacian_mtx_vec_mult__out_min, (__global float *)_wcl_allocs->gl.laplacian_mtx_vec_mult__out_max, (__global float *)_wcl_allocs->gl.laplacian_mtx_vec_mult__x_min, (__global float *)_wcl_allocs->gl.laplacian_mtx_vec_mult__x_max, (__global float *)_wcl_allocs->gl.pressure_solve__pressure_min, (__global float *)_wcl_allocs->gl.pressure_solve__pressure_max, (__global float *)_wcl_allocs->gl.pressure_solve__pressure_prev_min, (__global float *)_wcl_allocs->gl.pressure_solve__pressure_prev_max, (__global float *)_wcl_allocs->gl.pressure_solve__divergence_min, (__global float *)_wcl_allocs->gl.pressure_solve__divergence_max, (__global float *)_wcl_allocs->gl.pressure_apply__u_min, (__global float *)_wcl_allocs->gl.pressure_apply__u_max, (__global float *)_wcl_allocs->gl.pressure_apply__v_min, (__global float *)_wcl_allocs->gl.pressure_apply__v_max, (__global float *)_wcl_allocs->gl.pressure_apply__w_min, (__global float *)_wcl_allocs->gl.pressure_apply__w_max, (__global float *)_wcl_allocs->gl.pressure_apply__pressure_min, (__global float *)_wcl_allocs->gl.pressure_apply__pressure_max, (__global float *)_wcl_allocs->gn))) = _wcl_allocs->pa._wcl_traced_velocity.x;

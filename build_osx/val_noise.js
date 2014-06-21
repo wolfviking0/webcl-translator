@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-osx-sample/js/val_noise.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_noise.data';
     var REMOTE_PACKAGE_SIZE = 47888;
-    var PACKAGE_UUID = 'feb88e3d-da54-492c-a5be-3f314c2d0ff1';
+    var PACKAGE_UUID = '19c04e10-e26a-4895-b18d-017768b8896c';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
