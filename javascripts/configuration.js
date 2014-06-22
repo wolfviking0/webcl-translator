@@ -142,7 +142,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "Vector Add",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_book/",
       "id"            : 5,
       "gl"            : "off",
@@ -351,7 +351,7 @@ var configuration_pages = {
     // caustic.scn / caustic3.scn / complex.scn / cornell_large.scn / cornell.scn /simple.scn
     { 
       "title"         : "SmallPT V1 Caustic",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_davibu/",
       "id"            : 3,
       "gl"            : "on",
@@ -362,7 +362,7 @@ var configuration_pages = {
     },
     { 
       "title"         : "SmallPT V1 Complex",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_davibu/",
       "id"            : 3,
       "gl"            : "on",
