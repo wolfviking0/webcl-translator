@@ -142,7 +142,7 @@ void framebuffer_size_callback(int width, int height)
 void Application::resizeWindow(int width, int height)
 {
     glViewport(0, 0, width, height);
-    Demo::get()->resizeWindow(width, height);
+    //Demo::get()->resizeWindow(width, height);
 }
 
 void Application::init()

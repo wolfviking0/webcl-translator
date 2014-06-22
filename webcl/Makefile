@@ -124,7 +124,7 @@ KERNEL_fluids			= 	--preload-file kernels.cl
 CFLAGS_eventprofiling	=	-s TOTAL_MEMORY=1024*1024*100
 CFLAGS_dxtcompressor	= 	-s GL_FFP_ONLY=1 -s LEGACY_GL_EMULATION=1
 CFLAGS_particles		= 	-s GL_FFP_ONLY=1 -s LEGACY_GL_EMULATION=1 -s TOTAL_MEMORY=1024*1024*256
-CFLAGS_attractor		= 	-s FULL_ES2=1 -s TOTAL_MEMORY=1024*1024*256
+CFLAGS_attractor		= 	-s FULL_ES2=1 -s TOTAL_MEMORY=1024*1024*256 -std=c++11
 CFLAGS_fluids			= 	-s GL_FFP_ONLY=1 -s LEGACY_GL_EMULATION=1 -s TOTAL_MEMORY=1024*1024*512
 
 VALPARAM_imagecopy		=	-s CL_VAL_PARAM='[""]'
@@ -135,6 +135,8 @@ VALPARAM_dxtcompressor	=	-s CL_VAL_PARAM='["-cl-mad-enable"]'
 VALPARAM_fluids			=	-s CL_VAL_PARAM='["-DNX:96","-DNY:96","-DNZ:1","-DBLOCK_SIZE:8","-DWGSIZE:1","-DBLOCK_SIZE_WITH_PAD:1"]'
 
 else
+
+CFLAGS_attractor	= 	-std=c++11
 
 COPY_imagecopy		= 	cp image_copy.cl $(BUILD_FOLDER) &&
 COPY_eventprofiling	= 	cp event_profiling.cl $(BUILD_FOLDER) &&
