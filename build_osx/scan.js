@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-osx-sample/js/scan.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'scan.data';
     var REMOTE_PACKAGE_SIZE = 15054;
-    var PACKAGE_UUID = 'ef6d9123-c987-498e-953a-0f8a281d0b23';
+    var PACKAGE_UUID = '4b82eb46-fe53-499e-84df-0cd5e6148323';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -221,6 +221,7 @@ if (ENVIRONMENT_IS_NODE) {
     globalEval(read(f));
   };
 
+  Module['thisProgram'] = process['argv'][1];
   Module['arguments'] = process['argv'].slice(2);
 
   module['exports'] = Module;
@@ -1374,6 +1375,7 @@ var __ATEXIT__    = []; // functions called during shutdown
 var __ATPOSTRUN__ = []; // functions called after the runtime has exited
 
 var runtimeInitialized = false;
+var runtimeExited = false;
 
 function preRun() {
   // compatibility - merge in anything from Module['preRun'] at this time
@@ -1401,6 +1403,7 @@ function exitRuntime() {
     Module.printErr('Exiting runtime. Any attempt to access the compiled C code may fail from now. If you want to keep the runtime alive, set Module["noExitRuntime"] = true or build with -s NO_EXIT_RUNTIME=1');
   }
   callRuntimeCallbacks(__ATEXIT__);
+  runtimeExited = true;
 }
 
 function postRun() {
@@ -1570,6 +1573,11 @@ function addRunDependency(id) {
     if (runDependencyWatcher === null && typeof setInterval !== 'undefined') {
       // Check for missing dependencies every few seconds
       runDependencyWatcher = setInterval(function() {
+        if (ABORT) {
+          clearInterval(runDependencyWatcher);
+          runDependencyWatcher = null;
+          return;
+        }
         var shown = false;
         for (var dep in runDependencyTracking) {
           if (!shown) {
@@ -1822,7 +1830,10 @@ function copyTempDouble(ptr) {
         case 5: return 16;
         case 6: return 6;
         case 73: return 4;
-        case 84: return 1;
+        case 84: {
+          if (typeof navigator === 'object') return navigator['hardwareConcurrency'] || 1;
+          return 1;
+        }
       }
       ___setErrNo(ERRNO_CODES.EINVAL);
       return -1;
@@ -2262,12 +2273,12 @@ function copyTempDouble(ptr) {
             GL.uniforms[id] = loc;
           }
         }
-      }};var CL={cl_init:0,cl_extensions:["KHR_GL_SHARING","KHR_fp16","KHR_fp64"],cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_structs_sig:{},cl_pn_type:[],cl_objects:{},cl_objects_map:{},cl_objects_retains:{},cl_objects_mem_callback:{},init:function () {
+      }};var CL={cl_init:0,cl_extensions:["KHR_gl_sharing","KHR_fp16","KHR_fp64"],cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_structs_sig:{},cl_pn_type:[],cl_objects:{},cl_objects_map:{},cl_objects_retains:{},cl_objects_mem_callback:{},init:function () {
         if (CL.cl_init == 0) {
           console.log('%c WebCL-Translator V2.0 ! ', 'background: #222; color: #bada55');
           var nodejs = (typeof window === 'undefined');
           if(nodejs) {
-            webcl = require('../webcl');
+            webcl = require('../../node_modules/node-webcl/webcl');
           }
   
           if (webcl == undefined) {
@@ -3533,7 +3544,7 @@ function copyTempDouble(ptr) {
           }
         }}};
   
-  var MEMFS={ops_table:null,CONTENT_OWNING:1,CONTENT_FLEXIBLE:2,CONTENT_FIXED:3,mount:function (mount) {
+  var MEMFS={ops_table:null,mount:function (mount) {
         return MEMFS.createNode(null, '/', 16384 | 511 /* 0777 */, 0);
       },createNode:function (parent, name, mode, dev) {
         if (FS.isBlkdev(mode) || FS.isFIFO(mode)) {
@@ -3596,8 +3607,11 @@ function copyTempDouble(ptr) {
         } else if (FS.isFile(node.mode)) {
           node.node_ops = MEMFS.ops_table.file.node;
           node.stream_ops = MEMFS.ops_table.file.stream;
-          node.contents = [];
-          node.contentMode = MEMFS.CONTENT_FLEXIBLE;
+          node.usedBytes = 0; // The actual number of bytes used in the typed array, as opposed to contents.buffer.byteLength which gives the whole capacity.
+          // When the byte data of the file is populated, this will point to either a typed array, or a normal JS array. Typed arrays are preferred
+          // for performance, and used by default. However, typed arrays are not resizable like normal JS arrays are, so there is a small disk size
+          // penalty involved for appending file writes that continuously grow a file similar to std::vector capacity vs used -scheme.
+          node.contents = null; 
         } else if (FS.isLink(node.mode)) {
           node.node_ops = MEMFS.ops_table.link.node;
           node.stream_ops = MEMFS.ops_table.link.stream;
@@ -3611,12 +3625,63 @@ function copyTempDouble(ptr) {
           parent.contents[name] = node;
         }
         return node;
-      },ensureFlexible:function (node) {
-        if (node.contentMode !== MEMFS.CONTENT_FLEXIBLE) {
-          var contents = node.contents;
-          node.contents = Array.prototype.slice.call(contents);
-          node.contentMode = MEMFS.CONTENT_FLEXIBLE;
+      },getFileDataAsRegularArray:function (node) {
+        if (node.contents && node.contents.subarray) {
+          var arr = [];
+          for (var i = 0; i < node.usedBytes; ++i) arr.push(node.contents[i]);
+          return arr; // Returns a copy of the original data.
         }
+        return node.contents; // No-op, the file contents are already in a JS array. Return as-is.
+      },getFileDataAsTypedArray:function (node) {
+        if (node.contents && node.contents.subarray) return node.contents.subarray(0, node.usedBytes); // Make sure to not return excess unused bytes.
+        return new Uint8Array(node.contents);
+      },expandFileStorage:function (node, newCapacity) {
+  
+        // If we are asked to expand the size of a file that already exists, revert to using a standard JS array to store the file
+        // instead of a typed array. This makes resizing the array more flexible because we can just .push() elements at the back to
+        // increase the size.
+        if (node.contents && node.contents.subarray && newCapacity > node.contents.length) {
+          node.contents = MEMFS.getFileDataAsRegularArray(node);
+          node.usedBytes = node.contents.length; // We might be writing to a lazy-loaded file which had overridden this property, so force-reset it.
+        }
+  
+        if (!node.contents || node.contents.subarray) { // Keep using a typed array if creating a new storage, or if old one was a typed array as well.
+          var prevCapacity = node.contents ? node.contents.buffer.byteLength : 0;
+          if (prevCapacity >= newCapacity) return; // No need to expand, the storage was already large enough.
+          // Don't expand strictly to the given requested limit if it's only a very small increase, but instead geometrically grow capacity.
+          // For small filesizes (<1MB), perform size*2 geometric increase, but for large sizes, do a much more conservative size*1.125 increase to
+          // avoid overshooting the allocation cap by a very large margin.
+          var CAPACITY_DOUBLING_MAX = 1024 * 1024;
+          newCapacity = Math.max(newCapacity, (prevCapacity * (prevCapacity < CAPACITY_DOUBLING_MAX ? 2.0 : 1.125)) | 0);
+          if (prevCapacity != 0) newCapacity = Math.max(newCapacity, 256); // At minimum allocate 256b for each file when expanding.
+          var oldContents = node.contents;
+          node.contents = new Uint8Array(newCapacity); // Allocate new storage.
+          if (node.usedBytes > 0) node.contents.set(oldContents.subarray(0, node.usedBytes), 0); // Copy old data over to the new storage.
+          return;
+        }
+        // Not using a typed array to back the file storage. Use a standard JS array instead.
+        if (!node.contents && newCapacity > 0) node.contents = [];
+        while (node.contents.length < newCapacity) node.contents.push(0);
+      },resizeFileStorage:function (node, newSize) {
+        if (node.usedBytes == newSize) return;
+        if (newSize == 0) {
+          node.contents = null; // Fully decommit when requesting a resize to zero.
+          node.usedBytes = 0;
+          return;
+        }
+  
+        if (!node.contents || node.contents.subarray) { // Resize a typed array if that is being used as the backing store.
+          var oldContents = node.contents;
+          node.contents = new Uint8Array(new ArrayBuffer(newSize)); // Allocate new storage.
+          node.contents.set(oldContents.subarray(0, Math.min(newSize, node.usedBytes))); // Copy old data over to the new storage.
+          node.usedBytes = newSize;
+          return;
+        }
+        // Backing with a JS array.
+        if (!node.contents) node.contents = [];
+        if (node.contents.length > newSize) node.contents.length = newSize;
+        else while (node.contents.length < newSize) node.contents.push(0);
+        node.usedBytes = newSize;
       },node_ops:{getattr:function (node) {
           var attr = {};
           // device numbers reuse inode numbers.
@@ -3630,7 +3695,7 @@ function copyTempDouble(ptr) {
           if (FS.isDir(node.mode)) {
             attr.size = 4096;
           } else if (FS.isFile(node.mode)) {
-            attr.size = node.contents.length;
+            attr.size = node.usedBytes;
           } else if (FS.isLink(node.mode)) {
             attr.size = node.link.length;
           } else {
@@ -3652,10 +3717,7 @@ function copyTempDouble(ptr) {
             node.timestamp = attr.timestamp;
           }
           if (attr.size !== undefined) {
-            MEMFS.ensureFlexible(node);
-            var contents = node.contents;
-            if (attr.size < contents.length) contents.length = attr.size;
-            else while (attr.size > contents.length) contents.push(0);
+            MEMFS.resizeFileStorage(node, attr.size);
           }
         },lookup:function (parent, name) {
           throw FS.genericErrors[ERRNO_CODES.ENOENT];
@@ -3708,41 +3770,44 @@ function copyTempDouble(ptr) {
           return node.link;
         }},stream_ops:{read:function (stream, buffer, offset, length, position) {
           var contents = stream.node.contents;
-          if (position >= contents.length)
-            return 0;
-          var size = Math.min(contents.length - position, length);
+          if (position >= stream.node.usedBytes) return 0;
+          var size = Math.min(stream.node.usedBytes - position, length);
           assert(size >= 0);
           if (size > 8 && contents.subarray) { // non-trivial, and typed array
             buffer.set(contents.subarray(position, position + size), offset);
           } else
           {
-            for (var i = 0; i < size; i++) {
-              buffer[offset + i] = contents[position + i];
-            }
+            for (var i = 0; i < size; i++) buffer[offset + i] = contents[position + i];
           }
           return size;
         },write:function (stream, buffer, offset, length, position, canOwn) {
+          if (!length) return 0;
           var node = stream.node;
           node.timestamp = Date.now();
-          var contents = node.contents;
-          if (length && contents.length === 0 && position === 0 && buffer.subarray) {
-            // just replace it with the new data
-            assert(buffer.length);
-            if (canOwn && offset === 0) {
-              node.contents = buffer; // this could be a subarray of Emscripten HEAP, or allocated from some other source.
-              node.contentMode = (buffer.buffer === HEAP8.buffer) ? MEMFS.CONTENT_OWNING : MEMFS.CONTENT_FIXED;
-            } else {
-              node.contents = new Uint8Array(buffer.subarray(offset, offset+length));
-              node.contentMode = MEMFS.CONTENT_FIXED;
+  
+          if (buffer.subarray && (!node.contents || node.contents.subarray)) { // This write is from a typed array to a typed array?
+            if (canOwn) { // Can we just reuse the buffer we are given?
+              assert(position === 0, 'canOwn must imply no weird position inside the file');
+              node.contents = buffer.subarray(offset, offset + length);
+              node.usedBytes = length;
+              return length;
+            } else if (node.usedBytes === 0 && position === 0) { // If this is a simple first write to an empty file, do a fast set since we don't need to care about old data.
+              node.contents = new Uint8Array(buffer.subarray(offset, offset + length));
+              node.usedBytes = length;
+              return length;
+            } else if (position + length <= node.usedBytes) { // Writing to an already allocated and used subrange of the file?
+              node.contents.set(buffer.subarray(offset, offset + length), position);
+              return length;
             }
-            return length;
           }
-          MEMFS.ensureFlexible(node);
-          var contents = node.contents;
-          while (contents.length < position) contents.push(0);
-          for (var i = 0; i < length; i++) {
-            contents[position + i] = buffer[offset + i];
-          }
+          // Appending to an existing file and we need to reallocate, or source data did not come as a typed array.
+          MEMFS.expandFileStorage(node, position+length);
+          if (node.contents.subarray && buffer.subarray) node.contents.set(buffer.subarray(offset, offset + length), position); // Use typed array write if available.
+          else
+            for (var i = 0; i < length; i++) {
+             node.contents[position + i] = buffer[offset + i]; // Or fall back to manual write if not.
+            }
+          node.usedBytes = Math.max(node.usedBytes, position+length);
           return length;
         },llseek:function (stream, offset, whence) {
           var position = offset;
@@ -3750,7 +3815,7 @@ function copyTempDouble(ptr) {
             position += stream.position;
           } else if (whence === 2) {  // SEEK_END.
             if (FS.isFile(stream.node.mode)) {
-              position += stream.node.contents.length;
+              position += stream.node.usedBytes;
             }
           }
           if (position < 0) {
@@ -3760,10 +3825,8 @@ function copyTempDouble(ptr) {
           stream.position = position;
           return position;
         },allocate:function (stream, offset, length) {
-          MEMFS.ensureFlexible(stream.node);
-          var contents = stream.node.contents;
-          var limit = offset + length;
-          while (limit > contents.length) contents.push(0);
+          MEMFS.expandFileStorage(stream.node, offset + length);
+          stream.node.usedBytes = Math.max(stream.node.usedBytes, offset + length);
         },mmap:function (stream, buffer, offset, length, position, prot, flags) {
           if (!FS.isFile(stream.node.mode)) {
             throw new FS.ErrnoError(ERRNO_CODES.ENODEV);
@@ -3780,7 +3843,7 @@ function copyTempDouble(ptr) {
             ptr = contents.byteOffset;
           } else {
             // Try to avoid unnecessary slices.
-            if (position > 0 || position + length < contents.length) {
+            if (position > 0 || position + length < stream.node.usedBytes) {
               if (contents.subarray) {
                 contents = contents.subarray(position, position + length);
               } else {
@@ -3922,6 +3985,9 @@ function copyTempDouble(ptr) {
         if (FS.isDir(stat.mode)) {
           return callback(null, { timestamp: stat.mtime, mode: stat.mode });
         } else if (FS.isFile(stat.mode)) {
+          // Performance consideration: storing a normal JavaScript array to a IndexedDB is much slower than storing a typed array.
+          // Therefore always convert the file contents to a typed array first before writing the data to IndexedDB.
+          node.contents = MEMFS.getFileDataAsTypedArray(node);
           return callback(null, { timestamp: stat.mtime, mode: stat.mode, contents: node.contents });
         } else {
           return callback(new Error('node type not supported'));
@@ -5038,6 +5104,9 @@ function copyTempDouble(ptr) {
           timestamp: Math.max(atime, mtime)
         });
       },open:function (path, flags, mode, fd_start, fd_end) {
+        if (path === "") {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
+        }
         flags = typeof flags === 'string' ? FS.modeStringToFlags(flags) : flags;
         mode = typeof mode === 'undefined' ? 438 /* 0666 */ : mode;
         if ((flags & 64)) {
@@ -5179,16 +5248,16 @@ function copyTempDouble(ptr) {
         if (!stream.stream_ops.write) {
           throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
         }
+        if (stream.flags & 1024) {
+          // seek to the end before writing in append mode
+          FS.llseek(stream, 0, 2);
+        }
         var seeking = true;
         if (typeof position === 'undefined') {
           position = stream.position;
           seeking = false;
         } else if (!stream.seekable) {
           throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
-        }
-        if (stream.flags & 1024) {
-          // seek to the end before writing in append mode
-          FS.llseek(stream, 0, 2);
         }
         var bytesWritten = stream.stream_ops.write(stream, buffer, offset, length, position, canOwn);
         if (!seeking) stream.position += bytesWritten;
@@ -5296,6 +5365,21 @@ function copyTempDouble(ptr) {
         TTY.register(FS.makedev(6, 0), TTY.default_tty1_ops);
         FS.mkdev('/dev/tty', FS.makedev(5, 0));
         FS.mkdev('/dev/tty1', FS.makedev(6, 0));
+        // setup /dev/[u]random
+        var random_device;
+        if (typeof crypto !== 'undefined') {
+          // for modern web browsers
+          var randomBuffer = new Uint8Array(1);
+          random_device = function() { crypto.getRandomValues(randomBuffer); return randomBuffer[0]; };
+        } else if (ENVIRONMENT_IS_NODE) {
+          // for nodejs
+          random_device = function() { return require('crypto').randomBytes(1)[0]; };
+        } else {
+          // default for ES5 platforms
+          random_device = function() { return Math.floor(Math.random()*256); };
+        }
+        FS.createDevice('/dev', 'random', random_device);
+        FS.createDevice('/dev', 'urandom', random_device);
         // we're not going to emulate the actual shm device,
         // just create the tmp dirs that reside in it commonly
         FS.mkdir('/dev/shm');
@@ -5543,6 +5627,7 @@ function copyTempDouble(ptr) {
             // WARNING: Can't read binary files in V8's d8 or tracemonkey's js, as
             //          read() will try to parse UTF8.
             obj.contents = intArrayFromString(Module['read'](obj.url), true);
+            obj.usedBytes = obj.contents.length;
           } catch (e) {
             success = false;
           }
@@ -5656,6 +5741,10 @@ function copyTempDouble(ptr) {
           node.contents = null;
           node.url = properties.url;
         }
+        // Add a function that defers querying the file size until it is asked the first time.
+        Object.defineProperty(node, "usedBytes", {
+            get: function() { return this.contents.length; }
+        });
         // override each stream op with one that tries to force load the lazy file first
         var stream_ops = {};
         var keys = Object.keys(node.stream_ops);
@@ -6892,7 +6981,9 @@ function copyTempDouble(ptr) {
       return _id;
     }
 
-  var _fabs=Math_abs;
+  function _fabs() {
+  return Math_abs.apply(null, arguments)
+  }
 
   function _clBuildProgram(program,num_devices,device_list,options,pfn_notify,user_data) {
   
@@ -7201,10 +7292,29 @@ function copyTempDouble(ptr) {
               Module['setStatus']('');
             }
           }
+        },runIter:function (func) {
+          if (ABORT) return;
+          if (Module['preMainLoop']) {
+            var preRet = Module['preMainLoop']();
+            if (preRet === false) {
+              return; // |return false| skips a frame
+            }
+          }
+          try {
+            func();
+          } catch (e) {
+            if (e instanceof ExitStatus) {
+              return;
+            } else {
+              if (e && typeof e === 'object' && e.stack) Module.printErr('exception thrown: ' + [e, e.stack]);
+              throw e;
+            }
+          }
+          if (Module['postMainLoop']) Module['postMainLoop']();
         }},isFullScreen:false,pointerLock:false,moduleContextCreatedCallbacks:[],workers:[],init:function () {
         if (!Module["preloadPlugins"]) Module["preloadPlugins"] = []; // needs to exist even in workers
   
-        if (Browser.initted || ENVIRONMENT_IS_WORKER) return;
+        if (Browser.initted) return;
         Browser.initted = true;
   
         try {
@@ -7345,6 +7455,12 @@ function copyTempDouble(ptr) {
         // Canvas event setup
   
         var canvas = Module['canvas'];
+        function pointerLockChange() {
+          Browser.pointerLock = document['pointerLockElement'] === canvas ||
+                                document['mozPointerLockElement'] === canvas ||
+                                document['webkitPointerLockElement'] === canvas ||
+                                document['msPointerLockElement'] === canvas;
+        }
         if (canvas) {
           // forced aspect ratio can be enabled by defining 'forcedAspectRatio' on Module
           // Module['forcedAspectRatio'] = 4 / 3;
@@ -7361,12 +7477,6 @@ function copyTempDouble(ptr) {
                                    function(){}; // no-op if function does not exist
           canvas.exitPointerLock = canvas.exitPointerLock.bind(document);
   
-          function pointerLockChange() {
-            Browser.pointerLock = document['pointerLockElement'] === canvas ||
-                                  document['mozPointerLockElement'] === canvas ||
-                                  document['webkitPointerLockElement'] === canvas ||
-                                  document['msPointerLockElement'] === canvas;
-          }
   
           document.addEventListener('pointerlockchange', pointerLockChange, false);
           document.addEventListener('mozpointerlockchange', pointerLockChange, false);
@@ -7383,6 +7493,8 @@ function copyTempDouble(ptr) {
           }
         }
       },createContext:function (canvas, useWebGL, setInModule, webGLContextAttributes) {
+        if (useWebGL && Module.ctx) return Module.ctx; // no need to recreate singleton GL context
+  
         var ctx;
         var errorInfo = '?';
         function onContextCreationError(event) {
@@ -7419,11 +7531,15 @@ function copyTempDouble(ptr) {
           return null;
         }
         if (useWebGL) {
+          // possible GL_DEBUG entry point: ctx = wrapDebugGL(ctx);
+  
           // Set the background of the WebGL canvas to black
           canvas.style.backgroundColor = "black";
         }
         if (setInModule) {
-          GLctx = Module.ctx = ctx;
+          if (!useWebGL) assert(typeof GLctx === 'undefined', 'cannot set in module if GLctx is used, but we are a non-GL context that would replace it');
+          Module.ctx = ctx;
+          if (useWebGL) GLctx = ctx;
           Module.useWebGL = useWebGL;
           Browser.moduleContextCreatedCallbacks.forEach(function(callback) { callback() });
           Browser.init();
@@ -7485,9 +7601,21 @@ function copyTempDouble(ptr) {
                                             canvasContainer['msRequestFullscreen'] ||
                                            (canvasContainer['webkitRequestFullScreen'] ? function() { canvasContainer['webkitRequestFullScreen'](Element['ALLOW_KEYBOARD_INPUT']) } : null);
         canvasContainer.requestFullScreen();
+      },nextRAF:0,fakeRequestAnimationFrame:function (func) {
+        // try to keep 60fps between calls to here
+        var now = Date.now();
+        if (Browser.nextRAF === 0) {
+          Browser.nextRAF = now + 1000/60;
+        } else {
+          while (now + 2 >= Browser.nextRAF) { // fudge a little, to avoid timer jitter causing us to do lots of delay:0
+            Browser.nextRAF += 1000/60;
+          }
+        }
+        var delay = Math.max(Browser.nextRAF - now, 0);
+        setTimeout(func, delay);
       },requestAnimationFrame:function requestAnimationFrame(func) {
         if (typeof window === 'undefined') { // Provide fallback to setTimeout if window is undefined (e.g. in Node.js)
-          setTimeout(func, 1000/60);
+          Browser.fakeRequestAnimationFrame(func);
         } else {
           if (!window.requestAnimationFrame) {
             window.requestAnimationFrame = window['requestAnimationFrame'] ||
@@ -7495,7 +7623,7 @@ function copyTempDouble(ptr) {
                                            window['webkitRequestAnimationFrame'] ||
                                            window['msRequestAnimationFrame'] ||
                                            window['oRequestAnimationFrame'] ||
-                                           window['setTimeout'];
+                                           Browser.fakeRequestAnimationFrame;
           }
           window.requestAnimationFrame(func);
         }
@@ -7985,7 +8113,9 @@ function copyTempDouble(ptr) {
 
   var _BDtoIHigh=true;
 
-  var _ceil=Math_ceil;
+  function _ceil() {
+  return Math_ceil.apply(null, arguments)
+  }
 
   function _clEnqueueWriteBuffer(command_queue,buffer,blocking_write,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event) {
       
@@ -10624,13 +10754,13 @@ function _strstr($h,$n) {
  var $209 = 0, $21 = 0, $210 = 0, $211 = 0, $212 = 0, $213 = 0, $214 = 0, $215 = 0, $216 = 0, $217 = 0, $218 = 0, $219 = 0, $22 = 0, $220 = 0, $221 = 0, $222 = 0, $223 = 0, $224 = 0, $225 = 0, $226 = 0;
  var $227 = 0, $228 = 0, $229 = 0, $23 = 0, $230 = 0, $231 = 0, $232 = 0, $233 = 0, $234 = 0, $235 = 0, $236 = 0, $237 = 0, $238 = 0, $239 = 0, $24 = 0, $240 = 0, $241 = 0, $242 = 0, $243 = 0, $244 = 0;
  var $245 = 0, $246 = 0, $247 = 0, $248 = 0, $249 = 0, $25 = 0, $250 = 0, $251 = 0, $252 = 0, $253 = 0, $254 = 0, $255 = 0, $256 = 0, $257 = 0, $258 = 0, $259 = 0, $26 = 0, $260 = 0, $261 = 0, $262 = 0;
- var $263 = 0, $264 = 0, $265 = 0, $266 = 0, $267 = 0, $268 = 0, $269 = 0, $27 = 0, $270 = 0, $271 = 0, $272 = 0, $273 = 0, $274 = 0, $275 = 0, $276 = 0, $277 = 0, $28 = 0, $29 = 0, $3 = 0, $30 = 0;
- var $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $37 = 0, $38 = 0, $39 = 0, $4 = 0, $40 = 0, $41 = 0, $42 = 0, $43 = 0, $44 = 0, $45 = 0, $46 = 0, $47 = 0, $48 = 0, $49 = 0;
- var $5 = 0, $50 = 0, $51 = 0, $52 = 0, $53 = 0, $54 = 0, $55 = 0, $56 = 0, $57 = 0, $58 = 0, $59 = 0, $6 = 0, $60 = 0, $61 = 0, $62 = 0, $63 = 0, $64 = 0, $65 = 0, $66 = 0, $67 = 0;
- var $68 = 0, $69 = 0, $7 = 0, $70 = 0, $71 = 0, $72 = 0, $73 = 0, $74 = 0, $75 = 0, $76 = 0, $77 = 0, $78 = 0, $79 = 0, $8 = 0, $80 = 0, $81 = 0, $82 = 0, $83 = 0, $84 = 0, $85 = 0;
- var $86 = 0, $87 = 0, $88 = 0, $89 = 0, $9 = 0, $90 = 0, $91 = 0, $92 = 0, $93 = 0, $94 = 0, $95 = 0, $96 = 0, $97 = 0, $98 = 0, $99 = 0, $byteset$i = 0, $hw$0$in2$i = 0, $hw$03$i = 0, $hw$03$i10 = 0, $ip$0$ph76$i = 0;
- var $ip$0$ph76142$i = 0, $ip$0$ph79$i = 0, $ip$1$ip$0$$i = 0, $ip$1$ip$0$i = 0, $ip$1$ph56$i = 0, $ip$1$ph59$i = 0, $jp$0$ph19$ph70$i = 0, $jp$0$ph1964$i = 0, $jp$0$ph80$i = 0, $jp$1$ph60$i = 0, $jp$1$ph8$ph50$i = 0, $jp$1$ph844$i = 0, $k$027$i = 0, $k$114$i = 0, $k$2$us$i = 0, $k$36$i = 0, $k$36$us$i = 0, $k$4$i = 0, $k$4$us$i = 0, $l$037$i = 0;
- var $mem$0$us$i = 0, $notlhs$i = 0, $notrhs$us$i = 0, $or$cond$i = 0, $or$cond$i12 = 0, $or$cond3$us$i = 0, $p$0$ph$ph68$i = 0, $p$0$ph$ph68146$i = 0, $p$0$ph$ph71$i = 0, $p$1$p$0$i = 0, $p$1$ph$ph48$i = 0, $p$1$ph$ph51$i = 0, $p$3151$i = 0, $shift$i = 0, $z$0$i = 0, $z$0$us$i = 0, $z$1$i = 0, $z$1$us$i = 0, label = 0, sp = 0;
+ var $263 = 0, $264 = 0, $265 = 0, $266 = 0, $267 = 0, $268 = 0, $269 = 0, $27 = 0, $270 = 0, $271 = 0, $272 = 0, $273 = 0, $274 = 0, $275 = 0, $276 = 0, $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0;
+ var $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $37 = 0, $38 = 0, $39 = 0, $4 = 0, $40 = 0, $41 = 0, $42 = 0, $43 = 0, $44 = 0, $45 = 0, $46 = 0, $47 = 0, $48 = 0, $49 = 0, $5 = 0;
+ var $50 = 0, $51 = 0, $52 = 0, $53 = 0, $54 = 0, $55 = 0, $56 = 0, $57 = 0, $58 = 0, $59 = 0, $6 = 0, $60 = 0, $61 = 0, $62 = 0, $63 = 0, $64 = 0, $65 = 0, $66 = 0, $67 = 0, $68 = 0;
+ var $69 = 0, $7 = 0, $70 = 0, $71 = 0, $72 = 0, $73 = 0, $74 = 0, $75 = 0, $76 = 0, $77 = 0, $78 = 0, $79 = 0, $8 = 0, $80 = 0, $81 = 0, $82 = 0, $83 = 0, $84 = 0, $85 = 0, $86 = 0;
+ var $87 = 0, $88 = 0, $89 = 0, $9 = 0, $90 = 0, $91 = 0, $92 = 0, $93 = 0, $94 = 0, $95 = 0, $96 = 0, $97 = 0, $98 = 0, $99 = 0, $byteset$i = 0, $hw$0$in2$i = 0, $hw$03$i = 0, $hw$03$i10 = 0, $ip$0$ph78$i = 0, $ip$0$ph78146$i = 0;
+ var $ip$0$ph81$i = 0, $ip$1$ip$0$$i = 0, $ip$1$ip$0$i = 0, $ip$1$ph58$i = 0, $ip$1$ph61$i = 0, $jp$0$ph22$ph72$i = 0, $jp$0$ph2266$i = 0, $jp$0$ph82$i = 0, $jp$1$ph11$ph52$i = 0, $jp$1$ph1146$i = 0, $jp$1$ph62$i = 0, $k$030$i = 0, $k$117$i = 0, $k$2$us$i = 0, $k$37$i = 0, $k$37$us$i = 0, $k$4$i = 0, $k$4$us$i = 0, $l$039$i = 0, $mem$0$us$i = 0;
+ var $notlhs$i = 0, $notrhs$us$i = 0, $or$cond$i = 0, $or$cond$i12 = 0, $or$cond3$us$i = 0, $p$0$ph$ph70$i = 0, $p$0$ph$ph70150$i = 0, $p$0$ph$ph73$i = 0, $p$1$p$0$i = 0, $p$1$ph$ph50$i = 0, $p$1$ph$ph53$i = 0, $p$3155$i = 0, $shift$i = 0, $z$0$i = 0, $z$0$us$i = 0, $z$1$i = 0, $z$1$us$i = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 1056|0;
  $byteset$i = sp + 1024|0;
@@ -10675,12 +10805,12 @@ function _strstr($h,$n) {
   $20 = $9&255;
   $21 = $19 << 8;
   $22 = $21 | $20;
-  $$01$i = $8;$271 = $9;$hw$0$in2$i = $22;
+  $$01$i = $8;$270 = $9;$hw$0$in2$i = $22;
   while(1) {
    $23 = $hw$0$in2$i & 65535;
    $24 = ($23|0)==($17|0);
    if ($24) {
-    $$0$lcssa$i = $$01$i;$32 = $271;
+    $$0$lcssa$i = $$01$i;$32 = $270;
     break;
    }
    $25 = $23 << 8;
@@ -10693,7 +10823,7 @@ function _strstr($h,$n) {
     $$0$lcssa$i = $26;$32 = 0;
     break;
    } else {
-    $$01$i = $26;$271 = $27;$hw$0$in2$i = $29;
+    $$01$i = $26;$270 = $27;$hw$0$in2$i = $29;
    }
   }
   $31 = ($32<<24>>24)==(0);
@@ -10817,14 +10947,14 @@ function _strstr($h,$n) {
   STACKTOP = sp;return ($$0|0);
  }
  ;HEAP32[$byteset$i+0>>2]=0|0;HEAP32[$byteset$i+4>>2]=0|0;HEAP32[$byteset$i+8>>2]=0|0;HEAP32[$byteset$i+12>>2]=0|0;HEAP32[$byteset$i+16>>2]=0|0;HEAP32[$byteset$i+20>>2]=0|0;HEAP32[$byteset$i+24>>2]=0|0;HEAP32[$byteset$i+28>>2]=0|0;
- $106 = $0;$l$037$i = 0;
+ $106 = $0;$l$039$i = 0;
  while(1) {
-  $102 = (($3) + ($l$037$i)|0);
+  $102 = (($3) + ($l$039$i)|0);
   $103 = HEAP8[$102>>0]|0;
   $104 = ($103<<24>>24)==(0);
   if ($104) {
    $$0 = 0;
-   label = 80;
+   label = 79;
    break;
   }
   $105 = $106&255;
@@ -10835,7 +10965,7 @@ function _strstr($h,$n) {
   $111 = HEAP32[$110>>2]|0;
   $112 = $111 | $108;
   HEAP32[$110>>2] = $112;
-  $113 = (($l$037$i) + 1)|0;
+  $113 = (($l$039$i) + 1)|0;
   $114 = (($shift$i) + ($105<<2)|0);
   HEAP32[$114>>2] = $113;
   $115 = (($n) + ($113)|0);
@@ -10844,24 +10974,24 @@ function _strstr($h,$n) {
   if ($117) {
    break;
   } else {
-   $106 = $116;$l$037$i = $113;
+   $106 = $116;$l$039$i = $113;
   }
  }
- if ((label|0) == 80) {
+ if ((label|0) == 79) {
   STACKTOP = sp;return ($$0|0);
  }
  $118 = ($113>>>0)>(1);
  L49: do {
   if ($118) {
-   $272 = 1;$ip$0$ph79$i = -1;$jp$0$ph80$i = 0;
+   $271 = 1;$ip$0$ph81$i = -1;$jp$0$ph82$i = 0;
    L50: while(1) {
-    $273 = $272;$jp$0$ph19$ph70$i = $jp$0$ph80$i;$p$0$ph$ph71$i = 1;
+    $272 = $271;$jp$0$ph22$ph72$i = $jp$0$ph82$i;$p$0$ph$ph73$i = 1;
     while(1) {
-     $274 = $273;$jp$0$ph1964$i = $jp$0$ph19$ph70$i;
+     $273 = $272;$jp$0$ph2266$i = $jp$0$ph22$ph72$i;
      L54: while(1) {
-      $120 = $274;$k$027$i = 1;
+      $120 = $273;$k$030$i = 1;
       while(1) {
-       $125 = (($k$027$i) + ($ip$0$ph79$i))|0;
+       $125 = (($k$030$i) + ($ip$0$ph81$i))|0;
        $126 = (($n) + ($125)|0);
        $127 = HEAP8[$126>>0]|0;
        $128 = (($n) + ($120)|0);
@@ -10870,63 +11000,63 @@ function _strstr($h,$n) {
        if (!($130)) {
         break L54;
        }
-       $131 = ($k$027$i|0)==($p$0$ph$ph71$i|0);
-       $123 = (($k$027$i) + 1)|0;
+       $131 = ($k$030$i|0)==($p$0$ph$ph73$i|0);
+       $123 = (($k$030$i) + 1)|0;
        if ($131) {
         break;
        }
-       $122 = (($123) + ($jp$0$ph1964$i))|0;
+       $122 = (($123) + ($jp$0$ph2266$i))|0;
        $124 = ($122>>>0)<($113>>>0);
        if ($124) {
-        $120 = $122;$k$027$i = $123;
+        $120 = $122;$k$030$i = $123;
        } else {
-        $ip$0$ph76$i = $ip$0$ph79$i;$p$0$ph$ph68$i = $p$0$ph$ph71$i;
+        $ip$0$ph78$i = $ip$0$ph81$i;$p$0$ph$ph70$i = $p$0$ph$ph73$i;
         break L50;
        }
       }
-      $132 = (($jp$0$ph1964$i) + ($p$0$ph$ph71$i))|0;
+      $132 = (($jp$0$ph2266$i) + ($p$0$ph$ph73$i))|0;
       $133 = (($132) + 1)|0;
       $134 = ($133>>>0)<($113>>>0);
       if ($134) {
-       $274 = $133;$jp$0$ph1964$i = $132;
+       $273 = $133;$jp$0$ph2266$i = $132;
       } else {
-       $ip$0$ph76$i = $ip$0$ph79$i;$p$0$ph$ph68$i = $p$0$ph$ph71$i;
+       $ip$0$ph78$i = $ip$0$ph81$i;$p$0$ph$ph70$i = $p$0$ph$ph73$i;
        break L50;
       }
      }
      $135 = ($127&255)>($129&255);
-     $136 = (($120) - ($ip$0$ph79$i))|0;
+     $136 = (($120) - ($ip$0$ph81$i))|0;
      if (!($135)) {
       break;
      }
      $119 = (($120) + 1)|0;
      $121 = ($119>>>0)<($113>>>0);
      if ($121) {
-      $273 = $119;$jp$0$ph19$ph70$i = $120;$p$0$ph$ph71$i = $136;
+      $272 = $119;$jp$0$ph22$ph72$i = $120;$p$0$ph$ph73$i = $136;
      } else {
-      $ip$0$ph76$i = $ip$0$ph79$i;$p$0$ph$ph68$i = $136;
+      $ip$0$ph78$i = $ip$0$ph81$i;$p$0$ph$ph70$i = $136;
       break L50;
      }
     }
-    $137 = (($jp$0$ph1964$i) + 1)|0;
-    $138 = (($jp$0$ph1964$i) + 2)|0;
+    $137 = (($jp$0$ph2266$i) + 1)|0;
+    $138 = (($jp$0$ph2266$i) + 2)|0;
     $139 = ($138>>>0)<($113>>>0);
     if ($139) {
-     $272 = $138;$ip$0$ph79$i = $jp$0$ph1964$i;$jp$0$ph80$i = $137;
+     $271 = $138;$ip$0$ph81$i = $jp$0$ph2266$i;$jp$0$ph82$i = $137;
     } else {
-     $ip$0$ph76$i = $jp$0$ph1964$i;$p$0$ph$ph68$i = 1;
+     $ip$0$ph78$i = $jp$0$ph2266$i;$p$0$ph$ph70$i = 1;
      break;
     }
    }
-   $275 = 1;$ip$1$ph59$i = -1;$jp$1$ph60$i = 0;
+   $274 = 1;$ip$1$ph61$i = -1;$jp$1$ph62$i = 0;
    while(1) {
-    $277 = $275;$jp$1$ph8$ph50$i = $jp$1$ph60$i;$p$1$ph$ph51$i = 1;
+    $276 = $274;$jp$1$ph11$ph52$i = $jp$1$ph62$i;$p$1$ph$ph53$i = 1;
     while(1) {
-     $276 = $277;$jp$1$ph844$i = $jp$1$ph8$ph50$i;
+     $275 = $276;$jp$1$ph1146$i = $jp$1$ph11$ph52$i;
      L69: while(1) {
-      $147 = $276;$k$114$i = 1;
+      $147 = $275;$k$117$i = 1;
       while(1) {
-       $143 = (($k$114$i) + ($ip$1$ph59$i))|0;
+       $143 = (($k$117$i) + ($ip$1$ph61$i))|0;
        $144 = (($n) + ($143)|0);
        $145 = HEAP8[$144>>0]|0;
        $146 = (($n) + ($147)|0);
@@ -10935,63 +11065,63 @@ function _strstr($h,$n) {
        if (!($149)) {
         break L69;
        }
-       $150 = ($k$114$i|0)==($p$1$ph$ph51$i|0);
-       $141 = (($k$114$i) + 1)|0;
+       $150 = ($k$117$i|0)==($p$1$ph$ph53$i|0);
+       $141 = (($k$117$i) + 1)|0;
        if ($150) {
         break;
        }
-       $140 = (($141) + ($jp$1$ph844$i))|0;
+       $140 = (($141) + ($jp$1$ph1146$i))|0;
        $142 = ($140>>>0)<($113>>>0);
        if ($142) {
-        $147 = $140;$k$114$i = $141;
+        $147 = $140;$k$117$i = $141;
        } else {
-        $ip$0$ph76142$i = $ip$0$ph76$i;$ip$1$ph56$i = $ip$1$ph59$i;$p$0$ph$ph68146$i = $p$0$ph$ph68$i;$p$1$ph$ph48$i = $p$1$ph$ph51$i;
+        $ip$0$ph78146$i = $ip$0$ph78$i;$ip$1$ph58$i = $ip$1$ph61$i;$p$0$ph$ph70150$i = $p$0$ph$ph70$i;$p$1$ph$ph50$i = $p$1$ph$ph53$i;
         break L49;
        }
       }
-      $151 = (($jp$1$ph844$i) + ($p$1$ph$ph51$i))|0;
+      $151 = (($jp$1$ph1146$i) + ($p$1$ph$ph53$i))|0;
       $152 = (($151) + 1)|0;
       $153 = ($152>>>0)<($113>>>0);
       if ($153) {
-       $276 = $152;$jp$1$ph844$i = $151;
+       $275 = $152;$jp$1$ph1146$i = $151;
       } else {
-       $ip$0$ph76142$i = $ip$0$ph76$i;$ip$1$ph56$i = $ip$1$ph59$i;$p$0$ph$ph68146$i = $p$0$ph$ph68$i;$p$1$ph$ph48$i = $p$1$ph$ph51$i;
+       $ip$0$ph78146$i = $ip$0$ph78$i;$ip$1$ph58$i = $ip$1$ph61$i;$p$0$ph$ph70150$i = $p$0$ph$ph70$i;$p$1$ph$ph50$i = $p$1$ph$ph53$i;
        break L49;
       }
      }
      $154 = ($145&255)<($148&255);
-     $155 = (($147) - ($ip$1$ph59$i))|0;
+     $155 = (($147) - ($ip$1$ph61$i))|0;
      if (!($154)) {
       break;
      }
      $156 = (($147) + 1)|0;
      $157 = ($156>>>0)<($113>>>0);
      if ($157) {
-      $277 = $156;$jp$1$ph8$ph50$i = $147;$p$1$ph$ph51$i = $155;
+      $276 = $156;$jp$1$ph11$ph52$i = $147;$p$1$ph$ph53$i = $155;
      } else {
-      $ip$0$ph76142$i = $ip$0$ph76$i;$ip$1$ph56$i = $ip$1$ph59$i;$p$0$ph$ph68146$i = $p$0$ph$ph68$i;$p$1$ph$ph48$i = $155;
+      $ip$0$ph78146$i = $ip$0$ph78$i;$ip$1$ph58$i = $ip$1$ph61$i;$p$0$ph$ph70150$i = $p$0$ph$ph70$i;$p$1$ph$ph50$i = $155;
       break L49;
      }
     }
-    $158 = (($jp$1$ph844$i) + 1)|0;
-    $159 = (($jp$1$ph844$i) + 2)|0;
+    $158 = (($jp$1$ph1146$i) + 1)|0;
+    $159 = (($jp$1$ph1146$i) + 2)|0;
     $160 = ($159>>>0)<($113>>>0);
     if ($160) {
-     $275 = $159;$ip$1$ph59$i = $jp$1$ph844$i;$jp$1$ph60$i = $158;
+     $274 = $159;$ip$1$ph61$i = $jp$1$ph1146$i;$jp$1$ph62$i = $158;
     } else {
-     $ip$0$ph76142$i = $ip$0$ph76$i;$ip$1$ph56$i = $jp$1$ph844$i;$p$0$ph$ph68146$i = $p$0$ph$ph68$i;$p$1$ph$ph48$i = 1;
+     $ip$0$ph78146$i = $ip$0$ph78$i;$ip$1$ph58$i = $jp$1$ph1146$i;$p$0$ph$ph70150$i = $p$0$ph$ph70$i;$p$1$ph$ph50$i = 1;
      break;
     }
    }
   } else {
-   $ip$0$ph76142$i = -1;$ip$1$ph56$i = -1;$p$0$ph$ph68146$i = 1;$p$1$ph$ph48$i = 1;
+   $ip$0$ph78146$i = -1;$ip$1$ph58$i = -1;$p$0$ph$ph70150$i = 1;$p$1$ph$ph50$i = 1;
   }
  } while(0);
- $161 = (($ip$1$ph56$i) + 1)|0;
- $162 = (($ip$0$ph76142$i) + 1)|0;
+ $161 = (($ip$1$ph58$i) + 1)|0;
+ $162 = (($ip$0$ph78146$i) + 1)|0;
  $163 = ($161>>>0)>($162>>>0);
- $p$1$p$0$i = $163 ? $p$1$ph$ph48$i : $p$0$ph$ph68146$i;
- $ip$1$ip$0$i = $163 ? $ip$1$ph56$i : $ip$0$ph76142$i;
+ $p$1$p$0$i = $163 ? $p$1$ph$ph50$i : $p$0$ph$ph70150$i;
+ $ip$1$ip$0$i = $163 ? $ip$1$ph58$i : $ip$0$ph78146$i;
  $164 = (($n) + ($p$1$p$0$i)|0);
  $165 = (($ip$1$ip$0$i) + 1)|0;
  $166 = (_memcmp($n,$164,$165)|0);
@@ -11001,7 +11131,7 @@ function _strstr($h,$n) {
   $174 = $113 | 63;
   $notlhs$i = ($113|0)==($p$1$p$0$i|0);
   if ($notlhs$i) {
-   $229 = $174;$p$3151$i = $113;
+   $228 = $174;$p$3155$i = $113;
   } else {
    $$02$us$i = $3;$mem$0$us$i = 0;$z$0$us$i = $3;
    L83: while(1) {
@@ -11023,7 +11153,7 @@ function _strstr($h,$n) {
        $184 = ($183>>>0)<($113>>>0);
        if ($184) {
         $$0 = 0;
-        label = 80;
+        label = 79;
         break L83;
        } else {
         $z$1$us$i = $180;
@@ -11034,7 +11164,7 @@ function _strstr($h,$n) {
       $z$1$us$i = $z$0$us$i;
      }
     } while(0);
-    $186 = (($$02$us$i) + ($l$037$i)|0);
+    $186 = (($$02$us$i) + ($l$039$i)|0);
     $187 = HEAP8[$186>>0]|0;
     $188 = $187&255;
     $189 = $188 >>> 5;
@@ -11045,8 +11175,8 @@ function _strstr($h,$n) {
     $194 = $193 & $191;
     $195 = ($194|0)==(0);
     if ($195) {
-     $224 = (($$02$us$i) + ($113)|0);
-     $$02$us$i = $224;$mem$0$us$i = 0;$z$0$us$i = $z$1$us$i;
+     $223 = (($$02$us$i) + ($113)|0);
+     $$02$us$i = $223;$mem$0$us$i = 0;$z$0$us$i = $z$1$us$i;
      continue;
     }
     $196 = (($shift$i) + ($188<<2)|0);
@@ -11071,12 +11201,12 @@ function _strstr($h,$n) {
      if ($205) {
       $k$4$us$i = $165;
      } else {
-      $$pr$us$i = $204;$k$36$us$i = $$mem$0$us$i;
+      $$pr$us$i = $204;$k$37$us$i = $$mem$0$us$i;
       while(1) {
-       $210 = (($$02$us$i) + ($k$36$us$i)|0);
+       $210 = (($$02$us$i) + ($k$37$us$i)|0);
        $211 = HEAP8[$210>>0]|0;
        $212 = ($$pr$us$i<<24>>24)==($211<<24>>24);
-       $207 = (($k$36$us$i) + 1)|0;
+       $207 = (($k$37$us$i) + 1)|0;
        if (!($212)) {
         break;
        }
@@ -11087,10 +11217,10 @@ function _strstr($h,$n) {
         $k$4$us$i = $165;
         break L97;
        } else {
-        $$pr$us$i = $208;$k$36$us$i = $207;
+        $$pr$us$i = $208;$k$37$us$i = $207;
        }
       }
-      $213 = (($k$36$us$i) - ($ip$1$ip$0$i))|0;
+      $213 = (($k$37$us$i) - ($ip$1$ip$0$i))|0;
       $214 = (($$02$us$i) + ($213)|0);
       $$02$us$i = $214;$mem$0$us$i = 0;$z$0$us$i = $z$1$us$i;
       continue L83;
@@ -11099,7 +11229,9 @@ function _strstr($h,$n) {
     while(1) {
      $215 = ($k$4$us$i>>>0)>($mem$0$us$i>>>0);
      if (!($215)) {
-      break;
+      $$0 = $$02$us$i;
+      label = 79;
+      break L83;
      }
      $216 = (($k$4$us$i) + -1)|0;
      $217 = (($n) + ($216)|0);
@@ -11113,16 +11245,10 @@ function _strstr($h,$n) {
       break;
      }
     }
-    $222 = ($k$4$us$i|0)==($mem$0$us$i|0);
-    if ($222) {
-     $$0 = $$02$us$i;
-     label = 80;
-     break;
-    }
-    $223 = (($$02$us$i) + ($p$1$p$0$i)|0);
-    $$02$us$i = $223;$mem$0$us$i = $173;$z$0$us$i = $z$1$us$i;
+    $222 = (($$02$us$i) + ($p$1$p$0$i)|0);
+    $$02$us$i = $222;$mem$0$us$i = $173;$z$0$us$i = $z$1$us$i;
    }
-   if ((label|0) == 80) {
+   if ((label|0) == 79) {
     STACKTOP = sp;return ($$0|0);
    }
   }
@@ -11133,33 +11259,33 @@ function _strstr($h,$n) {
   $ip$1$ip$0$$i = $170 ? $ip$1$ip$0$i : $169;
   $171 = (($ip$1$ip$0$$i) + 1)|0;
   $172 = $113 | 63;
-  $229 = $172;$p$3151$i = $171;
+  $228 = $172;$p$3155$i = $171;
  }
  $175 = (($n) + ($165)|0);
  $$02$i = $3;$z$0$i = $3;
- L111: while(1) {
-  $225 = $z$0$i;
-  $226 = $$02$i;
-  $227 = (($225) - ($226))|0;
-  $228 = ($227>>>0)<($113>>>0);
+ L110: while(1) {
+  $224 = $z$0$i;
+  $225 = $$02$i;
+  $226 = (($224) - ($225))|0;
+  $227 = ($226>>>0)<($113>>>0);
   do {
-   if ($228) {
-    $230 = (_memchr($z$0$i,0,$229)|0);
-    $231 = ($230|0)==(0|0);
-    if ($231) {
-     $235 = (($z$0$i) + ($229)|0);
-     $z$1$i = $235;
+   if ($227) {
+    $229 = (_memchr($z$0$i,0,$228)|0);
+    $230 = ($229|0)==(0|0);
+    if ($230) {
+     $234 = (($z$0$i) + ($228)|0);
+     $z$1$i = $234;
      break;
     } else {
-     $232 = $230;
-     $233 = (($232) - ($226))|0;
-     $234 = ($233>>>0)<($113>>>0);
-     if ($234) {
+     $231 = $229;
+     $232 = (($231) - ($225))|0;
+     $233 = ($232>>>0)<($113>>>0);
+     if ($233) {
       $$0 = 0;
-      label = 80;
-      break L111;
+      label = 79;
+      break L110;
      } else {
-      $z$1$i = $230;
+      $z$1$i = $229;
       break;
      }
     }
@@ -11167,84 +11293,84 @@ function _strstr($h,$n) {
     $z$1$i = $z$0$i;
    }
   } while(0);
-  $236 = (($$02$i) + ($l$037$i)|0);
-  $237 = HEAP8[$236>>0]|0;
-  $238 = $237&255;
-  $239 = $238 >>> 5;
-  $240 = (($byteset$i) + ($239<<2)|0);
-  $241 = HEAP32[$240>>2]|0;
-  $242 = $238 & 31;
-  $243 = 1 << $242;
-  $244 = $243 & $241;
-  $245 = ($244|0)==(0);
-  if ($245) {
-   $251 = (($$02$i) + ($113)|0);
-   $$02$i = $251;$z$0$i = $z$1$i;
-   continue;
-  }
-  $246 = (($shift$i) + ($238<<2)|0);
-  $247 = HEAP32[$246>>2]|0;
-  $248 = ($113|0)==($247|0);
-  if (!($248)) {
-   $249 = (($113) - ($247))|0;
-   $250 = (($$02$i) + ($249)|0);
+  $235 = (($$02$i) + ($l$039$i)|0);
+  $236 = HEAP8[$235>>0]|0;
+  $237 = $236&255;
+  $238 = $237 >>> 5;
+  $239 = (($byteset$i) + ($238<<2)|0);
+  $240 = HEAP32[$239>>2]|0;
+  $241 = $237 & 31;
+  $242 = 1 << $241;
+  $243 = $242 & $240;
+  $244 = ($243|0)==(0);
+  if ($244) {
+   $250 = (($$02$i) + ($113)|0);
    $$02$i = $250;$z$0$i = $z$1$i;
    continue;
   }
-  $252 = HEAP8[$175>>0]|0;
-  $253 = ($252<<24>>24)==(0);
-  L125: do {
-   if ($253) {
+  $245 = (($shift$i) + ($237<<2)|0);
+  $246 = HEAP32[$245>>2]|0;
+  $247 = ($113|0)==($246|0);
+  if (!($247)) {
+   $248 = (($113) - ($246))|0;
+   $249 = (($$02$i) + ($248)|0);
+   $$02$i = $249;$z$0$i = $z$1$i;
+   continue;
+  }
+  $251 = HEAP8[$175>>0]|0;
+  $252 = ($251<<24>>24)==(0);
+  L124: do {
+   if ($252) {
     $k$4$i = $165;
    } else {
-    $$pr$i = $252;$k$36$i = $165;
+    $$pr$i = $251;$k$37$i = $165;
     while(1) {
-     $258 = (($$02$i) + ($k$36$i)|0);
-     $259 = HEAP8[$258>>0]|0;
-     $260 = ($$pr$i<<24>>24)==($259<<24>>24);
-     $255 = (($k$36$i) + 1)|0;
-     if (!($260)) {
+     $257 = (($$02$i) + ($k$37$i)|0);
+     $258 = HEAP8[$257>>0]|0;
+     $259 = ($$pr$i<<24>>24)==($258<<24>>24);
+     $254 = (($k$37$i) + 1)|0;
+     if (!($259)) {
       break;
      }
-     $254 = (($n) + ($255)|0);
-     $256 = HEAP8[$254>>0]|0;
-     $257 = ($256<<24>>24)==(0);
-     if ($257) {
+     $253 = (($n) + ($254)|0);
+     $255 = HEAP8[$253>>0]|0;
+     $256 = ($255<<24>>24)==(0);
+     if ($256) {
       $k$4$i = $165;
-      break L125;
+      break L124;
      } else {
-      $$pr$i = $256;$k$36$i = $255;
+      $$pr$i = $255;$k$37$i = $254;
      }
     }
-    $261 = (($k$36$i) - ($ip$1$ip$0$i))|0;
-    $262 = (($$02$i) + ($261)|0);
-    $$02$i = $262;$z$0$i = $z$1$i;
-    continue L111;
+    $260 = (($k$37$i) - ($ip$1$ip$0$i))|0;
+    $261 = (($$02$i) + ($260)|0);
+    $$02$i = $261;$z$0$i = $z$1$i;
+    continue L110;
    }
   } while(0);
   while(1) {
-   $263 = ($k$4$i|0)==(0);
-   if ($263) {
+   $262 = ($k$4$i|0)==(0);
+   if ($262) {
     $$0 = $$02$i;
-    label = 80;
-    break L111;
+    label = 79;
+    break L110;
    }
-   $264 = (($k$4$i) + -1)|0;
-   $265 = (($n) + ($264)|0);
-   $266 = HEAP8[$265>>0]|0;
-   $267 = (($$02$i) + ($264)|0);
-   $268 = HEAP8[$267>>0]|0;
-   $269 = ($266<<24>>24)==($268<<24>>24);
-   if ($269) {
-    $k$4$i = $264;
+   $263 = (($k$4$i) + -1)|0;
+   $264 = (($n) + ($263)|0);
+   $265 = HEAP8[$264>>0]|0;
+   $266 = (($$02$i) + ($263)|0);
+   $267 = HEAP8[$266>>0]|0;
+   $268 = ($265<<24>>24)==($267<<24>>24);
+   if ($268) {
+    $k$4$i = $263;
    } else {
     break;
    }
   }
-  $270 = (($$02$i) + ($p$3151$i)|0);
-  $$02$i = $270;$z$0$i = $z$1$i;
+  $269 = (($$02$i) + ($p$3155$i)|0);
+  $$02$i = $269;$z$0$i = $z$1$i;
  }
- if ((label|0) == 80) {
+ if ((label|0) == 79) {
   STACKTOP = sp;return ($$0|0);
  }
  return 0|0;
@@ -11861,7 +11987,7 @@ function _malloc($bytes) {
      $276 = ((1560 + ($idx$0$i<<2)|0) + 304|0);
      $277 = HEAP32[$276>>2]|0;
      $278 = ($277|0)==(0|0);
-     L126: do {
+     L9: do {
       if ($278) {
        $rsize$2$i = $250;$t$1$i = 0;$v$2$i = 0;
       } else {
@@ -11885,7 +12011,7 @@ function _malloc($bytes) {
          $289 = ($286|0)==($247|0);
          if ($289) {
           $rsize$2$i = $287;$t$1$i = $t$0$i14;$v$2$i = $t$0$i14;
-          break L126;
+          break L9;
          } else {
           $rsize$1$i = $287;$v$1$i = $t$0$i14;
          }
@@ -12170,7 +12296,7 @@ function _malloc($bytes) {
         }
        } while(0);
        $412 = ($rsize$3$lcssa$i>>>0)<(16);
-       L204: do {
+       L87: do {
         if ($412) {
          $413 = (($rsize$3$lcssa$i) + ($247))|0;
          $414 = $413 | 3;
@@ -12309,7 +12435,7 @@ function _malloc($bytes) {
          $482 = HEAP32[$481>>2]|0;
          $483 = $482 & -8;
          $484 = ($483|0)==($rsize$3$lcssa$i|0);
-         L225: do {
+         L108: do {
           if ($484) {
            $T$0$lcssa$i = $477;
           } else {
@@ -12330,7 +12456,7 @@ function _malloc($bytes) {
             $492 = ($491|0)==($rsize$3$lcssa$i|0);
             if ($492) {
              $T$0$lcssa$i = $489;
-             break L225;
+             break L108;
             } else {
              $K12$025$i = $487;$T$024$i = $489;
             }
@@ -12351,7 +12477,7 @@ function _malloc($bytes) {
             $$sum13$i = (($247) + 8)|0;
             $500 = (($v$3$lcssa$i) + ($$sum13$i)|0);
             HEAP32[$500>>2] = $349;
-            break L204;
+            break L87;
            }
           }
          } while(0);
@@ -14807,6 +14933,7 @@ function _bitshift64Lshr(low, high, bits) {
     return (high >>> (bits - 32))|0;
 }
 function _memcpy(dest, src, num) {
+
     dest = dest|0; src = src|0; num = num|0;
     var ret = 0;
     if ((num|0) >= 4096) return _emscripten_memcpy_big(dest|0, src|0, num|0)|0;
@@ -14846,7 +14973,42 @@ function _memcpy(dest, src, num) {
   })
   // EMSCRIPTEN_END_ASM
   ({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "_fabs": _fabs, "_clReleaseProgram": _clReleaseProgram, "_clCreateKernel": _clCreateKernel, "_send": _send, "_fread": _fread, "_clReleaseKernel": _clReleaseKernel, "_clReleaseContext": _clReleaseContext, "___setErrNo": ___setErrNo, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_clCreateContext": _clCreateContext, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_clCreateProgramWithSource": _clCreateProgramWithSource, "_fmax": _fmax, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "_time": _time, "_pwrite": _pwrite, "_open": _open, "_sbrk": _sbrk, "_clReleaseMemObject": _clReleaseMemObject, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_fileno": _fileno, "_sysconf": _sysconf, "_clFinish": _clFinish, "_clGetDeviceInfo": _clGetDeviceInfo, "_clCreateCommandQueue": _clCreateCommandQueue, "_printf": _printf, "_clReleaseCommandQueue": _clReleaseCommandQueue, "__reallyNegative": __reallyNegative, "_fflush": _fflush, "_write": _write, "_pread": _pread, "___errno_location": ___errno_location, "_clCreateBuffer": _clCreateBuffer, "_stat": _stat, "_recv": _recv, "_clGetDeviceIDs": _clGetDeviceIDs, "_mkport": _mkport, "_read": _read, "_clSetKernelArg": _clSetKernelArg, "_abort": _abort, "_fwrite": _fwrite, "_emscripten_get_now": _emscripten_get_now, "_clBuildProgram": _clBuildProgram, "_fprintf": _fprintf, "_ceil": _ceil, "__formatString": __formatString, "_fopen": _fopen, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_clGetKernelWorkGroupInfo": _clGetKernelWorkGroupInfo, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "___rand_seed": ___rand_seed, "NaN": NaN, "Infinity": Infinity }, buffer);
-  var _strlen = Module["_strlen"] = asm["_strlen"];
+  var real__strlen = asm["_strlen"]; asm["_strlen"] = function() {
+  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+  return real__strlen.apply(null, arguments);
+};
+
+var real__main = asm["_main"]; asm["_main"] = function() {
+  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+  return real__main.apply(null, arguments);
+};
+
+var real__rand_r = asm["_rand_r"]; asm["_rand_r"] = function() {
+  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+  return real__rand_r.apply(null, arguments);
+};
+
+var real__bitshift64Lshr = asm["_bitshift64Lshr"]; asm["_bitshift64Lshr"] = function() {
+  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+  return real__bitshift64Lshr.apply(null, arguments);
+};
+
+var real__rand = asm["_rand"]; asm["_rand"] = function() {
+  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+  return real__rand.apply(null, arguments);
+};
+
+var real_runPostSets = asm["runPostSets"]; asm["runPostSets"] = function() {
+  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+  return real_runPostSets.apply(null, arguments);
+};
+var _strlen = Module["_strlen"] = asm["_strlen"];
 var _free = Module["_free"] = asm["_free"];
 var _main = Module["_main"] = asm["_main"];
 var _rand_r = Module["_rand_r"] = asm["_rand_r"];
@@ -14876,6 +15038,9 @@ if (memoryInitializer) {
   } else {
     addRunDependency('memory initializer');
     Browser.asyncLoad(memoryInitializer, function(data) {
+      for (var i = 0; i < data.length; i++) {
+        assert(HEAPU8[STATIC_BASE + i] === 0, "area for memory initializer should not have been touched before it's loaded");
+      }
       HEAPU8.set(data, STATIC_BASE);
       removeRunDependency('memory initializer');
     }, function(data) {
@@ -14916,7 +15081,7 @@ Module['callMain'] = Module.callMain = function callMain(args) {
       argv.push(0);
     }
   }
-  var argv = [allocate(intArrayFromString("/bin/this.program"), 'i8', ALLOC_NORMAL) ];
+  var argv = [allocate(intArrayFromString(Module['thisProgram'] || '/bin/this.program'), 'i8', ALLOC_NORMAL) ];
   pad();
   for (var i = 0; i < argc-1; i = i + 1) {
     argv.push(allocate(intArrayFromString(args[i]), 'i8', ALLOC_NORMAL));
@@ -14977,6 +15142,8 @@ function run(args) {
     if (Module['calledRun']) return; // run may have just been called while the async setStatus time below was happening
     Module['calledRun'] = true;
 
+    if (ABORT) return; 
+
     ensureInitRuntime();
 
     preMain();
@@ -14998,7 +15165,7 @@ function run(args) {
       setTimeout(function() {
         Module['setStatus']('');
       }, 1);
-      if (!ABORT) doRun();
+      doRun();
     }, 1);
   } else {
     doRun();

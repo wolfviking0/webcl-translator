@@ -66,6 +66,7 @@ if (ENVIRONMENT_IS_NODE) {
     globalEval(read(f));
   };
 
+  Module['thisProgram'] = process['argv'][1];
   Module['arguments'] = process['argv'].slice(2);
 
   module['exports'] = Module;
@@ -1219,6 +1220,7 @@ var __ATEXIT__    = []; // functions called during shutdown
 var __ATPOSTRUN__ = []; // functions called after the runtime has exited
 
 var runtimeInitialized = false;
+var runtimeExited = false;
 
 function preRun() {
   // compatibility - merge in anything from Module['preRun'] at this time
@@ -1246,6 +1248,7 @@ function exitRuntime() {
     Module.printErr('Exiting runtime. Any attempt to access the compiled C code may fail from now. If you want to keep the runtime alive, set Module["noExitRuntime"] = true or build with -s NO_EXIT_RUNTIME=1');
   }
   callRuntimeCallbacks(__ATEXIT__);
+  runtimeExited = true;
 }
 
 function postRun() {
@@ -1415,6 +1418,11 @@ function addRunDependency(id) {
     if (runDependencyWatcher === null && typeof setInterval !== 'undefined') {
       // Check for missing dependencies every few seconds
       runDependencyWatcher = setInterval(function() {
+        if (ABORT) {
+          clearInterval(runDependencyWatcher);
+          runDependencyWatcher = null;
+          return;
+        }
         var shown = false;
         for (var dep in runDependencyTracking) {
           if (!shown) {
@@ -1814,7 +1822,10 @@ function copyTempDouble(ptr) {
         case 5: return 16;
         case 6: return 6;
         case 73: return 4;
-        case 84: return 1;
+        case 84: {
+          if (typeof navigator === 'object') return navigator['hardwareConcurrency'] || 1;
+          return 1;
+        }
       }
       ___setErrNo(ERRNO_CODES.EINVAL);
       return -1;
@@ -2098,7 +2109,7 @@ function copyTempDouble(ptr) {
           }
         }}};
   
-  var MEMFS={ops_table:null,CONTENT_OWNING:1,CONTENT_FLEXIBLE:2,CONTENT_FIXED:3,mount:function (mount) {
+  var MEMFS={ops_table:null,mount:function (mount) {
         return MEMFS.createNode(null, '/', 16384 | 511 /* 0777 */, 0);
       },createNode:function (parent, name, mode, dev) {
         if (FS.isBlkdev(mode) || FS.isFIFO(mode)) {
@@ -2161,8 +2172,11 @@ function copyTempDouble(ptr) {
         } else if (FS.isFile(node.mode)) {
           node.node_ops = MEMFS.ops_table.file.node;
           node.stream_ops = MEMFS.ops_table.file.stream;
-          node.contents = [];
-          node.contentMode = MEMFS.CONTENT_FLEXIBLE;
+          node.usedBytes = 0; // The actual number of bytes used in the typed array, as opposed to contents.buffer.byteLength which gives the whole capacity.
+          // When the byte data of the file is populated, this will point to either a typed array, or a normal JS array. Typed arrays are preferred
+          // for performance, and used by default. However, typed arrays are not resizable like normal JS arrays are, so there is a small disk size
+          // penalty involved for appending file writes that continuously grow a file similar to std::vector capacity vs used -scheme.
+          node.contents = null; 
         } else if (FS.isLink(node.mode)) {
           node.node_ops = MEMFS.ops_table.link.node;
           node.stream_ops = MEMFS.ops_table.link.stream;
@@ -2176,12 +2190,63 @@ function copyTempDouble(ptr) {
           parent.contents[name] = node;
         }
         return node;
-      },ensureFlexible:function (node) {
-        if (node.contentMode !== MEMFS.CONTENT_FLEXIBLE) {
-          var contents = node.contents;
-          node.contents = Array.prototype.slice.call(contents);
-          node.contentMode = MEMFS.CONTENT_FLEXIBLE;
+      },getFileDataAsRegularArray:function (node) {
+        if (node.contents && node.contents.subarray) {
+          var arr = [];
+          for (var i = 0; i < node.usedBytes; ++i) arr.push(node.contents[i]);
+          return arr; // Returns a copy of the original data.
         }
+        return node.contents; // No-op, the file contents are already in a JS array. Return as-is.
+      },getFileDataAsTypedArray:function (node) {
+        if (node.contents && node.contents.subarray) return node.contents.subarray(0, node.usedBytes); // Make sure to not return excess unused bytes.
+        return new Uint8Array(node.contents);
+      },expandFileStorage:function (node, newCapacity) {
+  
+        // If we are asked to expand the size of a file that already exists, revert to using a standard JS array to store the file
+        // instead of a typed array. This makes resizing the array more flexible because we can just .push() elements at the back to
+        // increase the size.
+        if (node.contents && node.contents.subarray && newCapacity > node.contents.length) {
+          node.contents = MEMFS.getFileDataAsRegularArray(node);
+          node.usedBytes = node.contents.length; // We might be writing to a lazy-loaded file which had overridden this property, so force-reset it.
+        }
+  
+        if (!node.contents || node.contents.subarray) { // Keep using a typed array if creating a new storage, or if old one was a typed array as well.
+          var prevCapacity = node.contents ? node.contents.buffer.byteLength : 0;
+          if (prevCapacity >= newCapacity) return; // No need to expand, the storage was already large enough.
+          // Don't expand strictly to the given requested limit if it's only a very small increase, but instead geometrically grow capacity.
+          // For small filesizes (<1MB), perform size*2 geometric increase, but for large sizes, do a much more conservative size*1.125 increase to
+          // avoid overshooting the allocation cap by a very large margin.
+          var CAPACITY_DOUBLING_MAX = 1024 * 1024;
+          newCapacity = Math.max(newCapacity, (prevCapacity * (prevCapacity < CAPACITY_DOUBLING_MAX ? 2.0 : 1.125)) | 0);
+          if (prevCapacity != 0) newCapacity = Math.max(newCapacity, 256); // At minimum allocate 256b for each file when expanding.
+          var oldContents = node.contents;
+          node.contents = new Uint8Array(newCapacity); // Allocate new storage.
+          if (node.usedBytes > 0) node.contents.set(oldContents.subarray(0, node.usedBytes), 0); // Copy old data over to the new storage.
+          return;
+        }
+        // Not using a typed array to back the file storage. Use a standard JS array instead.
+        if (!node.contents && newCapacity > 0) node.contents = [];
+        while (node.contents.length < newCapacity) node.contents.push(0);
+      },resizeFileStorage:function (node, newSize) {
+        if (node.usedBytes == newSize) return;
+        if (newSize == 0) {
+          node.contents = null; // Fully decommit when requesting a resize to zero.
+          node.usedBytes = 0;
+          return;
+        }
+  
+        if (!node.contents || node.contents.subarray) { // Resize a typed array if that is being used as the backing store.
+          var oldContents = node.contents;
+          node.contents = new Uint8Array(new ArrayBuffer(newSize)); // Allocate new storage.
+          node.contents.set(oldContents.subarray(0, Math.min(newSize, node.usedBytes))); // Copy old data over to the new storage.
+          node.usedBytes = newSize;
+          return;
+        }
+        // Backing with a JS array.
+        if (!node.contents) node.contents = [];
+        if (node.contents.length > newSize) node.contents.length = newSize;
+        else while (node.contents.length < newSize) node.contents.push(0);
+        node.usedBytes = newSize;
       },node_ops:{getattr:function (node) {
           var attr = {};
           // device numbers reuse inode numbers.
@@ -2195,7 +2260,7 @@ function copyTempDouble(ptr) {
           if (FS.isDir(node.mode)) {
             attr.size = 4096;
           } else if (FS.isFile(node.mode)) {
-            attr.size = node.contents.length;
+            attr.size = node.usedBytes;
           } else if (FS.isLink(node.mode)) {
             attr.size = node.link.length;
           } else {
@@ -2217,10 +2282,7 @@ function copyTempDouble(ptr) {
             node.timestamp = attr.timestamp;
           }
           if (attr.size !== undefined) {
-            MEMFS.ensureFlexible(node);
-            var contents = node.contents;
-            if (attr.size < contents.length) contents.length = attr.size;
-            else while (attr.size > contents.length) contents.push(0);
+            MEMFS.resizeFileStorage(node, attr.size);
           }
         },lookup:function (parent, name) {
           throw FS.genericErrors[ERRNO_CODES.ENOENT];
@@ -2273,41 +2335,44 @@ function copyTempDouble(ptr) {
           return node.link;
         }},stream_ops:{read:function (stream, buffer, offset, length, position) {
           var contents = stream.node.contents;
-          if (position >= contents.length)
-            return 0;
-          var size = Math.min(contents.length - position, length);
+          if (position >= stream.node.usedBytes) return 0;
+          var size = Math.min(stream.node.usedBytes - position, length);
           assert(size >= 0);
           if (size > 8 && contents.subarray) { // non-trivial, and typed array
             buffer.set(contents.subarray(position, position + size), offset);
           } else
           {
-            for (var i = 0; i < size; i++) {
-              buffer[offset + i] = contents[position + i];
-            }
+            for (var i = 0; i < size; i++) buffer[offset + i] = contents[position + i];
           }
           return size;
         },write:function (stream, buffer, offset, length, position, canOwn) {
+          if (!length) return 0;
           var node = stream.node;
           node.timestamp = Date.now();
-          var contents = node.contents;
-          if (length && contents.length === 0 && position === 0 && buffer.subarray) {
-            // just replace it with the new data
-            assert(buffer.length);
-            if (canOwn && offset === 0) {
-              node.contents = buffer; // this could be a subarray of Emscripten HEAP, or allocated from some other source.
-              node.contentMode = (buffer.buffer === HEAP8.buffer) ? MEMFS.CONTENT_OWNING : MEMFS.CONTENT_FIXED;
-            } else {
-              node.contents = new Uint8Array(buffer.subarray(offset, offset+length));
-              node.contentMode = MEMFS.CONTENT_FIXED;
+  
+          if (buffer.subarray && (!node.contents || node.contents.subarray)) { // This write is from a typed array to a typed array?
+            if (canOwn) { // Can we just reuse the buffer we are given?
+              assert(position === 0, 'canOwn must imply no weird position inside the file');
+              node.contents = buffer.subarray(offset, offset + length);
+              node.usedBytes = length;
+              return length;
+            } else if (node.usedBytes === 0 && position === 0) { // If this is a simple first write to an empty file, do a fast set since we don't need to care about old data.
+              node.contents = new Uint8Array(buffer.subarray(offset, offset + length));
+              node.usedBytes = length;
+              return length;
+            } else if (position + length <= node.usedBytes) { // Writing to an already allocated and used subrange of the file?
+              node.contents.set(buffer.subarray(offset, offset + length), position);
+              return length;
             }
-            return length;
           }
-          MEMFS.ensureFlexible(node);
-          var contents = node.contents;
-          while (contents.length < position) contents.push(0);
-          for (var i = 0; i < length; i++) {
-            contents[position + i] = buffer[offset + i];
-          }
+          // Appending to an existing file and we need to reallocate, or source data did not come as a typed array.
+          MEMFS.expandFileStorage(node, position+length);
+          if (node.contents.subarray && buffer.subarray) node.contents.set(buffer.subarray(offset, offset + length), position); // Use typed array write if available.
+          else
+            for (var i = 0; i < length; i++) {
+             node.contents[position + i] = buffer[offset + i]; // Or fall back to manual write if not.
+            }
+          node.usedBytes = Math.max(node.usedBytes, position+length);
           return length;
         },llseek:function (stream, offset, whence) {
           var position = offset;
@@ -2315,7 +2380,7 @@ function copyTempDouble(ptr) {
             position += stream.position;
           } else if (whence === 2) {  // SEEK_END.
             if (FS.isFile(stream.node.mode)) {
-              position += stream.node.contents.length;
+              position += stream.node.usedBytes;
             }
           }
           if (position < 0) {
@@ -2325,10 +2390,8 @@ function copyTempDouble(ptr) {
           stream.position = position;
           return position;
         },allocate:function (stream, offset, length) {
-          MEMFS.ensureFlexible(stream.node);
-          var contents = stream.node.contents;
-          var limit = offset + length;
-          while (limit > contents.length) contents.push(0);
+          MEMFS.expandFileStorage(stream.node, offset + length);
+          stream.node.usedBytes = Math.max(stream.node.usedBytes, offset + length);
         },mmap:function (stream, buffer, offset, length, position, prot, flags) {
           if (!FS.isFile(stream.node.mode)) {
             throw new FS.ErrnoError(ERRNO_CODES.ENODEV);
@@ -2345,7 +2408,7 @@ function copyTempDouble(ptr) {
             ptr = contents.byteOffset;
           } else {
             // Try to avoid unnecessary slices.
-            if (position > 0 || position + length < contents.length) {
+            if (position > 0 || position + length < stream.node.usedBytes) {
               if (contents.subarray) {
                 contents = contents.subarray(position, position + length);
               } else {
@@ -2487,6 +2550,9 @@ function copyTempDouble(ptr) {
         if (FS.isDir(stat.mode)) {
           return callback(null, { timestamp: stat.mtime, mode: stat.mode });
         } else if (FS.isFile(stat.mode)) {
+          // Performance consideration: storing a normal JavaScript array to a IndexedDB is much slower than storing a typed array.
+          // Therefore always convert the file contents to a typed array first before writing the data to IndexedDB.
+          node.contents = MEMFS.getFileDataAsTypedArray(node);
           return callback(null, { timestamp: stat.mtime, mode: stat.mode, contents: node.contents });
         } else {
           return callback(new Error('node type not supported'));
@@ -3603,6 +3669,9 @@ function copyTempDouble(ptr) {
           timestamp: Math.max(atime, mtime)
         });
       },open:function (path, flags, mode, fd_start, fd_end) {
+        if (path === "") {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
+        }
         flags = typeof flags === 'string' ? FS.modeStringToFlags(flags) : flags;
         mode = typeof mode === 'undefined' ? 438 /* 0666 */ : mode;
         if ((flags & 64)) {
@@ -3744,16 +3813,16 @@ function copyTempDouble(ptr) {
         if (!stream.stream_ops.write) {
           throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
         }
+        if (stream.flags & 1024) {
+          // seek to the end before writing in append mode
+          FS.llseek(stream, 0, 2);
+        }
         var seeking = true;
         if (typeof position === 'undefined') {
           position = stream.position;
           seeking = false;
         } else if (!stream.seekable) {
           throw new FS.ErrnoError(ERRNO_CODES.ESPIPE);
-        }
-        if (stream.flags & 1024) {
-          // seek to the end before writing in append mode
-          FS.llseek(stream, 0, 2);
         }
         var bytesWritten = stream.stream_ops.write(stream, buffer, offset, length, position, canOwn);
         if (!seeking) stream.position += bytesWritten;
@@ -3861,6 +3930,21 @@ function copyTempDouble(ptr) {
         TTY.register(FS.makedev(6, 0), TTY.default_tty1_ops);
         FS.mkdev('/dev/tty', FS.makedev(5, 0));
         FS.mkdev('/dev/tty1', FS.makedev(6, 0));
+        // setup /dev/[u]random
+        var random_device;
+        if (typeof crypto !== 'undefined') {
+          // for modern web browsers
+          var randomBuffer = new Uint8Array(1);
+          random_device = function() { crypto.getRandomValues(randomBuffer); return randomBuffer[0]; };
+        } else if (ENVIRONMENT_IS_NODE) {
+          // for nodejs
+          random_device = function() { return require('crypto').randomBytes(1)[0]; };
+        } else {
+          // default for ES5 platforms
+          random_device = function() { return Math.floor(Math.random()*256); };
+        }
+        FS.createDevice('/dev', 'random', random_device);
+        FS.createDevice('/dev', 'urandom', random_device);
         // we're not going to emulate the actual shm device,
         // just create the tmp dirs that reside in it commonly
         FS.mkdir('/dev/shm');
@@ -4108,6 +4192,7 @@ function copyTempDouble(ptr) {
             // WARNING: Can't read binary files in V8's d8 or tracemonkey's js, as
             //          read() will try to parse UTF8.
             obj.contents = intArrayFromString(Module['read'](obj.url), true);
+            obj.usedBytes = obj.contents.length;
           } catch (e) {
             success = false;
           }
@@ -4221,6 +4306,10 @@ function copyTempDouble(ptr) {
           node.contents = null;
           node.url = properties.url;
         }
+        // Add a function that defers querying the file size until it is asked the first time.
+        Object.defineProperty(node, "usedBytes", {
+            get: function() { return this.contents.length; }
+        });
         // override each stream op with one that tries to force load the lazy file first
         var stream_ops = {};
         var keys = Object.keys(node.stream_ops);
@@ -5565,20 +5654,32 @@ function copyTempDouble(ptr) {
   
       var _kernel_converted = CU.convertCudaKernelToOpenCL(_kernel_source,_kernel_name);
   
+      if (_kernel_options) {
+        // Add space after -D
+        _kernel_options = _kernel_options.replace(/-D/g, "-D ");
+  
+        // Remove all the multispace
+        _kernel_options = _kernel_options.replace(/\s{2,}/g, " ");
+      }
+  
       try {
   
   
         var _program = CU.cuda_objects[CU.cuda_context].createProgram(_kernel_converted);
   
         
-        _program.build(CU.cuda_objects[CU.cuda_device],Pointer_stringify(options),null);
+        _program.build([CU.cuda_objects[CU.cuda_device]],_kernel_options,null);
   
         
         var _kernel = _program.createKernel(_kernel_name);
   
         for (var i = 0; i < num_args; i++) {
-          
-          var webCLKernelArgInfo = _kernel.getArgInfo(i);
+           
+          var webCLKernelArgInfo
+          if (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) 
+            webCLKernelArgInfo = _kernel.getArgInfo(i);
+          else
+            webCLKernelArgInfo = {'addressQualifier':'','typeName':'float'};
   
           if (webCLKernelArgInfo.addressQualifier == "local") {
             console.error("cudaRunKernel (local paramater) not yet implemented ...\n");
@@ -5603,6 +5704,12 @@ function copyTempDouble(ptr) {
           }
         }
   
+        var global_work_offset = [];
+        for (var i = 0; i < work_dim; i++) {
+          global_work_offset.push(0);
+        }
+  
+  
         
         var _event = null;
         if (CU.cuda_profile_event) {
@@ -5610,7 +5717,7 @@ function copyTempDouble(ptr) {
           CU.cuda_events.push(_event);
         }
         
-        CU.cuda_objects[CU.cuda_command_queue].enqueueNDRangeKernel(_kernel,work_dim,[],global_work_size,local_work_size,[],_event);  
+        CU.cuda_objects[CU.cuda_command_queue].enqueueNDRangeKernel(_kernel,work_dim,global_work_offset,global_work_size,local_work_size,[],_event);  
   
         _program.release();
   
@@ -5700,7 +5807,9 @@ function copyTempDouble(ptr) {
       return 0; /* cudaSuccess */
     }
 
-  var _fabs=Math_abs;
+  function _fabs() {
+  return Math_abs.apply(null, arguments)
+  }
 
   function _cudaMemcpy(dst,src,count,kind) {
   
@@ -5711,13 +5820,13 @@ function copyTempDouble(ptr) {
           var _host_ptr = HEAPF32.subarray((src)>>2,(src+count)>>2);
   
           
-          CU.cuda_objects[CU.cuda_command_queue].enqueueWriteBuffer(CU.cuda_objects[dst],1,0,count,_host_ptr,[]);    
+          CU.cuda_objects[CU.cuda_command_queue].enqueueWriteBuffer(CU.cuda_objects[dst],true,0,count,_host_ptr,[]);    
   
         } else /*cudaMemcpyDeviceToHost <-> clEnqueueReadBuffer*/ {
   
           var _host_ptr = HEAPF32.subarray((dst)>>2,(dst+count)>>2);
           
-          CU.cuda_objects[CU.cuda_command_queue].enqueueReadBuffer(CU.cuda_objects[src],1,0,count,_host_ptr,[]);    
+          CU.cuda_objects[CU.cuda_command_queue].enqueueReadBuffer(CU.cuda_objects[src],true,0,count,_host_ptr,[]);    
   
   
         }
@@ -5880,10 +5989,29 @@ function copyTempDouble(ptr) {
               Module['setStatus']('');
             }
           }
+        },runIter:function (func) {
+          if (ABORT) return;
+          if (Module['preMainLoop']) {
+            var preRet = Module['preMainLoop']();
+            if (preRet === false) {
+              return; // |return false| skips a frame
+            }
+          }
+          try {
+            func();
+          } catch (e) {
+            if (e instanceof ExitStatus) {
+              return;
+            } else {
+              if (e && typeof e === 'object' && e.stack) Module.printErr('exception thrown: ' + [e, e.stack]);
+              throw e;
+            }
+          }
+          if (Module['postMainLoop']) Module['postMainLoop']();
         }},isFullScreen:false,pointerLock:false,moduleContextCreatedCallbacks:[],workers:[],init:function () {
         if (!Module["preloadPlugins"]) Module["preloadPlugins"] = []; // needs to exist even in workers
   
-        if (Browser.initted || ENVIRONMENT_IS_WORKER) return;
+        if (Browser.initted) return;
         Browser.initted = true;
   
         try {
@@ -6024,6 +6152,12 @@ function copyTempDouble(ptr) {
         // Canvas event setup
   
         var canvas = Module['canvas'];
+        function pointerLockChange() {
+          Browser.pointerLock = document['pointerLockElement'] === canvas ||
+                                document['mozPointerLockElement'] === canvas ||
+                                document['webkitPointerLockElement'] === canvas ||
+                                document['msPointerLockElement'] === canvas;
+        }
         if (canvas) {
           // forced aspect ratio can be enabled by defining 'forcedAspectRatio' on Module
           // Module['forcedAspectRatio'] = 4 / 3;
@@ -6040,12 +6174,6 @@ function copyTempDouble(ptr) {
                                    function(){}; // no-op if function does not exist
           canvas.exitPointerLock = canvas.exitPointerLock.bind(document);
   
-          function pointerLockChange() {
-            Browser.pointerLock = document['pointerLockElement'] === canvas ||
-                                  document['mozPointerLockElement'] === canvas ||
-                                  document['webkitPointerLockElement'] === canvas ||
-                                  document['msPointerLockElement'] === canvas;
-          }
   
           document.addEventListener('pointerlockchange', pointerLockChange, false);
           document.addEventListener('mozpointerlockchange', pointerLockChange, false);
@@ -6062,6 +6190,8 @@ function copyTempDouble(ptr) {
           }
         }
       },createContext:function (canvas, useWebGL, setInModule, webGLContextAttributes) {
+        if (useWebGL && Module.ctx) return Module.ctx; // no need to recreate singleton GL context
+  
         var ctx;
         var errorInfo = '?';
         function onContextCreationError(event) {
@@ -6098,11 +6228,15 @@ function copyTempDouble(ptr) {
           return null;
         }
         if (useWebGL) {
+          // possible GL_DEBUG entry point: ctx = wrapDebugGL(ctx);
+  
           // Set the background of the WebGL canvas to black
           canvas.style.backgroundColor = "black";
         }
         if (setInModule) {
-          GLctx = Module.ctx = ctx;
+          if (!useWebGL) assert(typeof GLctx === 'undefined', 'cannot set in module if GLctx is used, but we are a non-GL context that would replace it');
+          Module.ctx = ctx;
+          if (useWebGL) GLctx = ctx;
           Module.useWebGL = useWebGL;
           Browser.moduleContextCreatedCallbacks.forEach(function(callback) { callback() });
           Browser.init();
@@ -6164,9 +6298,21 @@ function copyTempDouble(ptr) {
                                             canvasContainer['msRequestFullscreen'] ||
                                            (canvasContainer['webkitRequestFullScreen'] ? function() { canvasContainer['webkitRequestFullScreen'](Element['ALLOW_KEYBOARD_INPUT']) } : null);
         canvasContainer.requestFullScreen();
+      },nextRAF:0,fakeRequestAnimationFrame:function (func) {
+        // try to keep 60fps between calls to here
+        var now = Date.now();
+        if (Browser.nextRAF === 0) {
+          Browser.nextRAF = now + 1000/60;
+        } else {
+          while (now + 2 >= Browser.nextRAF) { // fudge a little, to avoid timer jitter causing us to do lots of delay:0
+            Browser.nextRAF += 1000/60;
+          }
+        }
+        var delay = Math.max(Browser.nextRAF - now, 0);
+        setTimeout(func, delay);
       },requestAnimationFrame:function requestAnimationFrame(func) {
         if (typeof window === 'undefined') { // Provide fallback to setTimeout if window is undefined (e.g. in Node.js)
-          setTimeout(func, 1000/60);
+          Browser.fakeRequestAnimationFrame(func);
         } else {
           if (!window.requestAnimationFrame) {
             window.requestAnimationFrame = window['requestAnimationFrame'] ||
@@ -6174,7 +6320,7 @@ function copyTempDouble(ptr) {
                                            window['webkitRequestAnimationFrame'] ||
                                            window['msRequestAnimationFrame'] ||
                                            window['oRequestAnimationFrame'] ||
-                                           window['setTimeout'];
+                                           Browser.fakeRequestAnimationFrame;
           }
           window.requestAnimationFrame(func);
         }
@@ -11204,11 +11350,11 @@ function _atoi($s) {
  }
  $5 = HEAP8[$$0>>0]|0;
  $6 = $5 << 24 >> 24;
- if ((($6|0) == 45)) {
-  $neg$0 = 1;
-  label = 5;
- } else if ((($6|0) == 43)) {
+ if ((($6|0) == 43)) {
   $neg$0 = 0;
+  label = 5;
+ } else if ((($6|0) == 45)) {
+  $neg$0 = 1;
   label = 5;
  } else {
   $$1$ph = $$0;$8 = $5;$neg$1$ph = 0;
@@ -11359,6 +11505,7 @@ function _strlen(ptr) {
     return (curr - ptr)|0;
 }
 function _memcpy(dest, src, num) {
+
     dest = dest|0; src = src|0; num = num|0;
     var ret = 0;
     if ((num|0) >= 4096) return _emscripten_memcpy_big(dest|0, src|0, num|0)|0;
@@ -11398,7 +11545,24 @@ function _memcpy(dest, src, num) {
   })
   // EMSCRIPTEN_END_ASM
   ({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "_fabs": _fabs, "_send": _send, "_cudaEventElapsedTime": _cudaEventElapsedTime, "__reallyNegative": __reallyNegative, "_cudaSetDevice": _cudaSetDevice, "_cudaMemcpy": _cudaMemcpy, "_cudaRunKernelDimFunc": _cudaRunKernelDimFunc, "_fflush": _fflush, "_pwrite": _pwrite, "_cudaGetErrorString": _cudaGetErrorString, "___setErrNo": ___setErrNo, "_sbrk": _sbrk, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_fileno": _fileno, "_sysconf": _sysconf, "_cudaGetDevice": _cudaGetDevice, "_cudaDeviceSynchronize": _cudaDeviceSynchronize, "_printf": _printf, "_cudaRunKernel": _cudaRunKernel, "_cudaDeviceReset": _cudaDeviceReset, "_write": _write, "_cudaFree": _cudaFree, "___errno_location": ___errno_location, "_cudaGetDeviceProperties": _cudaGetDeviceProperties, "_mkport": _mkport, "__exit": __exit, "_cudaEventCreate": _cudaEventCreate, "_abort": _abort, "_fwrite": _fwrite, "_time": _time, "_fprintf": _fprintf, "_cudaEventRecord": _cudaEventRecord, "__formatString": __formatString, "_exit": _exit, "_cudaMalloc": _cudaMalloc, "_cudaEventSynchronize": _cudaEventSynchronize, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "NaN": NaN, "Infinity": Infinity, "_stderr": _stderr }, buffer);
-  var _strlen = Module["_strlen"] = asm["_strlen"];
+  var real__strlen = asm["_strlen"]; asm["_strlen"] = function() {
+  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+  return real__strlen.apply(null, arguments);
+};
+
+var real__main = asm["_main"]; asm["_main"] = function() {
+  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+  return real__main.apply(null, arguments);
+};
+
+var real_runPostSets = asm["runPostSets"]; asm["runPostSets"] = function() {
+  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+  return real_runPostSets.apply(null, arguments);
+};
+var _strlen = Module["_strlen"] = asm["_strlen"];
 var _free = Module["_free"] = asm["_free"];
 var _main = Module["_main"] = asm["_main"];
 var _memset = Module["_memset"] = asm["_memset"];
@@ -11425,6 +11589,9 @@ if (memoryInitializer) {
   } else {
     addRunDependency('memory initializer');
     Browser.asyncLoad(memoryInitializer, function(data) {
+      for (var i = 0; i < data.length; i++) {
+        assert(HEAPU8[STATIC_BASE + i] === 0, "area for memory initializer should not have been touched before it's loaded");
+      }
       HEAPU8.set(data, STATIC_BASE);
       removeRunDependency('memory initializer');
     }, function(data) {
@@ -11465,7 +11632,7 @@ Module['callMain'] = Module.callMain = function callMain(args) {
       argv.push(0);
     }
   }
-  var argv = [allocate(intArrayFromString("/bin/this.program"), 'i8', ALLOC_NORMAL) ];
+  var argv = [allocate(intArrayFromString(Module['thisProgram'] || '/bin/this.program'), 'i8', ALLOC_NORMAL) ];
   pad();
   for (var i = 0; i < argc-1; i = i + 1) {
     argv.push(allocate(intArrayFromString(args[i]), 'i8', ALLOC_NORMAL));
@@ -11526,6 +11693,8 @@ function run(args) {
     if (Module['calledRun']) return; // run may have just been called while the async setStatus time below was happening
     Module['calledRun'] = true;
 
+    if (ABORT) return; 
+
     ensureInitRuntime();
 
     preMain();
@@ -11547,7 +11716,7 @@ function run(args) {
       setTimeout(function() {
         Module['setStatus']('');
       }, 1);
-      if (!ABORT) doRun();
+      doRun();
     }, 1);
   } else {
     doRun();
