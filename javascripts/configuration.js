@@ -461,7 +461,7 @@ var configuration_pages = {
   "Demos OpenCL NVIDIA" : [
     { 
       "title"         : "Bandwidth Test",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 0,
       "gl"            : "off",
@@ -472,7 +472,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "BlackScholes",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 1,
       "gl"            : "off",
@@ -494,7 +494,7 @@ var configuration_pages = {
     },   
     { 
       "title"         : "ConvolutionSeparable",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 3,
       "gl"            : "off",
@@ -505,7 +505,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "CopyComputeOverlap",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 4,
       "gl"            : "off",
@@ -516,7 +516,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "DCT8x8",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 5,
       "gl"            : "off",
@@ -527,7 +527,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "DeviceQuery",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 6,
       "gl"            : "off",
@@ -538,7 +538,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "DotProduct",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 7,
       "gl"            : "off",
@@ -549,7 +549,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "DXTCompression",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 8,
       "gl"            : "off",
@@ -560,7 +560,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "FDTD3d",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 9,
       "gl"            : "off",
@@ -571,7 +571,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "HiddenMarkovModel",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 10,
       "gl"            : "off",
@@ -582,7 +582,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "Histogram",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 11,
       "gl"            : "off",
@@ -593,7 +593,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "MatrixMul",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 12,
       "gl"            : "on",
@@ -604,7 +604,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "MatVecMul",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 13,
       "gl"            : "off",
@@ -615,7 +615,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "MersenneTwister",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 14,
       "gl"            : "off",
@@ -626,7 +626,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "Nbody",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 15,
       "gl"            : "on",
@@ -637,7 +637,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "Particles",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 16,
       "gl"            : "on",
@@ -648,7 +648,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "QuasirandomGenerator",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 17,
       "gl"            : "off",
@@ -659,7 +659,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "RadixSort",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 18,
       "gl"            : "off",
@@ -670,7 +670,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "RecursiveGaussian",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 19,
       "gl"            : "on",
@@ -681,7 +681,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "Reduction",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 20,
       "gl"            : "off",
@@ -692,7 +692,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "Scan",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 21,
       "gl"            : "off",
@@ -714,7 +714,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "SimpleMultiGPU",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 23,
       "gl"            : "off",
@@ -725,7 +725,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "SobelFilter",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 24,
       "gl"            : "on",
@@ -736,7 +736,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "SortingNetworks",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 25,
       "gl"            : "off",
@@ -747,7 +747,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "Transpose",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 26,
       "gl"            : "off",
@@ -758,7 +758,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "Tridiagonal",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 27,
       "gl"            : "off",
@@ -769,7 +769,7 @@ var configuration_pages = {
     },     
     { 
       "title"         : "VectorAdd",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_nvidia/",
       "id"            : 28,
       "gl"            : "off",
