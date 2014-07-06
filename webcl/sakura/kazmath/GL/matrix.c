@@ -66,7 +66,7 @@ void lazyInitialize()
 km_mat4_stack_context *lookUpContext(void *contextRef)
 {
     lazyInitialize();
-    
+
     if (contexts) {
         km_mat4_stack_context_list *entry = contexts;
         pthread_mutex_lock(&contexts_mutex);
@@ -78,19 +78,19 @@ km_mat4_stack_context *lookUpContext(void *contextRef)
         } while ((entry = entry->next));
         pthread_mutex_unlock(&contexts_mutex);
     }
-    
+
     return NULL;
 }
 
 km_mat4_stack_context *registerContext(void *contextRef)
 {
     lazyInitialize();
-    
+
     km_mat4_stack_context *existingContext = lookUpContext(contextRef);
     if (!existingContext) {
         km_mat4_stack_context_list *entry = contexts;
         km_mat4_stack_context_list *last = NULL;
-        
+
         pthread_mutex_lock(&contexts_mutex);
         if (entry) {
             do {
@@ -98,13 +98,13 @@ km_mat4_stack_context *registerContext(void *contextRef)
             } while((entry = entry->next));
         }
         pthread_mutex_unlock(&contexts_mutex);
-        
+
         km_mat4_stack_context_list *newEntry = (km_mat4_stack_context_list *)malloc(sizeof(km_mat4_stack_context_list));
         memset(newEntry, 0, sizeof(km_mat4_stack_context_list));
         newEntry->context.contextRef = contextRef;
         newEntry->context.entry = newEntry;
         newEntry->prev = last;
-        
+
         pthread_mutex_lock(&contexts_mutex);
         if (last) {
             last->next = newEntry;
@@ -113,10 +113,10 @@ km_mat4_stack_context *registerContext(void *contextRef)
             contexts = newEntry;
         }
         pthread_mutex_unlock(&contexts_mutex);
-        
+
         return &newEntry->context;
     }
-    
+
     return existingContext;
 }
 
@@ -136,25 +136,25 @@ void kmGLClearContext(km_mat4_stack_context *context)
     /* Unlink current context from linked list*/
     if (context->entry->prev)
         context->entry->prev->next = context->entry->next;
-	
+
     /*Clear the matrix stacks*/
 	km_mat4_stack_release(&context->modelview_matrix_stack);
 	km_mat4_stack_release(&context->projection_matrix_stack);
 	km_mat4_stack_release(&context->texture_matrix_stack);
-    
+
 	/*Delete the matrices*/
 	context->initialized = 0;
-    
+
     /*Set the current stack to point nowhere*/
 	context->current_stack = NULL;
-    
+
     /* Free the list entry, including its stacks*/
     free(context->entry);
 }
 
 void kmGLClearCurrentContext()
 {
-    kmGLClearContext(pthread_getspecific(current_context_key));
+    kmGLClearContext((km_mat4_stack_context *)pthread_getspecific(current_context_key));
     pthread_setspecific(current_context_key, NULL);
 }
 
@@ -164,7 +164,7 @@ void kmGLClearAllContexts()
     do {
         kmGLClearContext(&entry->context);
     } while ((entry = entry->next));
-    
+
     pthread_setspecific(current_context_key, NULL);
 }
 
@@ -173,10 +173,10 @@ void kmGLClearAllContexts()
 
 km_mat4_stack_context *lazyInitializeCurrentContext()
 {
-    km_mat4_stack_context *current_context = pthread_getspecific(current_context_key);
-    
+    km_mat4_stack_context *current_context = (km_mat4_stack_context *)pthread_getspecific(current_context_key);
+
     assert(current_context != NULL && "No context set");
-    
+
 	if (current_context && !current_context->initialized) {
 		kmMat4 identity; /*Temporary identity matrix*/
 
@@ -200,7 +200,7 @@ km_mat4_stack_context *lazyInitializeCurrentContext()
 		km_mat4_stack_push(&current_context->projection_matrix_stack, &identity);
 		km_mat4_stack_push(&current_context->texture_matrix_stack, &identity);
 	}
-    
+
     return current_context;
 }
 
@@ -238,7 +238,7 @@ void kmGLPushMatrix(void)
 
 void kmGLPopMatrix(void)
 {
-	km_mat4_stack_context *current_context = pthread_getspecific(current_context_key);
+	km_mat4_stack_context *current_context = (km_mat4_stack_context *)pthread_getspecific(current_context_key);
     assert(current_context->initialized && "Cannot Pop empty matrix stack");
 	/*No need to lazy initialize, you shouldnt be popping first anyway!*/
 	km_mat4_stack_pop(current_context->current_stack, NULL);
@@ -285,7 +285,7 @@ void kmGLGetMatrix(kmGLEnum mode, kmMat4* pOut)
 
 void kmGLTranslatef(float x, float y, float z)
 {
-    km_mat4_stack_context *current_context = pthread_getspecific(current_context_key);
+    km_mat4_stack_context *current_context = (km_mat4_stack_context *)pthread_getspecific(current_context_key);
 
 	kmMat4 translation;
 
@@ -298,7 +298,7 @@ void kmGLTranslatef(float x, float y, float z)
 
 void kmGLRotatef(float angle, float x, float y, float z)
 {
-    km_mat4_stack_context *current_context = pthread_getspecific(current_context_key);
+    km_mat4_stack_context *current_context = (km_mat4_stack_context *)pthread_getspecific(current_context_key);
 
 	kmVec3 axis;
 	kmMat4 rotation;
@@ -315,7 +315,7 @@ void kmGLRotatef(float angle, float x, float y, float z)
 
 void kmGLScalef(float x, float y, float z)
 {
-    km_mat4_stack_context *current_context = pthread_getspecific(current_context_key);
+    km_mat4_stack_context *current_context = (km_mat4_stack_context *)pthread_getspecific(current_context_key);
 
 	kmMat4 scaling;
 	kmMat4Scaling(&scaling, x, y, z);

@@ -149,7 +149,7 @@ COPY_dxtcompressor	=	mkdir -p $(BUILD_FOLDER)data/ && cp data/lena_ref.dds $(BUI
 COPY_particles		= 	cp part2.cl $(BUILD_FOLDER) &&
 COPY_attractor		=	mkdir -p $(BUILD_FOLDER)kernel/ && mkdir -p $(BUILD_FOLDER)shader/ && cp kernel/lorenz.cl $(BUILD_FOLDER)kernel/ && cp shader/lorenz_nat.frag $(BUILD_FOLDER)shader/lorenz.frag && cp shader/lorenz_nat.vert $(BUILD_FOLDER)shader/lorenz.vert &&
 COPY_fluids			= 	cp kernels.cl $(BUILD_FOLDER) &&
-COPY_sakura			= 	cp src/kernel/kernel_petal_motion.cl $(BUILD_FOLDER) && cp src/shaders/*.h $(BUILD_FOLDER) &&
+COPY_sakura			= 	cp res/flat_petal.mtl $(BUILD_FOLDER) && cp res/tri_petal_normals.obj $(BUILD_FOLDER) && cp src/kernel/kernel_petal_motion.cl $(BUILD_FOLDER) && cp src/shaders/*.h $(BUILD_FOLDER) &&
 
 endif
 
@@ -198,7 +198,7 @@ fluids_sample: mkdir
 
 sakura_sample: mkdir
 	$(call chdir,sakura/)
-	$(COPY_sakura) 			$(GLOBAL) $(CC) 	$(CFLAGS) $(CFLAGS_sakura) 			$(SOURCES_sakura) 			$(VALPARAM_sakura) 			$(KERNEL_sakura) 			$(INCLUDES_sakura) 			-o $(BUILD_FOLDER)$(PREFIX)sakura$(EXTENSION)
+	$(COPY_sakura) 			$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_sakura) 			$(SOURCES_sakura) 			$(VALPARAM_sakura) 			$(KERNEL_sakura) 			$(INCLUDES_sakura) 			-o $(BUILD_FOLDER)$(PREFIX)sakura$(EXTENSION)
 
 clean:
 	rm -rf bin/

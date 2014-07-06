@@ -7,7 +7,9 @@
 //
 
 #include "ResourceLoader.h"
+#ifndef __EMSCRIPTEN__
 #include <CoreFoundation/CoreFoundation.h>
+#endif
 
 #define MAX_SOURCE_SIZE (0x100000)
 
@@ -15,20 +17,20 @@ char* ResourceLoader::getFilePathToResource(const char* fileName)
 {
     CFBundleRef mainBundle = CFBundleGetMainBundle();
     CFStringRef filename = CFStringCreateWithCString(NULL, fileName, kCFStringEncodingASCII);
-    
+
     CFURLRef resourcesURL = CFBundleCopyResourceURL(mainBundle, filename, NULL, NULL);
     assert(resourcesURL);
-    
+
     char* filepath = (char*)malloc(sizeof(char)*512);
     assert(CFURLGetFileSystemRepresentation(resourcesURL, true, (UInt8*)filepath, 200));
-    
+
     return filepath;
 }
 
 char* ResourceLoader::getContentsOfResourceAtPath(const char* filePath, size_t &size)
 {
     FILE *fp;
-    
+
     fp = fopen(filePath, "r");
     if (!fp) {
         fprintf(stderr, "Failed to load file contents.\n");
