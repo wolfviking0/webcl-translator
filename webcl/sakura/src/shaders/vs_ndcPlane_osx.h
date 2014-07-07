@@ -1,10 +1,8 @@
-#version 100
-attribute vec3 position;
-attribute vec2 texcoord;
-
-varying vec3 pos;
-varying vec2 uv;
-
+#version 150 core
+in vec3 position;
+in vec2 texcoord;
+out vec3 pos;
+out vec2 uv;
 uniform vec2 screenSize;
 
 void main()

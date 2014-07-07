@@ -1,12 +1,12 @@
-#version 100
+#version 150 core
 uniform mat4 MVP;
 uniform mat4 modelMatrix;
-attribute vec3 position;
-attribute vec3 normal;
+in vec3 position;
+in vec3 normal;
 uniform vec3 worldLightPos;
 
-varying vec3 Color;
-varying vec3 Normal;
+out vec3 Color;
+out vec3 Normal;
 
 void main()
 {

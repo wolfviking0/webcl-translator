@@ -24,15 +24,15 @@
         margin-right: auto;
         display: block;
       }
-          
+
       #glCanvas {
         border: 1px solid black;
       }
-          
+
       textarea.translator {
         font-family: monospace; width: 90%;
       }
-          
+
       div.translator {
         text-align: center;
       }
@@ -48,9 +48,9 @@
         <header>
           <h1><i>WebCL-Translator V2.0</i></h1>
           <h1><i><script>if(USE_VAL.length > 0) {document.write(" + WebCL-Validator")};</script></i></h1>
-          <h2><script>document.write(TITLE);</script></h2>  
+          <h2><script>document.write(TITLE);</script></h2>
         </header>
-        
+
         <section id="main_content">
           <div class="translator" id="status">
             Downloading...
@@ -71,13 +71,13 @@
             var cnv = document.createElement('canvas');
             cnv.setAttribute('oncontextmenu',"event.preventDefault()");
             cnv.setAttribute('id',"glCanvas");
-            
+
             var div = document.getElementById('renderArea');
             div.appendChild(cnv);
 
             // Add class attribute translator
-            cnv.setAttribute('class',"translator");  
-              
+            cnv.setAttribute('class',"translator");
+
             var textArea = document.getElementById ("output");
             if (USE_GL == 0) {
               div.style.display = 'none';
@@ -85,24 +85,25 @@
             } else {
               textArea.rows = "10";
             }
-            
+
             loadModule(PARAM);
 
             var samples = [
               "imagecopy.js",
-              "eventprofiling.js",              
+              "eventprofiling.js",
               "attractor.js",
               "dxtcompressor.js",
               "particles.js",
               "fluids.js",
+              "sakura.js",
             ];
 
             if (SAMPLE >= samples.length) {
               SAMPLE = 0;
             }
-            
+
             includeJS(samples[SAMPLE]);
-        
+
         	</script>
         </section>
 

@@ -61,7 +61,7 @@ Application::Application()
 Application::~Application()
 {
     if ( m_window )
-    {	
+    {
 		#ifndef __EMSCRIPTEN__
 	        glfwDestroyWindow(m_window);
 	    #else
@@ -108,7 +108,7 @@ void key_callback(int key, int action)
         glfwCloseWindow();
 		glfwTerminate();
         //
-        emscripten_cancel_main_loop();  
+        emscripten_cancel_main_loop();
         //
         exit(0);
     } else if (key == 32 /* */ && action == GLFW_PRESS) {
@@ -151,7 +151,7 @@ void Application::init()
 	#ifndef __EMSCRIPTEN__
 	    glfwSetErrorCallback(error_callback);
 	#endif
-	
+
     if( !glfwInit() )
         error::throw_ex("unable to initialize GLFW",__FILE__,__LINE__);
 
@@ -166,16 +166,16 @@ void Application::init()
 		int b_window = glfwOpenWindow( windowWidth, windowHeight, 8,8,8,0,0,0, GLFW_WINDOW);
 	    glfwSetWindowTitle(windowTitle.c_str());
 	    if( !b_window ) {
-    #endif    
-       
+    #endif
+
        	glfwTerminate();
         error::throw_ex("unable to create GLFW window",__FILE__,__LINE__);
     }
-    
+
 	#ifndef __EMSCRIPTEN__
 	    glfwMakeContextCurrent(m_window);
 	#endif
-	
+
     if ( glewInit() != GLEW_OK )
         error::throw_ex("unable to initialize GLEW",__FILE__,__LINE__);
 
@@ -188,7 +188,7 @@ void Application::init()
 	    glfwSetMousePosCallback(cursor_pos_callback);
 	    glfwSetWindowSizeCallback(framebuffer_size_callback);
 	#endif
-	
+
     glViewport(0, 0, windowWidth, windowHeight);
 }
 
@@ -198,7 +198,7 @@ void Application::init()
 int framesLastSecond = 0;
 int lastSecond = 0;
 int curFrame = 0;
-    
+
 void emscripten_loop_callback()
 {
     if (Application::get())
@@ -208,15 +208,15 @@ void emscripten_loop_callback()
 void Application::run()
 {
     setupLorenzAttractor();
-    
+
     emscripten_set_main_loop(emscripten_loop_callback,-1,0);
-    
+
 }
 
 void Application::mainLoop()
 {
 	float realTime = getRealTime();
-    
+
     ++framesLastSecond;
     if ( lastSecond != (int)realTime )
     {
@@ -229,7 +229,7 @@ void Application::mainLoop()
 
     // render and swap buffers
     Demo::get()->render(m_simTime);
-	
+
 	glfwSwapBuffers();
 
     // step simulation
@@ -245,7 +245,7 @@ void Application::mainLoop()
 
 	++curFrame;
 }
-    
+
 #else
 
 void Application::run()
@@ -253,13 +253,13 @@ void Application::run()
     setupLorenzAttractor();
 
     mainLoop();
-	
+
 	#ifndef __EMSCRIPTEN__
 	   glfwDestroyWindow(m_window);
 	#else
 	   glfwCloseWindow();
 	#endif
-	
+
     m_window = nullptr;
 
 	glfwTerminate();
@@ -277,7 +277,7 @@ void Application::mainLoop()
     	int exportStartFrame = global::par().getInt("exportStartFrame");
 	    int simulationEndFrame = global::par().getInt("simulationEndFrame");
 	#endif
-	
+
     while (!glfwWindowShouldClose(m_window))
     {
         float realTime = getRealTime();
@@ -291,7 +291,7 @@ void Application::mainLoop()
 
         // render and swap buffers
         Demo::get()->render(m_simTime);
-	
+
 		glfwSwapBuffers(m_window);
 
         // export the rendered frame
@@ -299,7 +299,7 @@ void Application::mainLoop()
         if ( FrameCaptor::get() && curFrame >= exportStartFrame )
             FrameCaptor::get()->capture();
 		#endif
-		
+
         #ifdef USE_FRAME_CAPTOR
         // check if we should stop the simulation
         if ( simulationEndFrame && curFrame == simulationEndFrame )
