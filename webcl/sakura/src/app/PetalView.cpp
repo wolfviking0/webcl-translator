@@ -18,9 +18,9 @@ PetalView::PetalView(int p, float aspect)
     camera = new Camera(60.0f, aspect, 0.01f, 500.0f);
     kmVec3 camPos;
     kmVec3Fill(&camPos, 0.0, 0.0, 10.0);
-    
-    bgPlane = new ShaderPlane((char*)"vs_ndcPlane.h", (char*)"fs_background.h");
-    
+
+    bgPlane = new ShaderPlane((char*)"src/shaders/vs_ndcPlane.h", (char*)"src/shaders/fs_background.h");
+
     camera->setPosition(camPos);
     camera->lookAt(KM_VEC3_ZERO);
 }
@@ -28,17 +28,17 @@ PetalView::PetalView(int p, float aspect)
 void PetalView::initPetals()
 {
     shaderLoader = new ShaderLoader();
-    
-    char* vertex = (char*)"vs_diffuse.h";
-    char* fragment = (char*)"fs_diffuse.h";
-    
+
+    char* vertex = (char*)"src/shaders/vs_diffuse.h";
+    char* fragment = (char*)"src/shaders/fs_diffuse.h";
+
     kmVec3Fill(&lightDirection, -1.0, -1.0, 0.0);
     ParticlePrototype* pType = new ParticlePrototype();
     pType->setShader(shaderLoader->loadShaderFromResources(vertex, fragment));
-    pType->setMesh((char*)"tri_petal_normals.obj");
-    
+    pType->setMesh((char*)"res/tri_petal_normals.obj");
+
     particleSystem = new CLParticleSystem(pType);
-   
+
 }
 
 void PetalView::update()

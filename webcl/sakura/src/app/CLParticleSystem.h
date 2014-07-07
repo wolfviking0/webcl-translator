@@ -11,7 +11,11 @@
 
 #include "ParticlePrototype.h"
 #include "kazmath.h"
+#ifdef __EMSCRIPTEN__
+#include <CL/OpenCL.h>
+#else
 #include <OpenCL/OpenCL.h>
+#endif
 
 class CLParticleSystem
 {
@@ -21,15 +25,15 @@ public:
     void update(kmMat4 cameraMatrix);
     void drawParticles(kmMat4 camMatrix, kmVec3 lightDirection);
 private:
-    
+
     void initCL();
     void createBuffers();
     ParticlePrototype* particle;
-    
+
     kmMat4* matrices;
     float* velocities;
     float* rotations;
-    
+
     cl_platform_id platform;
     cl_device_id device;
     cl_context context;
@@ -37,7 +41,7 @@ private:
     cl_program program;
     cl_int programHandle;
     cl_kernel kernel;
-    
+
     cl_mem matrixBuffer;
     cl_mem velBuffer;
     cl_mem rotBuffer;

@@ -9,7 +9,8 @@
 #ifndef OBJPARSER
 #define OBJPARSER
 
-#include <OpenGL/gl3.h>
+#include <GL/gl.h>
+#include <GL/glut.h>
 
 class ObjParser
 {
@@ -18,13 +19,13 @@ class ObjParser
         GLuint vert;
         GLuint normal;
     }Index;
-    
+
 public:
     ObjParser(char* objFileName);
     ~ObjParser(){}
-    
+
     GLfloat* getObjectDataArray(int& count);
-    
+
 private:
     Index* getIndexArray(int& count);
     GLfloat* getVertexArray(int& count);

@@ -19,7 +19,13 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <GLFW/glfw3.h>
+#ifndef __EMSCRIPTEN__
+    #define GLFW_INCLUDE_GLU
+    #include <GLFW/glfw3.h>
+#else
+    #define GLFW_INCLUDE_GLU
+    #include <GL/glfw.h>
+#endif
 #include "PetalView.h"
 
 static void error_callback(int error, const char* description)
@@ -44,7 +50,7 @@ int main(int argc, const char * argv[])
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
 
-    GLFWwindow* window = glfwCreateWindow(800,600, "Sakura Toy", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(512,512, "Sakura Toy", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -59,7 +65,7 @@ int main(int argc, const char * argv[])
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
     glCullFace(GL_BACK);
-    PetalView pView(25, 800/600.0f);
+    PetalView pView(25, 1.0f);
 
     while(!glfwWindowShouldClose(window))
     {

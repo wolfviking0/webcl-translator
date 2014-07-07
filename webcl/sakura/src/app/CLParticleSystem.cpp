@@ -178,7 +178,7 @@ void CLParticleSystem::initCL()
     clGetDeviceInfo(device, CL_DEVICE_NAME, 128, name, NULL);
     fprintf(stdout, "Got CL Device using the %s\n", name);
 
-    const char* kernelName = "kernel_petal_motion.cl";
+    const char* kernelName = "src/kernel/kernel_petal_motion.cl";
     const char* kernelSourcePath = loader.getFilePathToResource(kernelName); //getKernelSource(kernelName);
 
     size_t sourceSize = 0;
