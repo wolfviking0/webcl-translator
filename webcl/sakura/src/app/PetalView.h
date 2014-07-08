@@ -18,15 +18,15 @@
 class PetalView
 {
 public:
-    PetalView(int petalCount,float aspect);
+    PetalView(int petalCount,float aspect, int use_gpu);
     ~PetalView(){}
-    
+
     void update();
     void draw();
 
 private:
-    void initPetals();
-    
+    void initPetals(int use_gpu);
+
     ShaderPlane* bgPlane;
     unsigned int petalCount;
     Camera* camera;

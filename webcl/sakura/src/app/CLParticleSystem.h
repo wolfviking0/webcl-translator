@@ -20,13 +20,13 @@
 class CLParticleSystem
 {
 public:
-    CLParticleSystem(ParticlePrototype* particlePrototype);
+    CLParticleSystem(ParticlePrototype* particlePrototype, int use_gpu);
     ~CLParticleSystem();
     void update(kmMat4 cameraMatrix);
     void drawParticles(kmMat4 camMatrix, kmVec3 lightDirection);
 private:
 
-    void initCL();
+    void initCL(int use_gpu);
     void createBuffers();
     ParticlePrototype* particle;
 

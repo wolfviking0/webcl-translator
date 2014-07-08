@@ -11,10 +11,10 @@
 #include "ParticlePrototype.h"
 #define CONTROL_SENSITIVITY 0.3f
 
-PetalView::PetalView(int p, float aspect)
+PetalView::PetalView(int p, float aspect, int use_gpu)
 {
     petalCount = p;
-    initPetals();
+    initPetals(use_gpu);
     camera = new Camera(60.0f, aspect, 0.01f, 500.0f);
     kmVec3 camPos;
     kmVec3Fill(&camPos, 0.0, 0.0, 10.0);
@@ -24,7 +24,7 @@ PetalView::PetalView(int p, float aspect)
     camera->lookAt(KM_VEC3_ZERO);
 }
 
-void PetalView::initPetals()
+void PetalView::initPetals(int use_gpu)
 {
     shaderLoader = new ShaderLoader();
 
@@ -35,7 +35,7 @@ void PetalView::initPetals()
     pType->setShader(shaderLoader->loadShaderFromResources(vertex, fragment));
     pType->setMesh((char*)"res/tri_petal_normals.obj");
 
-    particleSystem = new CLParticleSystem(pType);
+    particleSystem = new CLParticleSystem(pType, use_gpu);
 
 }
 
@@ -46,6 +46,6 @@ void PetalView::update()
 
 void PetalView::draw()
 {
-    particleSystem->drawParticles(camera->getViewProjectionMatrix(), lightDirection);
     bgPlane->draw(camera->getViewProjectionMatrix());
+    particleSystem->drawParticles(camera->getViewProjectionMatrix(), lightDirection);
 }

@@ -11,11 +11,11 @@
 #include "ResourceLoader.h"
 #define NUM_PARTICLES 2000
 
-CLParticleSystem::CLParticleSystem(ParticlePrototype* particlePrototype)
+CLParticleSystem::CLParticleSystem(ParticlePrototype* particlePrototype, int use_gpu)
 {
     particle = particlePrototype;
 
-    initCL();
+    initCL(use_gpu);
     createBuffers();
 }
 
@@ -157,14 +157,14 @@ void CLParticleSystem::drawParticles(kmMat4 cameraMatrix,kmVec3 lightDirection)
     }
 }
 
-void CLParticleSystem::initCL()
+void CLParticleSystem::initCL(int use_gpu)
 {
     ResourceLoader loader;
 
     cl_int status;
 
     clGetPlatformIDs(1, &platform, NULL);
-    clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, NULL);
+    clGetDeviceIDs(platform, use_gpu ? CL_DEVICE_TYPE_GPU : CL_DEVICE_TYPE_CPU, 1, &device, NULL);
     context = clCreateContext(NULL, 1, &device, NULL, NULL, NULL);
     queue = clCreateCommandQueue(context, device, 0, &status);
 

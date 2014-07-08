@@ -72,6 +72,22 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 
 int main(int argc, const char * argv[])
 {
+    int use_gpu = 1;
+    int i = 0;
+    for(; i < argc && argv; i++)
+    {
+        if(!argv[i])
+            continue;
+
+        if(strstr(argv[i], "cpu"))
+            use_gpu = 0;
+
+        else if(strstr(argv[i], "gpu"))
+            use_gpu = 1;
+    }
+
+    printf("Parameter detect %s device\n",use_gpu==1?"GPU":"CPU");
+
     #ifndef __EMSCRIPTEN__
         glfwSetErrorCallback(error_callback);
     #endif
@@ -112,7 +128,7 @@ int main(int argc, const char * argv[])
     glEnable(GL_DEPTH_TEST);
     glCullFace(GL_BACK);
 
-    pView = new PetalView(25, 1.0f);
+    pView = new PetalView(25, 1.0f, use_gpu);
 
     #ifdef __EMSCRIPTEN__
         emscripten_set_main_loop(emscripten_loop_callback,-1,0);
