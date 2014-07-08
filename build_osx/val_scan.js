@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-osx-sample/js/val_scan.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_scan.data';
     var REMOTE_PACKAGE_SIZE = 102638;
-    var PACKAGE_UUID = 'e989ffce-de9b-4786-ae1f-8e47f0216ac5';
+    var PACKAGE_UUID = '3b84ac4f-63eb-408a-858f-abeb2462620c';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -9434,7 +9434,7 @@ function _UniformAdd($global,$local,$output_data,$partial_sums,$n,$group_offset,
  $vararg_buffer1 = sp;
  $vararg_buffer = sp + 8|0;
  $3 = sp + 12|0;
- $4 = sp + 20|0;
+ $4 = sp + 24|0;
  $5 = sp + 32|0;
  $6 = sp + 36|0;
  $7 = sp + 40|0;
@@ -9576,12 +9576,12 @@ function _PreScanBufferRecursive($output_data,$input_data,$max_group_size,$max_w
  var $last_global2 = 0, $last_group_element_count = 0, $last_local = 0, $last_local3 = 0, $last_shared = 0, $local = 0, $padding = 0, $padding1 = 0, $partial_sums = 0, $remainder = 0, $remaining_work_item_count = 0, $shared = 0, $work_item_count = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 144|0;
- $global = sp + 56|0;
- $local = sp + 64|0;
- $last_global = sp + 32|0;
+ $global = sp + 80|0;
+ $local = sp + 88|0;
+ $last_global = sp + 48|0;
  $last_local = sp + 104|0;
- $last_global2 = sp + 88|0;
- $last_local3 = sp;
+ $last_global2 = sp;
+ $last_local3 = sp + 8|0;
  $1 = $output_data;
  $2 = $input_data;
  $3 = $max_group_size;
@@ -14720,10 +14720,7 @@ function _frexp($x,$e) {
  $2 = (_bitshift64Lshr(($0|0),($1|0),52)|0);
  $3 = tempRet0;
  $4 = $2 & 2047;
- if ((($4|0) == 2047)) {
-  $$0 = $x;
-  STACKTOP = sp;return (+$$0);
- } else if ((($4|0) == 0)) {
+ if ((($4|0) == 0)) {
   $5 = $x != 0.0;
   if ($5) {
    $6 = $x * 18446744073709551616.0;
@@ -14736,6 +14733,9 @@ function _frexp($x,$e) {
   }
   HEAP32[$e>>2] = $storemerge;
   $$0 = $$01;
+  STACKTOP = sp;return (+$$0);
+ } else if ((($4|0) == 2047)) {
+  $$0 = $x;
   STACKTOP = sp;return (+$$0);
  } else {
   $10 = (($4) + -1022)|0;

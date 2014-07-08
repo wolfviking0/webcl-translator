@@ -1,0 +1,763 @@
+# Blender MTL File: 'petal.blend'
+# Material Count: 1
+
+newmtl Material
+Ns 96.078431
+Ka 0.000000 0.000000 0.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ni 1.000000
+d 1.000000
+illum 2
+# Blender v2.69 (sub 0) OBJ File: ''
+# www.blender.org
+o Plane
+v 1.000000 0.000000 0.298338
+v -0.623912 0.000000 0.749865
+v 1.000000 0.000000 -0.298338
+v -0.601242 0.000000 -0.749865
+v -0.517782 0.000000 0.000000
+v 1.404912 0.000000 0.000000
+v 0.000000 0.000000 0.964517
+v 0.000000 0.000000 -0.964517
+v -0.863097 0.000000 0.500000
+v -0.456241 0.000000 0.911558
+v -0.847981 0.000000 -0.500000
+v -0.440870 0.000000 -0.911558
+v 0.500000 0.000000 0.659850
+v 0.500000 0.000000 -0.659850
+v -0.258542 0.000000 1.093355
+v -0.249016 0.000000 -1.093355
+v 1.000000 -0.010094 0.298338
+v -0.623912 -0.010094 0.749865
+v 1.000000 -0.010094 -0.298338
+v -0.601242 -0.010094 -0.749865
+v -0.517782 -0.010094 0.000000
+v 1.404912 -0.010094 0.000000
+v 0.000000 -0.010094 0.964517
+v 0.000000 -0.010094 -0.964517
+v -0.863097 -0.010094 0.500000
+v -0.456241 -0.010094 0.911558
+v -0.847981 -0.010094 -0.500000
+v -0.440870 -0.010094 -0.911558
+v 0.500000 -0.010094 0.659850
+v 0.500000 -0.010094 -0.659850
+v -0.258542 -0.010094 1.093355
+v -0.249016 -0.010094 -1.093355
+vn 0.000000 -1.000000 0.000000
+vn 0.000000 1.000000 0.000000
+vn -0.834457 0.000000 0.551073
+vn -0.822838 0.000000 -0.568276
+vn 0.585917 0.000000 0.810371
+vn -0.711544 0.000000 -0.702642
+vn -0.687823 0.000000 -0.725878
+vn -0.722376 0.000000 0.691500
+vn 0.520345 0.000000 -0.853956
+vn -0.694160 0.000000 0.719820
+vn 0.459525 0.000000 -0.888165
+vn 0.446013 0.000000 0.895026
+vn 0.585917 0.000000 -0.810371
+vn 0.593175 0.000000 0.805073
+vn 0.593175 0.000000 -0.805073
+vn -0.676882 0.000000 0.736091
+vn -0.710003 0.000000 -0.704199
+vn 0.520345 0.000000 0.853956
+vn -0.694161 0.000000 0.719820
+vn 0.446013 0.000000 0.895027
+vn -0.676882 0.000000 0.736092
+s off
+f 1//1 3//1 6//1
+f 19//2 17//2 22//2
+f 11//3 27//3 5//3
+f 5//4 21//4 9//4
+f 13//5 29//5 1//5
+f 4//6 20//6 11//6
+f 16//7 32//7 12//7
+f 9//8 25//8 2//8
+f 14//9 30//9 8//9
+f 2//10 18//10 10//10
+f 8//11 24//11 16//11
+f 15//12 31//12 7//12
+f 3//13 19//13 14//13
+f 1//14 17//14 6//14
+f 6//15 22//15 3//15
+f 10//16 26//16 15//16
+f 12//17 28//17 4//17
+f 7//18 23//18 13//18
+f 8//1 12//1 16//1
+f 10//1 7//1 15//1
+f 4//1 5//1 11//1
+f 1//1 14//1 3//1
+f 13//1 14//1 1//1
+f 2//1 9//1 5//1
+f 13//1 8//1 14//1
+f 7//1 8//1 13//1
+f 7//1 10//1 8//1
+f 8//1 10//1 12//1
+f 10//1 2//1 5//1
+f 12//1 10//1 5//1
+f 4//1 12//1 5//1
+f 28//2 24//2 32//2
+f 26//2 31//2 23//2
+f 21//2 20//2 27//2
+f 19//2 29//2 17//2
+f 30//2 29//2 19//2
+f 25//2 18//2 21//2
+f 30//2 23//2 29//2
+f 24//2 23//2 30//2
+f 26//2 23//2 24//2
+f 26//2 24//2 28//2
+f 18//2 26//2 21//2
+f 26//2 28//2 21//2
+f 28//2 20//2 21//2
+f 27//3 21//3 5//3
+f 21//4 25//4 9//4
+f 29//5 17//5 1//5
+f 20//6 27//6 11//6
+f 32//7 28//7 12//7
+f 25//8 18//8 2//8
+f 30//9 24//9 8//9
+f 18//19 26//19 10//19
+f 24//11 32//11 16//11
+f 31//20 23//20 7//20
+f 19//13 30//13 14//13
+f 17//14 22//14 6//14
+f 22//15 19//15 3//15
+f 26//21 31//21 15//21
+f 28//17 20//17 4//17
+f 23//18 29//18 13//18
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "stepParticles" :
+                {
+                    "rotationBuffer" :
+                        {
+                            "index" : 0,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_rotationBuffer_size"
+                        },
+                    "_wcl_rotationBuffer_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "velocityBuffer" :
+                        {
+                            "index" : 2,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_velocityBuffer_size"
+                        },
+                    "_wcl_velocityBuffer_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "matrixBuffer" :
+                        {
+                            "index" : 4,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_matrixBuffer_size"
+                        },
+                    "_wcl_matrixBuffer_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "camMatrix" :
+                        {
+                            "index" : 6,
+                            "type" : "float *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_camMatrix_size"
+                        },
+                    "_wcl_camMatrix_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((512 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (512/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+typedef struct quat
+{
+    float x,y,z,w;
+}quat;
+
+typedef struct vec
+{
+    float x,y,z;
+}vec;
+
+typedef struct vec4
+{
+    float x,y,z,w;
+}vec4;
+
+typedef struct mat4
+{
+    float m[16];
+}mat4;
+
+typedef struct {
+    vec4 _wcl_v;
+    mat4 _wcl_tmp;
+    float _wcl_det;
+    int _wcl_i;
+    float _wcl_mat[16];
+    const float *_wcl_m1;
+    const float *_wcl_m2;
+    mat4 _wcl_transform;
+    mat4 _wcl_cam;
+    quat _wcl_rotation;
+    vec _wcl_worldPos;
+    mat4 _wcl_clip;
+    mat4 _wcl_invCam;
+    vec _wcl_translation;
+    mat4 _wcl_rMatrix;
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
+
+typedef struct {
+    __global float *stepParticles__rotationBuffer_min;
+    __global float *stepParticles__rotationBuffer_max;
+    __global float *stepParticles__velocityBuffer_min;
+    __global float *stepParticles__velocityBuffer_max;
+    __global float *stepParticles__matrixBuffer_min;
+    __global float *stepParticles__matrixBuffer_max;
+    __global float *stepParticles__camMatrix_min;
+    __global float *stepParticles__camMatrix_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+    _WclPrivates pa;
+    __private uint *pn;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+// be careful to edit this, this has been carefully tuned to work on every OpenCL driver
+// e.g. % item_count was added to start[(items_offset+i)] = _WCL_FILLCHAR;
+// to prevent compiler crash on Apple GeForce 640M
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[(items_offset+i) % item_count] = _WCL_FILLCHAR;           \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+constant int hd4k_workaround_constant = 0;
+
+// <= General code that doesn't depend on input.
+
+bool _wcl_addr_check_private_1_const__float__Ptr(const float *addr, unsigned size, const float * min0, const float * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(const float *, max0)) );
+}
+const float *_wcl_addr_clamp_private_1_const__float__Ptr(const float *addr, unsigned size, const float * min0, const float * max0, const float * asnull)
+{
+     return _wcl_addr_check_private_1_const__float__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_private_1_const__mat4__Ptr(const mat4 *addr, unsigned size, const mat4 * min0, const mat4 * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(const mat4 *, max0)) );
+}
+const mat4 *_wcl_addr_clamp_private_1_const__mat4__Ptr(const mat4 *addr, unsigned size, const mat4 * min0, const mat4 * max0, const mat4 * asnull)
+{
+     return _wcl_addr_check_private_1_const__mat4__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_private_1_const__vec__Ptr(const vec *addr, unsigned size, const vec * min0, const vec * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(const vec *, max0)) );
+}
+const vec *_wcl_addr_clamp_private_1_const__vec__Ptr(const vec *addr, unsigned size, const vec * min0, const vec * max0, const vec * asnull)
+{
+     return _wcl_addr_check_private_1_const__vec__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_private_1_float__Ptr(float *addr, unsigned size, float * min0, float * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(float *, max0)) );
+}
+float *_wcl_addr_clamp_private_1_float__Ptr(float *addr, unsigned size, float * min0, float * max0, float * asnull)
+{
+     return _wcl_addr_check_private_1_float__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_private_1_mat4__Ptr(mat4 *addr, unsigned size, mat4 * min0, mat4 * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(mat4 *, max0)) );
+}
+mat4 *_wcl_addr_clamp_private_1_mat4__Ptr(mat4 *addr, unsigned size, mat4 * min0, mat4 * max0, mat4 * asnull)
+{
+     return _wcl_addr_check_private_1_mat4__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_private_1_quat__Ptr(quat *addr, unsigned size, quat * min0, quat * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(quat *, max0)) );
+}
+quat *_wcl_addr_clamp_private_1_quat__Ptr(quat *addr, unsigned size, quat * min0, quat * max0, quat * asnull)
+{
+     return _wcl_addr_check_private_1_quat__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_private_1_vec__Ptr(vec *addr, unsigned size, vec * min0, vec * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(vec *, max0)) );
+}
+vec *_wcl_addr_clamp_private_1_vec__Ptr(vec *addr, unsigned size, vec * min0, vec * max0, vec * asnull)
+{
+     return _wcl_addr_check_private_1_vec__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_4__u_uglobal__float__Ptr(__global float *addr, unsigned size, __global float * min0, __global float * max0, __global float * min1, __global float * max1, __global float * min2, __global float * max2, __global float * min3, __global float * max3)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__global float *, max3)) );
+}
+__global float *_wcl_addr_clamp_global_4__u_uglobal__float__Ptr(__global float *addr, unsigned size, __global float * min0, __global float * max0, __global float * min1, __global float * max1, __global float * min2, __global float * max2, __global float * min3, __global float * max3, __global float * asnull)
+{
+     return _wcl_addr_check_global_4__u_uglobal__float__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3) ? addr : asnull;
+}
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+//
+//  kernel_petal_motion.h
+//  Sakura GL Toy
+//
+//  Created by Kyle Halladay on 2014-06-23.
+//  Copyright (c) 2014 Kyle Halladay. All rights reserved.
+//
+
+
+
+
+//#include "kazmath_cl.h"
+;
+
+;
+
+;
+
+;
+
+bool mat4Inverse(_WclProgramAllocations *_wcl_allocs, mat4* pOut, const mat4* pM) {
+    mat4 tmp;
+    float det;
+    int i;
+
+    (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(0), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[5] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[10] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[15] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[5] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[11] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[14] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[9] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[6] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[15] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[9] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[7] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[14] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[13] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[6] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[11] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[13] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[7] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[10];
+
+    (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(4), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = -(*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[4] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[10] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[15] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[4] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[11] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[14] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[8] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[6] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[15] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[8] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[7] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[14] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[12] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[6] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[11] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[12] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[7] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[10];
+
+    (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(8), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[4] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[9] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[15] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[4] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[11] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[13] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[8] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[5] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[15] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[8] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[7] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[13] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[12] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[5] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[11] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[12] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[7] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[9];
+
+    (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(12), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = -(*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[4] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[9] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[14] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[4] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[10] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[13] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[8] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[5] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[14] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[8] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[6] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[13] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[12] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[5] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[10] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[12] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[6] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[9];
+
+    (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(1), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = -(*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[10] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[15] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[11] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[14] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[9] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[15] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[9] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[14] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[13] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[11] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[13] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[10];
+
+    (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(5), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[10] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[15] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[11] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[14] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[8] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[15] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[8] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[14] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[12] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[11] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[12] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[10];
+
+    (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(9), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = -(*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[9] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[15] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[11] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[13] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[8] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[15] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[8] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[13] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[12] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[11] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[12] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[9];
+
+    (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(13), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[9] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[14] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[10] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[13] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[8] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[14] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[8] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[13] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[12] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[10] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[12] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[9];
+
+    (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(2), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[6] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[15] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[7] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[14] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[5] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[15] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[5] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[14] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[13] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[7] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[13] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[6];
+
+    (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(6), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = -(*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[6] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[15] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[7] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[14] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[4] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[15] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[4] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[14] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[12] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[7] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[12] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[6];
+
+    (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(10), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[5] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[15] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[7] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[13] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[4] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[15] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[4] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[13] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[12] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[7] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[12] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[5];
+
+    (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(14), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = -(*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[5] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[14] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[6] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[13] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[4] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[14] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[4] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[13] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[12] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[6] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[12] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[5];
+
+    (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(3), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = -(*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[6] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[11] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[7] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[10] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[5] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[11] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[5] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[10] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[9] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[7] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[9] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[6];
+
+    (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(7), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[6] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[11] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[7] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[10] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[4] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[11] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[4] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[10] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[8] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[7] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[8] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[6];
+
+    (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(11), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = -(*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[5] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[11] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[7] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[9] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[4] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[11] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[4] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[9] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[8] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[7] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[8] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[5];
+
+    (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(15), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[5] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[10] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[6] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[9] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[4] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[10] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[4] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[9] +
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[8] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[6] -
+    (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[8] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[5];
+
+    _wcl_allocs->pa._wcl_det = (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] * (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(0), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] * (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(4), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] * (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(8), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] * (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(12), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn)));
+
+    if (_wcl_allocs->pa._wcl_det == 0) {
+        return false;
+    }
+
+    _wcl_allocs->pa._wcl_det = 1.0 / _wcl_allocs->pa._wcl_det;
+
+    for (_wcl_allocs->pa._wcl_i = 0; _wcl_allocs->pa._wcl_i < 16; _wcl_allocs->pa._wcl_i++) {
+        (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[_wcl_allocs->pa._wcl_i] = (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_tmp.m)+(_wcl_allocs->pa._wcl_i), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) * _wcl_allocs->pa._wcl_det;
+    }
+
+    return true;
+}
+
+vec* vecMultiplyMat4(_WclProgramAllocations *_wcl_allocs, vec* pOut, const vec* pV, const mat4* pM) {
+    vec4 v;
+
+    _wcl_allocs->pa._wcl_v.x = (*(_wcl_addr_clamp_private_1_const__vec__Ptr((pV), 1, (const vec *)&_wcl_allocs->pa, (const vec *)(&_wcl_allocs->pa + 1), (const vec *)_wcl_allocs->pn))).x * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[0] + (*(_wcl_addr_clamp_private_1_const__vec__Ptr((pV), 1, (const vec *)&_wcl_allocs->pa, (const vec *)(&_wcl_allocs->pa + 1), (const vec *)_wcl_allocs->pn))).y * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[4] + (*(_wcl_addr_clamp_private_1_const__vec__Ptr((pV), 1, (const vec *)&_wcl_allocs->pa, (const vec *)(&_wcl_allocs->pa + 1), (const vec *)_wcl_allocs->pn))).z * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[8] + (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[12];
+    _wcl_allocs->pa._wcl_v.y = (*(_wcl_addr_clamp_private_1_const__vec__Ptr((pV), 1, (const vec *)&_wcl_allocs->pa, (const vec *)(&_wcl_allocs->pa + 1), (const vec *)_wcl_allocs->pn))).x * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[1] + (*(_wcl_addr_clamp_private_1_const__vec__Ptr((pV), 1, (const vec *)&_wcl_allocs->pa, (const vec *)(&_wcl_allocs->pa + 1), (const vec *)_wcl_allocs->pn))).y * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[5] + (*(_wcl_addr_clamp_private_1_const__vec__Ptr((pV), 1, (const vec *)&_wcl_allocs->pa, (const vec *)(&_wcl_allocs->pa + 1), (const vec *)_wcl_allocs->pn))).z * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[9] + (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[13];
+    _wcl_allocs->pa._wcl_v.z = (*(_wcl_addr_clamp_private_1_const__vec__Ptr((pV), 1, (const vec *)&_wcl_allocs->pa, (const vec *)(&_wcl_allocs->pa + 1), (const vec *)_wcl_allocs->pn))).x * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[2] + (*(_wcl_addr_clamp_private_1_const__vec__Ptr((pV), 1, (const vec *)&_wcl_allocs->pa, (const vec *)(&_wcl_allocs->pa + 1), (const vec *)_wcl_allocs->pn))).y * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[6] + (*(_wcl_addr_clamp_private_1_const__vec__Ptr((pV), 1, (const vec *)&_wcl_allocs->pa, (const vec *)(&_wcl_allocs->pa + 1), (const vec *)_wcl_allocs->pn))).z * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[10] + (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[14];
+    _wcl_allocs->pa._wcl_v.w = (*(_wcl_addr_clamp_private_1_const__vec__Ptr((pV), 1, (const vec *)&_wcl_allocs->pa, (const vec *)(&_wcl_allocs->pa + 1), (const vec *)_wcl_allocs->pn))).x * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[3] + (*(_wcl_addr_clamp_private_1_const__vec__Ptr((pV), 1, (const vec *)&_wcl_allocs->pa, (const vec *)(&_wcl_allocs->pa + 1), (const vec *)_wcl_allocs->pn))).y * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[7] + (*(_wcl_addr_clamp_private_1_const__vec__Ptr((pV), 1, (const vec *)&_wcl_allocs->pa, (const vec *)(&_wcl_allocs->pa + 1), (const vec *)_wcl_allocs->pn))).z * (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[11] + (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m[15];
+
+    (*(_wcl_addr_clamp_private_1_vec__Ptr((pOut), 1, (vec *)&_wcl_allocs->pa, (vec *)(&_wcl_allocs->pa + 1), (vec *)_wcl_allocs->pn))).x = _wcl_allocs->pa._wcl_v.x / _wcl_allocs->pa._wcl_v.w;
+    (*(_wcl_addr_clamp_private_1_vec__Ptr((pOut), 1, (vec *)&_wcl_allocs->pa, (vec *)(&_wcl_allocs->pa + 1), (vec *)_wcl_allocs->pn))).y = _wcl_allocs->pa._wcl_v.y / _wcl_allocs->pa._wcl_v.w;
+    (*(_wcl_addr_clamp_private_1_vec__Ptr((pOut), 1, (vec *)&_wcl_allocs->pa, (vec *)(&_wcl_allocs->pa + 1), (vec *)_wcl_allocs->pn))).z = _wcl_allocs->pa._wcl_v.z / _wcl_allocs->pa._wcl_v.w;
+
+    return pOut;
+}
+
+mat4* multiplyMatrices(_WclProgramAllocations *_wcl_allocs, mat4* pOut, const mat4* pM1, const mat4* pM2)
+{
+    float mat[16];
+
+    const float *m1 = (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM1), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m, *m2 = (*(_wcl_addr_clamp_private_1_const__mat4__Ptr((pM2), 1, (const mat4 *)&_wcl_allocs->pa, (const mat4 *)(&_wcl_allocs->pa + 1), (const mat4 *)_wcl_allocs->pn))).m;;_wcl_allocs->pa._wcl_m1 = m1;;_wcl_allocs->pa._wcl_m2 = m2;
+
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[0] = (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(0), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(0), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(4), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(1), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(8), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(2), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(12), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(3), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn)));
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[1] = (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(1), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(0), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(5), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(1), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(9), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(2), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(13), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(3), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn)));
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[2] = (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(2), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(0), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(6), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(1), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(10), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(2), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(14), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(3), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn)));
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[3] = (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(3), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(0), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(7), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(1), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(11), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(2), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(15), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(3), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn)));
+
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[4] = (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(0), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(4), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(4), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(5), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(8), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(6), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(12), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(7), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn)));
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[5] = (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(1), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(4), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(5), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(5), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(9), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(6), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(13), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(7), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn)));
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[6] = (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(2), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(4), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(6), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(5), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(10), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(6), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(14), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(7), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn)));
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[7] = (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(3), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(4), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(7), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(5), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(11), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(6), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(15), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(7), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn)));
+
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[8] = (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(0), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(8), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(4), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(9), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(8), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(10), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(12), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(11), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn)));
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[9] = (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(1), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(8), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(5), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(9), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(9), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(10), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(13), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(11), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn)));
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[10] = (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(2), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(8), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(6), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(9), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(10), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(10), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(14), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(11), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn)));
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[11] = (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(3), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(8), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(7), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(9), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(11), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(10), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(15), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(11), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn)));
+
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[12] = (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(0), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(12), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(4), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(13), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(8), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(14), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(12), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(15), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn)));
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[13] = (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(1), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(12), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(5), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(13), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(9), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(14), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(13), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(15), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn)));
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[14] = (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(2), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(12), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(6), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(13), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(10), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(14), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(14), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(15), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn)));
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[15] = (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(3), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(12), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(7), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(13), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(11), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(14), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) + (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m1)+(15), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn))) * (*(_wcl_addr_clamp_private_1_const__float__Ptr((_wcl_allocs->pa._wcl_m2)+(15), 1, (const float *)&_wcl_allocs->pa, (const float *)(&_wcl_allocs->pa + 1), (const float *)_wcl_allocs->pn)));
+
+
+
+    return pOut;
+}
+
+void translateMatrix(_WclProgramAllocations *_wcl_allocs, mat4* pOut, vec* t)
+{
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[12] += (*(_wcl_addr_clamp_private_1_vec__Ptr((t), 1, (vec *)&_wcl_allocs->pa, (vec *)(&_wcl_allocs->pa + 1), (vec *)_wcl_allocs->pn))).x;
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[13] += (*(_wcl_addr_clamp_private_1_vec__Ptr((t), 1, (vec *)&_wcl_allocs->pa, (vec *)(&_wcl_allocs->pa + 1), (vec *)_wcl_allocs->pn))).y;
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[14] += (*(_wcl_addr_clamp_private_1_vec__Ptr((t), 1, (vec *)&_wcl_allocs->pa, (vec *)(&_wcl_allocs->pa + 1), (vec *)_wcl_allocs->pn))).z;
+}
+
+void buildRotationMatrix(_WclProgramAllocations *_wcl_allocs, mat4* pOut, quat* pQ)
+{
+    float xx = (*(_wcl_addr_clamp_private_1_quat__Ptr((pQ), 1, (quat *)&_wcl_allocs->pa, (quat *)(&_wcl_allocs->pa + 1), (quat *)_wcl_allocs->pn))).x * (*(_wcl_addr_clamp_private_1_quat__Ptr((pQ), 1, (quat *)&_wcl_allocs->pa, (quat *)(&_wcl_allocs->pa + 1), (quat *)_wcl_allocs->pn))).x;
+    float xy = (*(_wcl_addr_clamp_private_1_quat__Ptr((pQ), 1, (quat *)&_wcl_allocs->pa, (quat *)(&_wcl_allocs->pa + 1), (quat *)_wcl_allocs->pn))).x * (*(_wcl_addr_clamp_private_1_quat__Ptr((pQ), 1, (quat *)&_wcl_allocs->pa, (quat *)(&_wcl_allocs->pa + 1), (quat *)_wcl_allocs->pn))).y;
+    float xz = (*(_wcl_addr_clamp_private_1_quat__Ptr((pQ), 1, (quat *)&_wcl_allocs->pa, (quat *)(&_wcl_allocs->pa + 1), (quat *)_wcl_allocs->pn))).x * (*(_wcl_addr_clamp_private_1_quat__Ptr((pQ), 1, (quat *)&_wcl_allocs->pa, (quat *)(&_wcl_allocs->pa + 1), (quat *)_wcl_allocs->pn))).z;
+    float xw = (*(_wcl_addr_clamp_private_1_quat__Ptr((pQ), 1, (quat *)&_wcl_allocs->pa, (quat *)(&_wcl_allocs->pa + 1), (quat *)_wcl_allocs->pn))).x * (*(_wcl_addr_clamp_private_1_quat__Ptr((pQ), 1, (quat *)&_wcl_allocs->pa, (quat *)(&_wcl_allocs->pa + 1), (quat *)_wcl_allocs->pn))).w;
+
+    float yy = (*(_wcl_addr_clamp_private_1_quat__Ptr((pQ), 1, (quat *)&_wcl_allocs->pa, (quat *)(&_wcl_allocs->pa + 1), (quat *)_wcl_allocs->pn))).y * (*(_wcl_addr_clamp_private_1_quat__Ptr((pQ), 1, (quat *)&_wcl_allocs->pa, (quat *)(&_wcl_allocs->pa + 1), (quat *)_wcl_allocs->pn))).y;
+    float yz = (*(_wcl_addr_clamp_private_1_quat__Ptr((pQ), 1, (quat *)&_wcl_allocs->pa, (quat *)(&_wcl_allocs->pa + 1), (quat *)_wcl_allocs->pn))).y * (*(_wcl_addr_clamp_private_1_quat__Ptr((pQ), 1, (quat *)&_wcl_allocs->pa, (quat *)(&_wcl_allocs->pa + 1), (quat *)_wcl_allocs->pn))).z;
+    float yw = (*(_wcl_addr_clamp_private_1_quat__Ptr((pQ), 1, (quat *)&_wcl_allocs->pa, (quat *)(&_wcl_allocs->pa + 1), (quat *)_wcl_allocs->pn))).y * (*(_wcl_addr_clamp_private_1_quat__Ptr((pQ), 1, (quat *)&_wcl_allocs->pa, (quat *)(&_wcl_allocs->pa + 1), (quat *)_wcl_allocs->pn))).w;
+
+    float zz = (*(_wcl_addr_clamp_private_1_quat__Ptr((pQ), 1, (quat *)&_wcl_allocs->pa, (quat *)(&_wcl_allocs->pa + 1), (quat *)_wcl_allocs->pn))).z * (*(_wcl_addr_clamp_private_1_quat__Ptr((pQ), 1, (quat *)&_wcl_allocs->pa, (quat *)(&_wcl_allocs->pa + 1), (quat *)_wcl_allocs->pn))).z;
+    float zw = (*(_wcl_addr_clamp_private_1_quat__Ptr((pQ), 1, (quat *)&_wcl_allocs->pa, (quat *)(&_wcl_allocs->pa + 1), (quat *)_wcl_allocs->pn))).z * (*(_wcl_addr_clamp_private_1_quat__Ptr((pQ), 1, (quat *)&_wcl_allocs->pa, (quat *)(&_wcl_allocs->pa + 1), (quat *)_wcl_allocs->pn))).w;
+
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[0] = 1 - 2 * (yy + zz);
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[1] = 2 * (xy + zw);
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[2] = 2 * (xz - yw);
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[3] = 0;
+
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[4] = 2 * (xy - zw);
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[5] = 1 - 2 * (xx + zz);
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[6] = 2 * (yz + xw);
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[7] = 0.0;
+
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[8] = 2 * (xz + yw);
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[9] = 2 * (yz - xw);
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[10] = 1 - 2 * (xx + yy);
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[11] = 0.0;
+
+
+    (*(_wcl_addr_clamp_private_1_mat4__Ptr((pOut), 1, (mat4 *)&_wcl_allocs->pa, (mat4 *)(&_wcl_allocs->pa + 1), (mat4 *)_wcl_allocs->pn))).m[15] = 1.0;
+}
+
+__kernel void stepParticles(global float* rotationBuffer, ulong _wcl_rotationBuffer_size, global float* velocityBuffer, ulong _wcl_velocityBuffer_size, global float* matrixBuffer, ulong _wcl_matrixBuffer_size, global float* camMatrix, ulong _wcl_camMatrix_size)
+{
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &rotationBuffer[0], &rotationBuffer[_wcl_rotationBuffer_size],&velocityBuffer[0], &velocityBuffer[_wcl_velocityBuffer_size],&matrixBuffer[0], &matrixBuffer[_wcl_matrixBuffer_size],&camMatrix[0], &camMatrix[_wcl_camMatrix_size] },
+        0,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.stepParticles__rotationBuffer_min, _wcl_allocs->gl.stepParticles__rotationBuffer_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.stepParticles__velocityBuffer_min, _wcl_allocs->gl.stepParticles__velocityBuffer_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.stepParticles__matrixBuffer_min, _wcl_allocs->gl.stepParticles__matrixBuffer_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.stepParticles__camMatrix_min, _wcl_allocs->gl.stepParticles__camMatrix_max, (__global uint*)0))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    size_t i = get_global_id(0);
+
+    mat4 transform;
+    mat4 cam;
+    for (int j = i * 16, iter = 0; j < (i+1)* 16; j++, iter++)
+    {
+        (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_transform.m)+(iter), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((matrixBuffer)+(j), 1, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_min, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_max, (__global float *)_wcl_allocs->gn)));
+        (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_cam.m)+(iter), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((camMatrix)+(iter), 1, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_min, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_max, (__global float *)_wcl_allocs->gn)));
+    }
+
+    quat rotation;
+    _wcl_allocs->pa._wcl_rotation.x = (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((rotationBuffer)+(i*4), 1, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_min, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_max, (__global float *)_wcl_allocs->gn)));
+    _wcl_allocs->pa._wcl_rotation.y = (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((rotationBuffer)+(i*4 + 1), 1, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_min, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_max, (__global float *)_wcl_allocs->gn)));
+    _wcl_allocs->pa._wcl_rotation.z = (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((rotationBuffer)+(i*4 + 2), 1, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_min, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_max, (__global float *)_wcl_allocs->gn)));
+    _wcl_allocs->pa._wcl_rotation.w = (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((rotationBuffer)+(i*4 + 3), 1, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_min, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_max, (__global float *)_wcl_allocs->gn)));
+
+    vec worldPos;
+    _wcl_allocs->pa._wcl_worldPos.x = (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_transform.m)+(12), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn)));
+    _wcl_allocs->pa._wcl_worldPos.y = (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_transform.m)+(13), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn)));
+    _wcl_allocs->pa._wcl_worldPos.z = (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_transform.m)+(14), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn)));
+
+    mat4 clip;
+    multiplyMatrices(_wcl_allocs, &_wcl_allocs->pa._wcl_clip, &_wcl_allocs->pa._wcl_cam,&_wcl_allocs->pa._wcl_transform);
+
+    (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_clip.m)+(12), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) -= (2.5*(*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_clip.m)+(15), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))))*step(1.1f, (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_clip.m)+(12), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn)))/(*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_clip.m)+(15), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))));
+    (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_clip.m)+(13), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) += (2.5*(*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_clip.m)+(15), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))))*step((*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_clip.m)+(13), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn)))/(*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_clip.m)+(15), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))),-1.1f );
+    (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_clip.m)+(14), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) += (1.5*(*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_clip.m)+(15), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))))*step(1.1f, (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_clip.m)+(14), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn)))/(*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_clip.m)+(15), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))));
+
+    mat4 invCam;
+    mat4Inverse(_wcl_allocs, &_wcl_allocs->pa._wcl_invCam, &_wcl_allocs->pa._wcl_cam);
+    multiplyMatrices(_wcl_allocs, &_wcl_allocs->pa._wcl_transform, &_wcl_allocs->pa._wcl_invCam,&_wcl_allocs->pa._wcl_clip);
+
+    vec translation;
+    _wcl_allocs->pa._wcl_translation.x = (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((velocityBuffer)+(i*3), 1, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_min, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_max, (__global float *)_wcl_allocs->gn)));
+    _wcl_allocs->pa._wcl_translation.y = (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((velocityBuffer)+(i*3+1), 1, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_min, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_max, (__global float *)_wcl_allocs->gn)));
+    _wcl_allocs->pa._wcl_translation.z = (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((velocityBuffer)+(i*3+2), 1, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_min, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_max, (__global float *)_wcl_allocs->gn)));
+
+    mat4 rMatrix;
+
+    buildRotationMatrix(_wcl_allocs, &_wcl_allocs->pa._wcl_rMatrix, &_wcl_allocs->pa._wcl_rotation);
+    multiplyMatrices(_wcl_allocs, &_wcl_allocs->pa._wcl_transform, &_wcl_allocs->pa._wcl_transform, &_wcl_allocs->pa._wcl_rMatrix);
+    translateMatrix(_wcl_allocs, &_wcl_allocs->pa._wcl_transform, &_wcl_allocs->pa._wcl_translation);
+
+    for (int j = i * 16, iter = 0; j < (i+1)* 16; j++, iter++)
+    {
+        (*(_wcl_addr_clamp_global_4__u_uglobal__float__Ptr((matrixBuffer)+(j), 1, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__rotationBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__velocityBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_min, (__global float *)_wcl_allocs->gl.stepParticles__matrixBuffer_max, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_min, (__global float *)_wcl_allocs->gl.stepParticles__camMatrix_max, (__global float *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_private_1_float__Ptr((_wcl_allocs->pa._wcl_transform.m)+(iter), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn)));
+    }
+
+}
+#version 100
+
+precision mediump float;
+
+varying vec3 pos;
+varying vec2 uv;
+//out vec4 fragCol;
+uniform vec2 screenSize;
+
+void main()
+{
+    vec2 coord = -1.0 + 2.0 * pos.xy / (screenSize.y/float(screenSize.x));
+    float d = max(0.1,min(1.0,1.0/(length(vec2(1.2,1.2)-coord) / 1.1)));
+    gl_FragColor = vec4(d*1.2, d,d*1.2,1.0);
+}
+#version 100
+
+precision mediump float;
+
+varying vec3 Color;
+varying vec3 Normal;
+uniform mat4 modelMatrix;
+uniform vec3 worldLightPos;
+//out vec4 fragCol;
+
+void main()
+{
+    vec3 worldNormal = (modelMatrix * vec4(Normal, 0.0)).xyz;
+
+    //multiply the dot product to get more intense white when fully lit
+    vec3 diff = max( 0.0, dot(normalize(worldNormal), -normalize(worldLightPos) ) *1.2) * Color;
+
+    gl_FragColor = vec4(diff + Color*0.25, 1.0);
+}
+#version 100
+uniform mat4 MVP;
+uniform mat4 modelMatrix;
+attribute vec3 position;
+attribute vec3 normal;
+uniform vec3 worldLightPos;
+
+varying vec3 Color;
+varying vec3 Normal;
+
+void main()
+{
+    Normal = normal;
+    Color = vec3(1.0,0.75,0.75);
+    gl_Position = MVP * vec4(position, 1.0);
+}
+#version 100
+attribute vec3 position;
+attribute vec2 texcoord;
+
+varying vec3 pos;
+varying vec2 uv;
+
+uniform vec2 screenSize;
+
+void main()
+{
+    gl_Position = vec4(position,1.0);
+    pos = position;
+    uv = texcoord;
+}

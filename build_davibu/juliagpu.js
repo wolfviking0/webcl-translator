@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-davibu/js/juliagpu.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'juliagpu.data';
     var REMOTE_PACKAGE_SIZE = 8064;
-    var PACKAGE_UUID = 'c6c235eb-1e44-4e4e-a34a-53d25abe8c57';
+    var PACKAGE_UUID = '73006612-2258-42de-8531-aa4041b1e2c6';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -16059,14 +16059,14 @@ function _keyFunc($key,$x,$y) {
  var $k3 = 0.0, $k6 = 0.0, $k7 = 0.0, $k9 = 0.0, $l = 0.0, $l5 = 0.0, $offset = 0, $r = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer10 = 0, $vararg_buffer5 = 0, $vararg_ptr3 = 0, $vararg_ptr4 = 0, $vararg_ptr8 = 0, $vararg_ptr9 = 0, $x1 = 0, $y2 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 176|0;
- $vararg_buffer10 = sp + 40|0;
+ $vararg_buffer10 = sp + 16|0;
  $vararg_buffer5 = sp + 24|0;
  $vararg_buffer1 = sp;
- $vararg_buffer = sp + 16|0;
- $dir = sp + 88|0;
+ $vararg_buffer = sp + 40|0;
+ $dir = sp + 76|0;
  $dir4 = sp + 116|0;
  $dir8 = sp + 140|0;
- $dir10 = sp + 72|0;
+ $dir10 = sp + 60|0;
  $0 = $key;
  $1 = $x;
  $2 = $y;
@@ -16074,6 +16074,21 @@ function _keyFunc($key,$x,$y) {
  $4 = $3&255;
  do {
   switch ($4|0) {
+  case 27:  {
+   $96 = HEAP32[_stderr>>2]|0;
+   (_fprintf(($96|0),(3016|0),($vararg_buffer10|0))|0);
+   _exit(0);
+   // unreachable;
+   break;
+  }
+  case 32:  {
+   _ReInit(0);
+   _glutPostRedisplay();
+   $347 = (+_WallClockTime());
+   HEAPF64[3024>>3] = $347;
+   STACKTOP = sp;return;
+   break;
+  }
   case 112:  {
    $5 = (_fopen((2920|0),(2936|0))|0);
    $f = $5;
@@ -16229,21 +16244,6 @@ function _keyFunc($key,$x,$y) {
     $8 = HEAP32[_stderr>>2]|0;
     (_fprintf(($8|0),(2944|0),($vararg_buffer|0))|0);
    }
-   _ReInit(0);
-   _glutPostRedisplay();
-   $347 = (+_WallClockTime());
-   HEAPF64[3024>>3] = $347;
-   STACKTOP = sp;return;
-   break;
-  }
-  case 27:  {
-   $96 = HEAP32[_stderr>>2]|0;
-   (_fprintf(($96|0),(3016|0),($vararg_buffer10|0))|0);
-   _exit(0);
-   // unreachable;
-   break;
-  }
-  case 32:  {
    _ReInit(0);
    _glutPostRedisplay();
    $347 = (+_WallClockTime());
@@ -16717,16 +16717,8 @@ function _specialFunc($key,$x,$y) {
  $2 = $y;
  $3 = $0;
  switch ($3|0) {
- case 105:  {
-  $6 = +HEAPF32[((2264 + 72|0))>>2];
-  $7 = $6 - 0.5;
-  HEAPF32[((2264 + 72|0))>>2] = $7;
-  break;
- }
- case 104:  {
-  $4 = +HEAPF32[((2264 + 72|0))>>2];
-  $5 = $4 + 0.5;
-  HEAPF32[((2264 + 72|0))>>2] = $5;
+ case 101:  {
+  _rotateCameraX(-0.0349065847694873809814);
   break;
  }
  case 103:  {
@@ -16741,8 +16733,16 @@ function _specialFunc($key,$x,$y) {
   _rotateCameraY(0.0349065847694873809814);
   break;
  }
- case 101:  {
-  _rotateCameraX(-0.0349065847694873809814);
+ case 104:  {
+  $4 = +HEAPF32[((2264 + 72|0))>>2];
+  $5 = $4 + 0.5;
+  HEAPF32[((2264 + 72|0))>>2] = $5;
+  break;
+ }
+ case 105:  {
+  $6 = +HEAPF32[((2264 + 72|0))>>2];
+  $7 = $6 - 0.5;
+  HEAPF32[((2264 + 72|0))>>2] = $7;
   break;
  }
  default: {
@@ -18317,7 +18317,7 @@ function _malloc($bytes) {
      $276 = ((3752 + ($idx$0$i<<2)|0) + 304|0);
      $277 = HEAP32[$276>>2]|0;
      $278 = ($277|0)==(0|0);
-     L9: do {
+     L126: do {
       if ($278) {
        $rsize$2$i = $250;$t$1$i = 0;$v$2$i = 0;
       } else {
@@ -18341,7 +18341,7 @@ function _malloc($bytes) {
          $289 = ($286|0)==($247|0);
          if ($289) {
           $rsize$2$i = $287;$t$1$i = $t$0$i14;$v$2$i = $t$0$i14;
-          break L9;
+          break L126;
          } else {
           $rsize$1$i = $287;$v$1$i = $t$0$i14;
          }
@@ -18626,7 +18626,7 @@ function _malloc($bytes) {
         }
        } while(0);
        $412 = ($rsize$3$lcssa$i>>>0)<(16);
-       L87: do {
+       L204: do {
         if ($412) {
          $413 = (($rsize$3$lcssa$i) + ($247))|0;
          $414 = $413 | 3;
@@ -18765,7 +18765,7 @@ function _malloc($bytes) {
          $482 = HEAP32[$481>>2]|0;
          $483 = $482 & -8;
          $484 = ($483|0)==($rsize$3$lcssa$i|0);
-         L108: do {
+         L225: do {
           if ($484) {
            $T$0$lcssa$i = $477;
           } else {
@@ -18786,7 +18786,7 @@ function _malloc($bytes) {
             $492 = ($491|0)==($rsize$3$lcssa$i|0);
             if ($492) {
              $T$0$lcssa$i = $489;
-             break L108;
+             break L225;
             } else {
              $K12$025$i = $487;$T$024$i = $489;
             }
@@ -18807,7 +18807,7 @@ function _malloc($bytes) {
             $$sum13$i = (($247) + 8)|0;
             $500 = (($v$3$lcssa$i) + ($$sum13$i)|0);
             HEAP32[$500>>2] = $349;
-            break L87;
+            break L204;
            }
           }
          } while(0);
@@ -21036,10 +21036,7 @@ function _frexp($x,$e) {
  $2 = (_bitshift64Lshr(($0|0),($1|0),52)|0);
  $3 = tempRet0;
  $4 = $2 & 2047;
- if ((($4|0) == 2047)) {
-  $$0 = $x;
-  STACKTOP = sp;return (+$$0);
- } else if ((($4|0) == 0)) {
+ if ((($4|0) == 0)) {
   $5 = $x != 0.0;
   if ($5) {
    $6 = $x * 18446744073709551616.0;
@@ -21052,6 +21049,9 @@ function _frexp($x,$e) {
   }
   HEAP32[$e>>2] = $storemerge;
   $$0 = $$01;
+  STACKTOP = sp;return (+$$0);
+ } else if ((($4|0) == 2047)) {
+  $$0 = $x;
   STACKTOP = sp;return (+$$0);
  } else {
   $10 = (($4) + -1022)|0;
@@ -21513,12 +21513,12 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
    $1047 = $21;$25 = $22;
   }
   while(1) {
-   if ((($1047<<24>>24) == 0)) {
-    $$lcssa92 = $25;$z$0$lcssa = $25;
-    break;
-   } else if ((($1047<<24>>24) == 37)) {
+   if ((($1047<<24>>24) == 37)) {
     $27 = $25;$z$093 = $25;
     label = 9;
+    break;
+   } else if ((($1047<<24>>24) == 0)) {
+    $$lcssa92 = $25;$z$0$lcssa = $25;
     break;
    }
    $24 = (($25) + 1|0);

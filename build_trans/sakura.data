@@ -1,0 +1,497 @@
+# Blender MTL File: 'petal.blend'
+# Material Count: 1
+
+newmtl Material
+Ns 96.078431
+Ka 0.000000 0.000000 0.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ni 1.000000
+d 1.000000
+illum 2
+# Blender v2.69 (sub 0) OBJ File: ''
+# www.blender.org
+o Plane
+v 1.000000 0.000000 0.298338
+v -0.623912 0.000000 0.749865
+v 1.000000 0.000000 -0.298338
+v -0.601242 0.000000 -0.749865
+v -0.517782 0.000000 0.000000
+v 1.404912 0.000000 0.000000
+v 0.000000 0.000000 0.964517
+v 0.000000 0.000000 -0.964517
+v -0.863097 0.000000 0.500000
+v -0.456241 0.000000 0.911558
+v -0.847981 0.000000 -0.500000
+v -0.440870 0.000000 -0.911558
+v 0.500000 0.000000 0.659850
+v 0.500000 0.000000 -0.659850
+v -0.258542 0.000000 1.093355
+v -0.249016 0.000000 -1.093355
+v 1.000000 -0.010094 0.298338
+v -0.623912 -0.010094 0.749865
+v 1.000000 -0.010094 -0.298338
+v -0.601242 -0.010094 -0.749865
+v -0.517782 -0.010094 0.000000
+v 1.404912 -0.010094 0.000000
+v 0.000000 -0.010094 0.964517
+v 0.000000 -0.010094 -0.964517
+v -0.863097 -0.010094 0.500000
+v -0.456241 -0.010094 0.911558
+v -0.847981 -0.010094 -0.500000
+v -0.440870 -0.010094 -0.911558
+v 0.500000 -0.010094 0.659850
+v 0.500000 -0.010094 -0.659850
+v -0.258542 -0.010094 1.093355
+v -0.249016 -0.010094 -1.093355
+vn 0.000000 -1.000000 0.000000
+vn 0.000000 1.000000 0.000000
+vn -0.834457 0.000000 0.551073
+vn -0.822838 0.000000 -0.568276
+vn 0.585917 0.000000 0.810371
+vn -0.711544 0.000000 -0.702642
+vn -0.687823 0.000000 -0.725878
+vn -0.722376 0.000000 0.691500
+vn 0.520345 0.000000 -0.853956
+vn -0.694160 0.000000 0.719820
+vn 0.459525 0.000000 -0.888165
+vn 0.446013 0.000000 0.895026
+vn 0.585917 0.000000 -0.810371
+vn 0.593175 0.000000 0.805073
+vn 0.593175 0.000000 -0.805073
+vn -0.676882 0.000000 0.736091
+vn -0.710003 0.000000 -0.704199
+vn 0.520345 0.000000 0.853956
+vn -0.694161 0.000000 0.719820
+vn 0.446013 0.000000 0.895027
+vn -0.676882 0.000000 0.736092
+s off
+f 1//1 3//1 6//1
+f 19//2 17//2 22//2
+f 11//3 27//3 5//3
+f 5//4 21//4 9//4
+f 13//5 29//5 1//5
+f 4//6 20//6 11//6
+f 16//7 32//7 12//7
+f 9//8 25//8 2//8
+f 14//9 30//9 8//9
+f 2//10 18//10 10//10
+f 8//11 24//11 16//11
+f 15//12 31//12 7//12
+f 3//13 19//13 14//13
+f 1//14 17//14 6//14
+f 6//15 22//15 3//15
+f 10//16 26//16 15//16
+f 12//17 28//17 4//17
+f 7//18 23//18 13//18
+f 8//1 12//1 16//1
+f 10//1 7//1 15//1
+f 4//1 5//1 11//1
+f 1//1 14//1 3//1
+f 13//1 14//1 1//1
+f 2//1 9//1 5//1
+f 13//1 8//1 14//1
+f 7//1 8//1 13//1
+f 7//1 10//1 8//1
+f 8//1 10//1 12//1
+f 10//1 2//1 5//1
+f 12//1 10//1 5//1
+f 4//1 12//1 5//1
+f 28//2 24//2 32//2
+f 26//2 31//2 23//2
+f 21//2 20//2 27//2
+f 19//2 29//2 17//2
+f 30//2 29//2 19//2
+f 25//2 18//2 21//2
+f 30//2 23//2 29//2
+f 24//2 23//2 30//2
+f 26//2 23//2 24//2
+f 26//2 24//2 28//2
+f 18//2 26//2 21//2
+f 26//2 28//2 21//2
+f 28//2 20//2 21//2
+f 27//3 21//3 5//3
+f 21//4 25//4 9//4
+f 29//5 17//5 1//5
+f 20//6 27//6 11//6
+f 32//7 28//7 12//7
+f 25//8 18//8 2//8
+f 30//9 24//9 8//9
+f 18//19 26//19 10//19
+f 24//11 32//11 16//11
+f 31//20 23//20 7//20
+f 19//13 30//13 14//13
+f 17//14 22//14 6//14
+f 22//15 19//15 3//15
+f 26//21 31//21 15//21
+f 28//17 20//17 4//17
+f 23//18 29//18 13//18
+//
+//  kernel_petal_motion.h
+//  Sakura GL Toy
+//
+//  Created by Kyle Halladay on 2014-06-23.
+//  Copyright (c) 2014 Kyle Halladay. All rights reserved.
+//
+
+#ifndef Sakura_GL_Toy_kernel_petal_motion_h
+#define Sakura_GL_Toy_kernel_petal_motion_h
+
+//#include "kazmath_cl.h"
+typedef struct quat
+{
+    float x,y,z,w;
+}quat;
+
+typedef struct vec
+{
+    float x,y,z;
+}vec;
+
+typedef struct vec4
+{
+    float x,y,z,w;
+}vec4;
+
+typedef struct mat4
+{
+    float m[16];
+}mat4;
+
+bool mat4Inverse(mat4* pOut, const mat4* pM) {
+    mat4 tmp;
+    float det;
+    int i;
+
+    tmp.m[0] = pM->m[5]  * pM->m[10] * pM->m[15] -
+    pM->m[5]  * pM->m[11] * pM->m[14] -
+    pM->m[9]  * pM->m[6]  * pM->m[15] +
+    pM->m[9]  * pM->m[7]  * pM->m[14] +
+    pM->m[13] * pM->m[6]  * pM->m[11] -
+    pM->m[13] * pM->m[7]  * pM->m[10];
+
+    tmp.m[4] = -pM->m[4]  * pM->m[10] * pM->m[15] +
+    pM->m[4]  * pM->m[11] * pM->m[14] +
+    pM->m[8]  * pM->m[6]  * pM->m[15] -
+    pM->m[8]  * pM->m[7]  * pM->m[14] -
+    pM->m[12] * pM->m[6]  * pM->m[11] +
+    pM->m[12] * pM->m[7]  * pM->m[10];
+
+    tmp.m[8] = pM->m[4]  * pM->m[9] * pM->m[15] -
+    pM->m[4]  * pM->m[11] * pM->m[13] -
+    pM->m[8]  * pM->m[5] * pM->m[15] +
+    pM->m[8]  * pM->m[7] * pM->m[13] +
+    pM->m[12] * pM->m[5] * pM->m[11] -
+    pM->m[12] * pM->m[7] * pM->m[9];
+
+    tmp.m[12] = -pM->m[4]  * pM->m[9] * pM->m[14] +
+    pM->m[4]  * pM->m[10] * pM->m[13] +
+    pM->m[8]  * pM->m[5] * pM->m[14] -
+    pM->m[8]  * pM->m[6] * pM->m[13] -
+    pM->m[12] * pM->m[5] * pM->m[10] +
+    pM->m[12] * pM->m[6] * pM->m[9];
+
+    tmp.m[1] = -pM->m[1]  * pM->m[10] * pM->m[15] +
+    pM->m[1]  * pM->m[11] * pM->m[14] +
+    pM->m[9]  * pM->m[2] * pM->m[15] -
+    pM->m[9]  * pM->m[3] * pM->m[14] -
+    pM->m[13] * pM->m[2] * pM->m[11] +
+    pM->m[13] * pM->m[3] * pM->m[10];
+
+    tmp.m[5] = pM->m[0]  * pM->m[10] * pM->m[15] -
+    pM->m[0]  * pM->m[11] * pM->m[14] -
+    pM->m[8]  * pM->m[2] * pM->m[15] +
+    pM->m[8]  * pM->m[3] * pM->m[14] +
+    pM->m[12] * pM->m[2] * pM->m[11] -
+    pM->m[12] * pM->m[3] * pM->m[10];
+
+    tmp.m[9] = -pM->m[0]  * pM->m[9] * pM->m[15] +
+    pM->m[0]  * pM->m[11] * pM->m[13] +
+    pM->m[8]  * pM->m[1] * pM->m[15] -
+    pM->m[8]  * pM->m[3] * pM->m[13] -
+    pM->m[12] * pM->m[1] * pM->m[11] +
+    pM->m[12] * pM->m[3] * pM->m[9];
+
+    tmp.m[13] = pM->m[0]  * pM->m[9] * pM->m[14] -
+    pM->m[0]  * pM->m[10] * pM->m[13] -
+    pM->m[8]  * pM->m[1] * pM->m[14] +
+    pM->m[8]  * pM->m[2] * pM->m[13] +
+    pM->m[12] * pM->m[1] * pM->m[10] -
+    pM->m[12] * pM->m[2] * pM->m[9];
+
+    tmp.m[2] = pM->m[1]  * pM->m[6] * pM->m[15] -
+    pM->m[1]  * pM->m[7] * pM->m[14] -
+    pM->m[5]  * pM->m[2] * pM->m[15] +
+    pM->m[5]  * pM->m[3] * pM->m[14] +
+    pM->m[13] * pM->m[2] * pM->m[7] -
+    pM->m[13] * pM->m[3] * pM->m[6];
+
+    tmp.m[6] = -pM->m[0]  * pM->m[6] * pM->m[15] +
+    pM->m[0]  * pM->m[7] * pM->m[14] +
+    pM->m[4]  * pM->m[2] * pM->m[15] -
+    pM->m[4]  * pM->m[3] * pM->m[14] -
+    pM->m[12] * pM->m[2] * pM->m[7] +
+    pM->m[12] * pM->m[3] * pM->m[6];
+
+    tmp.m[10] = pM->m[0]  * pM->m[5] * pM->m[15] -
+    pM->m[0]  * pM->m[7] * pM->m[13] -
+    pM->m[4]  * pM->m[1] * pM->m[15] +
+    pM->m[4]  * pM->m[3] * pM->m[13] +
+    pM->m[12] * pM->m[1] * pM->m[7] -
+    pM->m[12] * pM->m[3] * pM->m[5];
+
+    tmp.m[14] = -pM->m[0]  * pM->m[5] * pM->m[14] +
+    pM->m[0]  * pM->m[6] * pM->m[13] +
+    pM->m[4]  * pM->m[1] * pM->m[14] -
+    pM->m[4]  * pM->m[2] * pM->m[13] -
+    pM->m[12] * pM->m[1] * pM->m[6] +
+    pM->m[12] * pM->m[2] * pM->m[5];
+
+    tmp.m[3] = -pM->m[1] * pM->m[6] * pM->m[11] +
+    pM->m[1] * pM->m[7] * pM->m[10] +
+    pM->m[5] * pM->m[2] * pM->m[11] -
+    pM->m[5] * pM->m[3] * pM->m[10] -
+    pM->m[9] * pM->m[2] * pM->m[7] +
+    pM->m[9] * pM->m[3] * pM->m[6];
+
+    tmp.m[7] = pM->m[0] * pM->m[6] * pM->m[11] -
+    pM->m[0] * pM->m[7] * pM->m[10] -
+    pM->m[4] * pM->m[2] * pM->m[11] +
+    pM->m[4] * pM->m[3] * pM->m[10] +
+    pM->m[8] * pM->m[2] * pM->m[7] -
+    pM->m[8] * pM->m[3] * pM->m[6];
+
+    tmp.m[11] = -pM->m[0] * pM->m[5] * pM->m[11] +
+    pM->m[0] * pM->m[7] * pM->m[9] +
+    pM->m[4] * pM->m[1] * pM->m[11] -
+    pM->m[4] * pM->m[3] * pM->m[9] -
+    pM->m[8] * pM->m[1] * pM->m[7] +
+    pM->m[8] * pM->m[3] * pM->m[5];
+
+    tmp.m[15] = pM->m[0] * pM->m[5] * pM->m[10] -
+    pM->m[0] * pM->m[6] * pM->m[9] -
+    pM->m[4] * pM->m[1] * pM->m[10] +
+    pM->m[4] * pM->m[2] * pM->m[9] +
+    pM->m[8] * pM->m[1] * pM->m[6] -
+    pM->m[8] * pM->m[2] * pM->m[5];
+
+    det = pM->m[0] * tmp.m[0] + pM->m[1] * tmp.m[4] + pM->m[2] * tmp.m[8] + pM->m[3] * tmp.m[12];
+
+    if (det == 0) {
+        return false;
+    }
+
+    det = 1.0 / det;
+
+    for (i = 0; i < 16; i++) {
+        pOut->m[i] = tmp.m[i] * det;
+    }
+
+    return true;
+}
+
+vec* vecMultiplyMat4(vec* pOut, const vec* pV, const mat4* pM) {
+    vec4 v;
+
+    v.x = pV->x * pM->m[0] + pV->y * pM->m[4] + pV->z * pM->m[8] + pM->m[12];
+    v.y = pV->x * pM->m[1] + pV->y * pM->m[5] + pV->z * pM->m[9] + pM->m[13];
+    v.z = pV->x * pM->m[2] + pV->y * pM->m[6] + pV->z * pM->m[10] + pM->m[14];
+    v.w = pV->x * pM->m[3] + pV->y * pM->m[7] + pV->z * pM->m[11] + pM->m[15];
+
+    pOut->x = v.x / v.w;
+    pOut->y = v.y / v.w;
+    pOut->z = v.z / v.w;
+
+    return pOut;
+}
+
+mat4* multiplyMatrices(mat4* pOut, const mat4* pM1, const mat4* pM2)
+{
+    float mat[16];
+
+    const float *m1 = pM1->m, *m2 = pM2->m;
+
+    pOut->m[0] = m1[0] * m2[0] + m1[4] * m2[1] + m1[8] * m2[2] + m1[12] * m2[3];
+    pOut->m[1] = m1[1] * m2[0] + m1[5] * m2[1] + m1[9] * m2[2] + m1[13] * m2[3];
+    pOut->m[2] = m1[2] * m2[0] + m1[6] * m2[1] + m1[10] * m2[2] + m1[14] * m2[3];
+    pOut->m[3] = m1[3] * m2[0] + m1[7] * m2[1] + m1[11] * m2[2] + m1[15] * m2[3];
+
+    pOut->m[4] = m1[0] * m2[4] + m1[4] * m2[5] + m1[8] * m2[6] + m1[12] * m2[7];
+    pOut->m[5] = m1[1] * m2[4] + m1[5] * m2[5] + m1[9] * m2[6] + m1[13] * m2[7];
+    pOut->m[6] = m1[2] * m2[4] + m1[6] * m2[5] + m1[10] * m2[6] + m1[14] * m2[7];
+    pOut->m[7] = m1[3] * m2[4] + m1[7] * m2[5] + m1[11] * m2[6] + m1[15] * m2[7];
+
+    pOut->m[8] = m1[0] * m2[8] + m1[4] * m2[9] + m1[8] * m2[10] + m1[12] * m2[11];
+    pOut->m[9] = m1[1] * m2[8] + m1[5] * m2[9] + m1[9] * m2[10] + m1[13] * m2[11];
+    pOut->m[10] = m1[2] * m2[8] + m1[6] * m2[9] + m1[10] * m2[10] + m1[14] * m2[11];
+    pOut->m[11] = m1[3] * m2[8] + m1[7] * m2[9] + m1[11] * m2[10] + m1[15] * m2[11];
+
+    pOut->m[12] = m1[0] * m2[12] + m1[4] * m2[13] + m1[8] * m2[14] + m1[12] * m2[15];
+    pOut->m[13] = m1[1] * m2[12] + m1[5] * m2[13] + m1[9] * m2[14] + m1[13] * m2[15];
+    pOut->m[14] = m1[2] * m2[12] + m1[6] * m2[13] + m1[10] * m2[14] + m1[14] * m2[15];
+    pOut->m[15] = m1[3] * m2[12] + m1[7] * m2[13] + m1[11] * m2[14] + m1[15] * m2[15];
+
+
+
+    return pOut;
+}
+
+void translateMatrix(mat4* pOut, vec* t)
+{
+    pOut->m[12] += t->x;
+    pOut->m[13] += t->y;
+    pOut->m[14] += t->z;
+}
+
+void buildRotationMatrix(mat4* pOut, quat* pQ)
+{
+    float xx = pQ->x * pQ->x;
+    float xy = pQ->x * pQ->y;
+    float xz = pQ->x * pQ->z;
+    float xw = pQ->x * pQ->w;
+
+    float yy = pQ->y * pQ->y;
+    float yz = pQ->y * pQ->z;
+    float yw = pQ->y * pQ->w;
+
+    float zz = pQ->z * pQ->z;
+    float zw = pQ->z * pQ->w;
+
+    pOut->m[0] = 1 - 2 * (yy + zz);
+    pOut->m[1] = 2 * (xy + zw);
+    pOut->m[2] = 2 * (xz - yw);
+    pOut->m[3] = 0;
+
+    pOut->m[4] = 2 * (xy - zw);
+    pOut->m[5] = 1 - 2 * (xx + zz);
+    pOut->m[6] = 2 * (yz + xw);
+    pOut->m[7] = 0.0;
+
+    pOut->m[8] = 2 * (xz + yw);
+    pOut->m[9] = 2 * (yz - xw);
+    pOut->m[10] = 1 - 2 * (xx + yy);
+    pOut->m[11] = 0.0;
+
+
+    pOut->m[15] = 1.0;
+}
+
+__kernel void stepParticles(global float* rotationBuffer, global float* velocityBuffer, global float* matrixBuffer, global float* camMatrix)
+{
+    size_t i = get_global_id(0);
+
+    mat4 transform;
+    mat4 cam;
+    for (int j = i * 16, iter = 0; j < (i+1)* 16; j++, iter++)
+    {
+        transform.m[iter] = matrixBuffer[j];
+        cam.m[iter] = camMatrix[iter];
+    }
+
+    quat rotation;
+    rotation.x = rotationBuffer[i*4];
+    rotation.y = rotationBuffer[i*4 + 1];
+    rotation.z = rotationBuffer[i*4 + 2];
+    rotation.w = rotationBuffer[i*4 + 3];
+
+    vec worldPos;
+    worldPos.x = transform.m[12];
+    worldPos.y = transform.m[13];
+    worldPos.z = transform.m[14];
+
+    mat4 clip;
+    multiplyMatrices(&clip, &cam,&transform);
+
+    clip.m[12] -= (2.5*clip.m[15])*step(1.1f, clip.m[12]/clip.m[15]);
+    clip.m[13] += (2.5*clip.m[15])*step(clip.m[13]/clip.m[15],-1.1f );
+    clip.m[14] += (1.5*clip.m[15])*step(1.1f, clip.m[14]/clip.m[15]);
+
+    mat4 invCam;
+    mat4Inverse(&invCam, &cam);
+    multiplyMatrices(&transform, &invCam,&clip);
+
+    vec translation;
+    translation.x = velocityBuffer[i*3];
+    translation.y = velocityBuffer[i*3+1];
+    translation.z = velocityBuffer[i*3+2];
+
+    mat4 rMatrix;
+
+    buildRotationMatrix(&rMatrix, &rotation);
+    multiplyMatrices(&transform, &transform, &rMatrix);
+    translateMatrix(&transform, &translation);
+
+    for (int j = i * 16, iter = 0; j < (i+1)* 16; j++, iter++)
+    {
+        matrixBuffer[j] = transform.m[iter];
+    }
+
+}
+
+
+#endif
+#version 100
+
+precision mediump float;
+
+varying vec3 pos;
+varying vec2 uv;
+//out vec4 fragCol;
+uniform vec2 screenSize;
+
+void main()
+{
+    vec2 coord = -1.0 + 2.0 * pos.xy / (screenSize.y/float(screenSize.x));
+    float d = max(0.1,min(1.0,1.0/(length(vec2(1.2,1.2)-coord) / 1.1)));
+    gl_FragColor = vec4(d*1.2, d,d*1.2,1.0);
+}
+#version 100
+
+precision mediump float;
+
+varying vec3 Color;
+varying vec3 Normal;
+uniform mat4 modelMatrix;
+uniform vec3 worldLightPos;
+//out vec4 fragCol;
+
+void main()
+{
+    vec3 worldNormal = (modelMatrix * vec4(Normal, 0.0)).xyz;
+
+    //multiply the dot product to get more intense white when fully lit
+    vec3 diff = max( 0.0, dot(normalize(worldNormal), -normalize(worldLightPos) ) *1.2) * Color;
+
+    gl_FragColor = vec4(diff + Color*0.25, 1.0);
+}
+#version 100
+uniform mat4 MVP;
+uniform mat4 modelMatrix;
+attribute vec3 position;
+attribute vec3 normal;
+uniform vec3 worldLightPos;
+
+varying vec3 Color;
+varying vec3 Normal;
+
+void main()
+{
+    Normal = normal;
+    Color = vec3(1.0,0.75,0.75);
+    gl_Position = MVP * vec4(position, 1.0);
+}
+#version 100
+attribute vec3 position;
+attribute vec2 texcoord;
+
+varying vec3 pos;
+varying vec2 uv;
+
+uniform vec2 screenSize;
+
+void main()
+{
+    gl_Position = vec4(position,1.0);
+    pos = position;
+    uv = texcoord;
+}

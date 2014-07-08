@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-osx-sample/js/transpose.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'transpose.data';
     var REMOTE_PACKAGE_SIZE = 9421;
-    var PACKAGE_UUID = '370d0caf-1178-44ac-a0d4-b9d02ac04de0';
+    var PACKAGE_UUID = 'cca47edb-da4f-4110-a29a-c022bef10fd7';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
