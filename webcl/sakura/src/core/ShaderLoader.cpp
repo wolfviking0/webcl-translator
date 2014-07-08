@@ -9,6 +9,8 @@
 #include "ShaderLoader.h"
 #include "ResourceLoader.h"
 #include <assert.h>
+#include <string>
+#include <vector>
 
 GLuint ShaderLoader::loadShaderFromResources(char* vertShaderName, char* fragShaderName)
 {
@@ -39,50 +41,67 @@ GLuint ShaderLoader::loadShaderFromResources(char* vertShaderName, char* fragSha
     const GLchar* fragSource = loader.getContentsOfResourceAtPath(fFilePath, fFileLen);
 
     int logLen;
-    GLint Result = GL_FALSE;
     GLuint vHdl, fHdl;
 
     vHdl = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vHdl, 1, &vertSource, NULL);
     glCompileShader(vHdl);
 
-    glGetShaderiv(vHdl, GL_COMPILE_STATUS, &Result);
-    glGetShaderiv(vHdl, GL_INFO_LOG_LENGTH, &logLen);
-    if ( logLen > 0 )
-    {
-        char error[logLen];
-        glGetShaderInfoLog(vHdl, logLen, NULL, &error[0]);
-        printf("%s\n", error);
+    GLint res = GL_FALSE;
+    glGetShaderiv( vHdl, GL_COMPILE_STATUS, &res );
+    if( res == GL_FALSE ) {
+        glGetShaderiv(vHdl, GL_INFO_LOG_LENGTH, &logLen);
+        if ( logLen > 0 )
+        {
+            char error[logLen];
+            glGetShaderInfoLog(vHdl, logLen, NULL, &error[0]);
+            printf("glCompileShader %s : %s\n", vFilePath, error);
+        }
     }
 
     fHdl = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fHdl, 1, &fragSource, NULL);
     glCompileShader(fHdl);
 
-    glGetShaderiv(fHdl, GL_COMPILE_STATUS, &Result);
-    glGetShaderiv(fHdl, GL_INFO_LOG_LENGTH, &logLen);
-    if ( logLen > 0 )
-    {
-        char error[logLen];
-        glGetShaderInfoLog(fHdl, logLen, NULL, &error[0]);
-        printf("%s\n", error);
+    res = GL_FALSE;
+    glGetShaderiv( fHdl, GL_COMPILE_STATUS, &res );
+    if( res == GL_FALSE ) {
+        glGetShaderiv(fHdl, GL_INFO_LOG_LENGTH, &logLen);
+        if ( logLen > 0 )
+        {
+            char error[logLen];
+            glGetShaderInfoLog(fHdl, logLen, NULL, &error[0]);
+            printf("glCompileShader %s : %s\n", fFilePath, error);
+        }
     }
 
     linkedProgram = glCreateProgram();
     glAttachShader(linkedProgram, vHdl);
     glAttachShader(linkedProgram, fHdl);
-    glBindFragDataLocation(linkedProgram, 0, "fragCol");
+    //glBindFragDataLocation(linkedProgram, 0, "fragCol");
 
     glLinkProgram(linkedProgram);
 
-
-    glGetProgramiv(linkedProgram, GL_LINK_STATUS, &Result);
-    glGetProgramiv(linkedProgram, GL_INFO_LOG_LENGTH, &logLen);
-    if ( logLen > 0 )
+    res = GL_FALSE;
+    glGetProgramiv(linkedProgram, GL_LINK_STATUS, &res);
+    //if ( res == GL_FALSE )
     {
-        char error[logLen];
-        glGetShaderInfoLog(vHdl, logLen, NULL, &error[0]);
-        printf("%s\n", error);
+        GLint logSize;
+        glGetProgramiv( linkedProgram, GL_INFO_LOG_LENGTH, &logSize );
+
+        if (logSize > 0)
+        {
+            std::vector <char> shaderLog(logSize);
+            GLsizei written;
+            glGetProgramInfoLog(linkedProgram, logSize, &written, shaderLog.data());
+            printf("%s\n",shaderLog.data());
+        }
+
+        if ( res == GL_FALSE )
+        {
+            glDeleteProgram(linkedProgram);
+            printf("GLSL program build failed : %s : %d\n",__FILE__,__LINE__);
+        }
     }
 
     loadedShaders[combinedName] = linkedProgram;
