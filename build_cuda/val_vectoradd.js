@@ -151,6 +151,10 @@ if (!Module['printErr']) {
 if (!Module['arguments']) {
   Module['arguments'] = [];
 }
+if (!Module['thisProgram']) {
+  Module['thisProgram'] = './this.program';
+}
+
 // *** Environment setup code ***
 
 // Closure helpers
@@ -449,12 +453,16 @@ var Runtime = {
   funcWrappers: {},
   getFuncWrapper: function (func, sig) {
     assert(sig);
-    if (!Runtime.funcWrappers[func]) {
-      Runtime.funcWrappers[func] = function dynCall_wrapper() {
+    if (!Runtime.funcWrappers[sig]) {
+      Runtime.funcWrappers[sig] = {};
+    }
+    var sigCache = Runtime.funcWrappers[sig];
+    if (!sigCache[func]) {
+      sigCache[func] = function dynCall_wrapper() {
         return Runtime.dynCall(sig, func, arguments);
       };
     }
-    return Runtime.funcWrappers[func];
+    return sigCache[func];
   },
   UTF8Processor: function () {
     var buffer = [];
@@ -672,6 +680,7 @@ var cwrap, ccall;
   //   alert(my_function(99, 12));
   //
   cwrap = function cwrap(ident, returnType, argTypes) {
+    argTypes = argTypes || [];
     var cfunc = getCFunc(ident);
     // When the function takes numbers and returns a number, we can just return
     // the original function
@@ -970,6 +979,25 @@ function stringToUTF32(str, outPtr) {
 Module['stringToUTF32'] = stringToUTF32;
 
 function demangle(func) {
+  var hasLibcxxabi = !!Module['___cxa_demangle'];
+  if (hasLibcxxabi) {
+    try {
+      var buf = _malloc(func.length);
+      writeStringToMemory(func.substr(1), buf);
+      var status = _malloc(4);
+      var ret = Module['___cxa_demangle'](buf, 0, 0, status);
+      if (getValue(status, 'i32') === 0 && ret) {
+        return Pointer_stringify(ret);
+      }
+      // otherwise, libcxxabi failed, we can try ours which may return a partial result
+    } catch(e) {
+      // failure when using libcxxabi, we can try ours which may return a partial result
+    } finally {
+      if (buf) _free(buf);
+      if (status) _free(status);
+      if (ret) _free(ret);
+    }
+  }
   var i = 3;
   // params, etc.
   var basicTypes = {
@@ -1101,6 +1129,7 @@ function demangle(func) {
       return ret + flushList();
     }
   }
+  var final = func;
   try {
     // Special-case the entry point, since its name differs from other name mangling.
     if (func == 'Object._main' || func == '_main') {
@@ -1114,20 +1143,41 @@ function demangle(func) {
       case 'n': return 'operator new()';
       case 'd': return 'operator delete()';
     }
-    return parse();
+    final = parse();
   } catch(e) {
-    return func;
+    final += '?';
   }
+  if (final.indexOf('?') >= 0 && !hasLibcxxabi) {
+    Runtime.warnOnce('warning: a problem occurred in builtin C++ name demangling; build with  -s DEMANGLE_SUPPORT=1  to link in libcxxabi demangling');
+  }
+  return final;
 }
 
 function demangleAll(text) {
   return text.replace(/__Z[\w\d_]+/g, function(x) { var y = demangle(x); return x === y ? x : (x + ' [' + y + ']') });
 }
 
-function stackTrace() {
-  var stack = new Error().stack;
-  return stack ? demangleAll(stack) : '(no stack trace available)'; // Stack trace is not available at least on IE10 and Safari 6.
+function jsStackTrace() {
+  var err = new Error();
+  if (!err.stack) {
+    // IE10+ special cases: It does have callstack info, but it is only populated if an Error object is thrown,
+    // so try that as a special-case.
+    try {
+      throw new Error(0);
+    } catch(e) {
+      err = e;
+    }
+    if (!err.stack) {
+      return '(no stack trace available)';
+    }
+  }
+  return err.stack.toString();
 }
+
+function stackTrace() {
+  return demangleAll(jsStackTrace());
+}
+Module['stackTrace'] = stackTrace;
 
 // Memory management
 
@@ -1906,7 +1956,7 @@ function copyTempDouble(ptr) {
           if (typeof path !== 'string') {
             throw new TypeError('Arguments to path.resolve must be strings');
           } else if (!path) {
-            continue;
+            return ''; // an invalid portion invalidates the whole thing
           }
           resolvedPath = path + '/' + resolvedPath;
           resolvedAbsolute = path.charAt(0) === '/';
@@ -2198,7 +2248,9 @@ function copyTempDouble(ptr) {
         if (!node.contents || node.contents.subarray) { // Resize a typed array if that is being used as the backing store.
           var oldContents = node.contents;
           node.contents = new Uint8Array(new ArrayBuffer(newSize)); // Allocate new storage.
-          node.contents.set(oldContents.subarray(0, Math.min(newSize, node.usedBytes))); // Copy old data over to the new storage.
+          if (oldContents) {
+            node.contents.set(oldContents.subarray(0, Math.min(newSize, node.usedBytes))); // Copy old data over to the new storage.
+          }
           node.usedBytes = newSize;
           return;
         }
@@ -2386,7 +2438,11 @@ function copyTempDouble(ptr) {
         }}};
   
   var IDBFS={dbs:{},indexedDB:function () {
-        return window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+        if (typeof indexedDB !== 'undefined') return indexedDB;
+        var ret = null;
+        if (typeof window === 'object') ret = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+        assert(ret, 'IDBFS used, but indexedDB not supported');
+        return ret;
       },DB_VERSION:21,DB_STORE_NAME:"FILE_DATA",mount:function (mount) {
         // reuse all of the core MEMFS functionality
         return MEMFS.mount.apply(null, arguments);
@@ -2880,6 +2936,8 @@ function copyTempDouble(ptr) {
         path = PATH.resolve(FS.cwd(), path);
         opts = opts || {};
   
+        if (!path) return { path: '', node: null };
+  
         var defaults = {
           follow_mount: true,
           recurse_count: 0
@@ -3085,7 +3143,10 @@ function copyTempDouble(ptr) {
         }
         return 0;
       },mayLookup:function (dir) {
-        return FS.nodePermissions(dir, 'x');
+        var err = FS.nodePermissions(dir, 'x');
+        if (err) return err;
+        if (!dir.node_ops.lookup) return ERRNO_CODES.EACCES;
+        return 0;
       },mayCreate:function (dir, name) {
         try {
           var node = FS.lookupNode(dir, name);
@@ -3326,6 +3387,9 @@ function copyTempDouble(ptr) {
         var lookup = FS.lookupPath(path, { parent: true });
         var parent = lookup.node;
         var name = PATH.basename(path);
+        if (!name || name === '.' || name === '..') {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
         var err = FS.mayCreate(parent, name);
         if (err) {
           throw new FS.ErrnoError(err);
@@ -3352,8 +3416,14 @@ function copyTempDouble(ptr) {
         mode |= 8192;
         return FS.mknod(path, mode, dev);
       },symlink:function (oldpath, newpath) {
+        if (!PATH.resolve(oldpath)) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
+        }
         var lookup = FS.lookupPath(newpath, { parent: true });
         var parent = lookup.node;
+        if (!parent) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
+        }
         var newname = PATH.basename(newpath);
         var err = FS.mayCreate(parent, newname);
         if (err) {
@@ -3378,6 +3448,7 @@ function copyTempDouble(ptr) {
         } catch (e) {
           throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
         }
+        if (!old_dir || !new_dir) throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
         // need to be part of the same mount
         if (old_dir.mount !== new_dir.mount) {
           throw new FS.ErrnoError(ERRNO_CODES.EXDEV);
@@ -3533,6 +3604,9 @@ function copyTempDouble(ptr) {
       },stat:function (path, dontFollow) {
         var lookup = FS.lookupPath(path, { follow: !dontFollow });
         var node = lookup.node;
+        if (!node) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
+        }
         if (!node.node_ops.getattr) {
           throw new FS.ErrnoError(ERRNO_CODES.EPERM);
         }
@@ -3654,6 +3728,7 @@ function copyTempDouble(ptr) {
           }
         }
         // perhaps we need to create the node
+        var created = false;
         if ((flags & 64)) {
           if (node) {
             // if O_CREAT and O_EXCL are set, error out if the node already exists
@@ -3663,6 +3738,7 @@ function copyTempDouble(ptr) {
           } else {
             // node doesn't exist, try to create it
             node = FS.mknod(path, mode, 0);
+            created = true;
           }
         }
         if (!node) {
@@ -3672,10 +3748,14 @@ function copyTempDouble(ptr) {
         if (FS.isChrdev(node.mode)) {
           flags &= ~512;
         }
-        // check permissions
-        var err = FS.mayOpen(node, flags);
-        if (err) {
-          throw new FS.ErrnoError(err);
+        // check permissions, if this is not a file we just created now (it is ok to
+        // create and write to a file with read-only permissions; it is read-only
+        // for later use)
+        if (!created) {
+          var err = FS.mayOpen(node, flags);
+          if (err) {
+            throw new FS.ErrnoError(err);
+          }
         }
         // do truncation if necessary
         if ((flags & 512)) {
@@ -3874,6 +3954,8 @@ function copyTempDouble(ptr) {
         FS.currentPath = lookup.path;
       },createDefaultDirectories:function () {
         FS.mkdir('/tmp');
+        FS.mkdir('/home');
+        FS.mkdir('/home/web_user');
       },createDefaultDevices:function () {
         // create /dev
         FS.mkdir('/dev');
@@ -4179,57 +4261,57 @@ function copyTempDouble(ptr) {
           this.getter = getter;
         }
         LazyUint8Array.prototype.cacheLength = function LazyUint8Array_cacheLength() {
-            // Find length
+          // Find length
+          var xhr = new XMLHttpRequest();
+          xhr.open('HEAD', url, false);
+          xhr.send(null);
+          if (!(xhr.status >= 200 && xhr.status < 300 || xhr.status === 304)) throw new Error("Couldn't load " + url + ". Status: " + xhr.status);
+          var datalength = Number(xhr.getResponseHeader("Content-length"));
+          var header;
+          var hasByteServing = (header = xhr.getResponseHeader("Accept-Ranges")) && header === "bytes";
+          var chunkSize = 1024*1024; // Chunk size in bytes
+  
+          if (!hasByteServing) chunkSize = datalength;
+  
+          // Function to get a range from the remote URL.
+          var doXHR = (function(from, to) {
+            if (from > to) throw new Error("invalid range (" + from + ", " + to + ") or no bytes requested!");
+            if (to > datalength-1) throw new Error("only " + datalength + " bytes available! programmer error!");
+  
+            // TODO: Use mozResponseArrayBuffer, responseStream, etc. if available.
             var xhr = new XMLHttpRequest();
-            xhr.open('HEAD', url, false);
+            xhr.open('GET', url, false);
+            if (datalength !== chunkSize) xhr.setRequestHeader("Range", "bytes=" + from + "-" + to);
+  
+            // Some hints to the browser that we want binary data.
+            if (typeof Uint8Array != 'undefined') xhr.responseType = 'arraybuffer';
+            if (xhr.overrideMimeType) {
+              xhr.overrideMimeType('text/plain; charset=x-user-defined');
+            }
+  
             xhr.send(null);
             if (!(xhr.status >= 200 && xhr.status < 300 || xhr.status === 304)) throw new Error("Couldn't load " + url + ". Status: " + xhr.status);
-            var datalength = Number(xhr.getResponseHeader("Content-length"));
-            var header;
-            var hasByteServing = (header = xhr.getResponseHeader("Accept-Ranges")) && header === "bytes";
-            var chunkSize = 1024*1024; // Chunk size in bytes
+            if (xhr.response !== undefined) {
+              return new Uint8Array(xhr.response || []);
+            } else {
+              return intArrayFromString(xhr.responseText || '', true);
+            }
+          });
+          var lazyArray = this;
+          lazyArray.setDataGetter(function(chunkNum) {
+            var start = chunkNum * chunkSize;
+            var end = (chunkNum+1) * chunkSize - 1; // including this byte
+            end = Math.min(end, datalength-1); // if datalength-1 is selected, this is the last block
+            if (typeof(lazyArray.chunks[chunkNum]) === "undefined") {
+              lazyArray.chunks[chunkNum] = doXHR(start, end);
+            }
+            if (typeof(lazyArray.chunks[chunkNum]) === "undefined") throw new Error("doXHR failed!");
+            return lazyArray.chunks[chunkNum];
+          });
   
-            if (!hasByteServing) chunkSize = datalength;
-  
-            // Function to get a range from the remote URL.
-            var doXHR = (function(from, to) {
-              if (from > to) throw new Error("invalid range (" + from + ", " + to + ") or no bytes requested!");
-              if (to > datalength-1) throw new Error("only " + datalength + " bytes available! programmer error!");
-  
-              // TODO: Use mozResponseArrayBuffer, responseStream, etc. if available.
-              var xhr = new XMLHttpRequest();
-              xhr.open('GET', url, false);
-              if (datalength !== chunkSize) xhr.setRequestHeader("Range", "bytes=" + from + "-" + to);
-  
-              // Some hints to the browser that we want binary data.
-              if (typeof Uint8Array != 'undefined') xhr.responseType = 'arraybuffer';
-              if (xhr.overrideMimeType) {
-                xhr.overrideMimeType('text/plain; charset=x-user-defined');
-              }
-  
-              xhr.send(null);
-              if (!(xhr.status >= 200 && xhr.status < 300 || xhr.status === 304)) throw new Error("Couldn't load " + url + ". Status: " + xhr.status);
-              if (xhr.response !== undefined) {
-                return new Uint8Array(xhr.response || []);
-              } else {
-                return intArrayFromString(xhr.responseText || '', true);
-              }
-            });
-            var lazyArray = this;
-            lazyArray.setDataGetter(function(chunkNum) {
-              var start = chunkNum * chunkSize;
-              var end = (chunkNum+1) * chunkSize - 1; // including this byte
-              end = Math.min(end, datalength-1); // if datalength-1 is selected, this is the last block
-              if (typeof(lazyArray.chunks[chunkNum]) === "undefined") {
-                lazyArray.chunks[chunkNum] = doXHR(start, end);
-              }
-              if (typeof(lazyArray.chunks[chunkNum]) === "undefined") throw new Error("doXHR failed!");
-              return lazyArray.chunks[chunkNum];
-            });
-  
-            this._length = datalength;
-            this._chunkSize = chunkSize;
-            this.lengthKnown = true;
+          this._length = datalength;
+          this._chunkSize = chunkSize;
+          this.lengthKnown = true;
         }
         if (typeof XMLHttpRequest !== 'undefined') {
           if (!ENVIRONMENT_IS_WORKER) throw 'Cannot do synchronous binary XHRs outside webworkers in modern browsers. Use --embed-file or --preload-file in emcc';
@@ -4417,6 +4499,30 @@ function copyTempDouble(ptr) {
   
   
   function _mkport() { throw 'TODO' }var SOCKFS={mount:function (mount) {
+        // If Module['websocket'] has already been defined (e.g. for configuring
+        // the subprotocol/url) use that, if not initialise it to a new object.
+        Module['websocket'] = (Module['websocket'] && 
+                               ('object' === typeof Module['websocket'])) ? Module['websocket'] : {};
+  
+        // Add the Event registration mechanism to the exported websocket configuration
+        // object so we can register network callbacks from native JavaScript too.
+        // For more documentation see system/include/emscripten/emscripten.h
+        Module['websocket']._callbacks = {};
+        Module['websocket']['on'] = function(event, callback) {
+  	    if ('function' === typeof callback) {
+  		  this._callbacks[event] = callback;
+          }
+  	    return this;
+        };
+  
+        Module['websocket'].emit = function(event, param) {
+  	    if ('function' === typeof this._callbacks[event]) {
+  		  this._callbacks[event].call(this, param);
+          }
+        };
+  
+        // If debug is enabled register simple default logging callbacks for each Event.
+  
         return FS.createNode(null, '/', 16384 | 511 /* 0777 */, 0);
       },createSocket:function (family, type, protocol) {
         var streaming = type == 1;
@@ -4430,6 +4536,7 @@ function copyTempDouble(ptr) {
           type: type,
           protocol: protocol,
           server: null,
+          error: null, // Used in getsockopt for SOL_SOCKET/SO_ERROR test
           peers: {},
           pending: [],
           recv_queue: [],
@@ -4520,8 +4627,8 @@ function copyTempDouble(ptr) {
               // runtimeConfig gets set to true if WebSocket runtime configuration is available.
               var runtimeConfig = (Module['websocket'] && ('object' === typeof Module['websocket']));
   
-              // The default value is 'ws://' the replace is needed because the compiler replaces "//" comments with '#'
-              // comments without checking context, so we'd end up with ws:#, the replace swaps the "#" for "//" again.
+              // The default value is 'ws://' the replace is needed because the compiler replaces '//' comments with '#'
+              // comments without checking context, so we'd end up with ws:#, the replace swaps the '#' for '//' again.
               var url = 'ws:#'.replace('#', '//');
   
               if (runtimeConfig) {
@@ -4592,6 +4699,9 @@ function copyTempDouble(ptr) {
           var first = true;
   
           var handleOpen = function () {
+  
+            Module['websocket'].emit('open', sock.stream.fd);
+  
             try {
               var queued = peer.dgram_send_queue.shift();
               while (queued) {
@@ -4626,6 +4736,7 @@ function copyTempDouble(ptr) {
             }
   
             sock.recv_queue.push({ addr: peer.addr, port: peer.port, data: data });
+            Module['websocket'].emit('message', sock.stream.fd);
           };
   
           if (ENVIRONMENT_IS_NODE) {
@@ -4636,13 +4747,31 @@ function copyTempDouble(ptr) {
               }
               handleMessage((new Uint8Array(data)).buffer);  // copy from node Buffer -> ArrayBuffer
             });
-            peer.socket.on('error', function() {
+            peer.socket.on('close', function() {
+              Module['websocket'].emit('close', sock.stream.fd);
+            });
+            peer.socket.on('error', function(error) {
+              // Although the ws library may pass errors that may be more descriptive than
+              // ECONNREFUSED they are not necessarily the expected error code e.g. 
+              // ENOTFOUND on getaddrinfo seems to be node.js specific, so using ECONNREFUSED
+              // is still probably the most useful thing to do.
+              sock.error = ERRNO_CODES.ECONNREFUSED; // Used in getsockopt for SOL_SOCKET/SO_ERROR test.
+              Module['websocket'].emit('error', [sock.stream.fd, sock.error, 'ECONNREFUSED: Connection refused']);
               // don't throw
             });
           } else {
             peer.socket.onopen = handleOpen;
+            peer.socket.onclose = function() {
+              Module['websocket'].emit('close', sock.stream.fd);
+            };
             peer.socket.onmessage = function peer_socket_onmessage(event) {
               handleMessage(event.data);
+            };
+            peer.socket.onerror = function(error) {
+              // The WebSocket spec only allows a 'simple event' to be thrown on error,
+              // so we only really know as much as ECONNREFUSED.
+              sock.error = ERRNO_CODES.ECONNREFUSED; // Used in getsockopt for SOL_SOCKET/SO_ERROR test.
+              Module['websocket'].emit('error', [sock.stream.fd, sock.error, 'ECONNREFUSED: Connection refused']);
             };
           }
         },poll:function (sock) {
@@ -4733,7 +4862,7 @@ function copyTempDouble(ptr) {
           }
         },connect:function (sock, addr, port) {
           if (sock.server) {
-            throw new FS.ErrnoError(ERRNO_CODS.EOPNOTSUPP);
+            throw new FS.ErrnoError(ERRNO_CODES.EOPNOTSUPP);
           }
   
           // TODO autobind
@@ -4774,6 +4903,7 @@ function copyTempDouble(ptr) {
             port: sock.sport
             // TODO support backlog
           });
+          Module['websocket'].emit('listen', sock.stream.fd); // Send Event with listen fd.
   
           sock.server.on('connection', function(ws) {
             if (sock.type === 1) {
@@ -4786,17 +4916,28 @@ function copyTempDouble(ptr) {
   
               // push to queue for accept to pick up
               sock.pending.push(newsock);
+              Module['websocket'].emit('connection', newsock.stream.fd);
             } else {
               // create a peer on the listen socket so calling sendto
               // with the listen socket and an address will resolve
               // to the correct client
               SOCKFS.websocket_sock_ops.createPeer(sock, ws);
+              Module['websocket'].emit('connection', sock.stream.fd);
             }
           });
           sock.server.on('closed', function() {
+            Module['websocket'].emit('close', sock.stream.fd);
             sock.server = null;
           });
-          sock.server.on('error', function() {
+          sock.server.on('error', function(error) {
+            // Although the ws library may pass errors that may be more descriptive than
+            // ECONNREFUSED they are not necessarily the expected error code e.g. 
+            // ENOTFOUND on getaddrinfo seems to be node.js specific, so using EHOSTUNREACH
+            // is still probably the most useful thing to do. This error shouldn't
+            // occur in a well written app as errors should get trapped in the compiled
+            // app's own getaddrinfo call.
+            sock.error = ERRNO_CODES.EHOSTUNREACH; // Used in getsockopt for SOL_SOCKET/SO_ERROR test.
+            Module['websocket'].emit('error', [sock.stream.fd, sock.error, 'EHOSTUNREACH: Host is unreachable']);
             // don't throw
           });
         },accept:function (listensock) {
@@ -5537,9 +5678,7 @@ function copyTempDouble(ptr) {
       return ret;  // Previous break location.
     }
 
-  function _fabs() {
-  return Math_abs.apply(null, arguments)
-  }
+  var _fabs=Math_abs;
 
   function _cudaMemcpy(dst,src,count,kind) {
   
@@ -6503,6 +6642,7 @@ assert(DYNAMIC_BASE < TOTAL_MEMORY, "TOTAL_MEMORY not big enough for stack");
     top = top|0;
     STACKTOP = top;
   }
+
   function setThrew(threw, value) {
     threw = threw|0;
     value = value|0;
@@ -8589,7 +8729,7 @@ function _malloc($bytes) {
          $746 = $743 & -8;
          $747 = $743 >>> 3;
          $748 = ($743>>>0)<(256);
-         L355: do {
+         L356: do {
           if ($748) {
            $$sum3738$i$i = $720 | 8;
            $$sum119$i = (($$sum3738$i$i) + ($tsize$246$i))|0;
@@ -8768,7 +8908,7 @@ function _malloc($bytes) {
              $810 = HEAP32[((1192 + 4|0))>>2]|0;
              $811 = $810 & $809;
              HEAP32[((1192 + 4|0))>>2] = $811;
-             break L355;
+             break L356;
             } else {
              $812 = HEAP32[((1192 + 16|0))>>2]|0;
              $813 = ($774>>>0)<($812>>>0);
@@ -8787,7 +8927,7 @@ function _malloc($bytes) {
              }
              $818 = ($R$1$i$i|0)==(0|0);
              if ($818) {
-              break L355;
+              break L356;
              }
             }
            } while(0);
@@ -8979,7 +9119,7 @@ function _malloc($bytes) {
         $902 = HEAP32[$901>>2]|0;
         $903 = $902 & -8;
         $904 = ($903|0)==($qsize$0$i$i|0);
-        L444: do {
+        L445: do {
          if ($904) {
           $T$0$lcssa$i28$i = $897;
          } else {
@@ -9000,7 +9140,7 @@ function _malloc($bytes) {
            $912 = ($911|0)==($qsize$0$i$i|0);
            if ($912) {
             $T$0$lcssa$i28$i = $909;
-            break L444;
+            break L445;
            } else {
             $K8$052$i$i = $907;$T$051$i$i = $909;
            }
@@ -10344,6 +10484,9 @@ var i64Math = null;
 // === Auto-generated postamble setup entry stuff ===
 
 if (memoryInitializer) {
+  if (Module['memoryInitializerPrefixURL']) {
+    memoryInitializer = Module['memoryInitializerPrefixURL'] + memoryInitializer;
+  }
   if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
     var data = Module['readBinary'](memoryInitializer);
     HEAPU8.set(data, STATIC_BASE);
@@ -10393,7 +10536,7 @@ Module['callMain'] = Module.callMain = function callMain(args) {
       argv.push(0);
     }
   }
-  var argv = [allocate(intArrayFromString(Module['thisProgram'] || '/bin/this.program'), 'i8', ALLOC_NORMAL) ];
+  var argv = [allocate(intArrayFromString(Module['thisProgram']), 'i8', ALLOC_NORMAL) ];
   pad();
   for (var i = 0; i < argc-1; i = i + 1) {
     argv.push(allocate(intArrayFromString(args[i]), 'i8', ALLOC_NORMAL));
@@ -10410,9 +10553,7 @@ Module['callMain'] = Module.callMain = function callMain(args) {
 
 
     // if we're not running an evented main loop, it's time to exit
-    if (!Module['noExitRuntime']) {
-      exit(ret);
-    }
+    exit(ret);
   }
   catch(e) {
     if (e instanceof ExitStatus) {
@@ -10486,6 +10627,11 @@ function run(args) {
 Module['run'] = Module.run = run;
 
 function exit(status) {
+  if (Module['noExitRuntime']) {
+    Module.printErr('exit(' + status + ') called, but noExitRuntime, so not exiting');
+    return;
+  }
+
   ABORT = true;
   EXITSTATUS = status;
   STACKTOP = initialStackTop;
@@ -10493,16 +10639,14 @@ function exit(status) {
   // exit the runtime
   exitRuntime();
 
-  // TODO We should handle this differently based on environment.
-  // In the browser, the best we can do is throw an exception
-  // to halt execution, but in node we could process.exit and
-  // I'd imagine SM shell would have something equivalent.
-  // This would let us set a proper exit status (which
-  // would be great for checking test exit statuses).
-  // https://github.com/kripken/emscripten/issues/1371
-
-  // throw an exception to halt the current execution
-  throw new ExitStatus(status);
+  if (ENVIRONMENT_IS_NODE) {
+    process['exit'](status);
+  } else if (ENVIRONMENT_IS_SHELL && typeof quit === 'function') {
+    quit(status);
+  } else {
+    // no proper way to exit with a return code, throw an exception to halt the current execution
+    throw new ExitStatus(status);
+  }
 }
 Module['exit'] = Module.exit = exit;
 

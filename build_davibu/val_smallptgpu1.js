@@ -18,7 +18,7 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-davibu/js/val_smallptgpu1.data';
     var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_smallptgpu1.data';
     var REMOTE_PACKAGE_SIZE = 43004;
-    var PACKAGE_UUID = '7afecd3e-48d1-48c5-ad1d-4ce25b8b1982';
+    var PACKAGE_UUID = '6f8dbbc7-3df4-4a0f-bf57-bf34a0760fd7';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -321,6 +321,10 @@ if (!Module['printErr']) {
 if (!Module['arguments']) {
   Module['arguments'] = [];
 }
+if (!Module['thisProgram']) {
+  Module['thisProgram'] = './this.program';
+}
+
 // *** Environment setup code ***
 
 // Closure helpers
@@ -619,12 +623,16 @@ var Runtime = {
   funcWrappers: {},
   getFuncWrapper: function (func, sig) {
     assert(sig);
-    if (!Runtime.funcWrappers[func]) {
-      Runtime.funcWrappers[func] = function dynCall_wrapper() {
+    if (!Runtime.funcWrappers[sig]) {
+      Runtime.funcWrappers[sig] = {};
+    }
+    var sigCache = Runtime.funcWrappers[sig];
+    if (!sigCache[func]) {
+      sigCache[func] = function dynCall_wrapper() {
         return Runtime.dynCall(sig, func, arguments);
       };
     }
-    return Runtime.funcWrappers[func];
+    return sigCache[func];
   },
   UTF8Processor: function () {
     var buffer = [];
@@ -842,6 +850,7 @@ var cwrap, ccall;
   //   alert(my_function(99, 12));
   //
   cwrap = function cwrap(ident, returnType, argTypes) {
+    argTypes = argTypes || [];
     var cfunc = getCFunc(ident);
     // When the function takes numbers and returns a number, we can just return
     // the original function
@@ -1140,6 +1149,25 @@ function stringToUTF32(str, outPtr) {
 Module['stringToUTF32'] = stringToUTF32;
 
 function demangle(func) {
+  var hasLibcxxabi = !!Module['___cxa_demangle'];
+  if (hasLibcxxabi) {
+    try {
+      var buf = _malloc(func.length);
+      writeStringToMemory(func.substr(1), buf);
+      var status = _malloc(4);
+      var ret = Module['___cxa_demangle'](buf, 0, 0, status);
+      if (getValue(status, 'i32') === 0 && ret) {
+        return Pointer_stringify(ret);
+      }
+      // otherwise, libcxxabi failed, we can try ours which may return a partial result
+    } catch(e) {
+      // failure when using libcxxabi, we can try ours which may return a partial result
+    } finally {
+      if (buf) _free(buf);
+      if (status) _free(status);
+      if (ret) _free(ret);
+    }
+  }
   var i = 3;
   // params, etc.
   var basicTypes = {
@@ -1271,6 +1299,7 @@ function demangle(func) {
       return ret + flushList();
     }
   }
+  var final = func;
   try {
     // Special-case the entry point, since its name differs from other name mangling.
     if (func == 'Object._main' || func == '_main') {
@@ -1284,20 +1313,41 @@ function demangle(func) {
       case 'n': return 'operator new()';
       case 'd': return 'operator delete()';
     }
-    return parse();
+    final = parse();
   } catch(e) {
-    return func;
+    final += '?';
   }
+  if (final.indexOf('?') >= 0 && !hasLibcxxabi) {
+    Runtime.warnOnce('warning: a problem occurred in builtin C++ name demangling; build with  -s DEMANGLE_SUPPORT=1  to link in libcxxabi demangling');
+  }
+  return final;
 }
 
 function demangleAll(text) {
   return text.replace(/__Z[\w\d_]+/g, function(x) { var y = demangle(x); return x === y ? x : (x + ' [' + y + ']') });
 }
 
-function stackTrace() {
-  var stack = new Error().stack;
-  return stack ? demangleAll(stack) : '(no stack trace available)'; // Stack trace is not available at least on IE10 and Safari 6.
+function jsStackTrace() {
+  var err = new Error();
+  if (!err.stack) {
+    // IE10+ special cases: It does have callstack info, but it is only populated if an Error object is thrown,
+    // so try that as a special-case.
+    try {
+      throw new Error(0);
+    } catch(e) {
+      err = e;
+    }
+    if (!err.stack) {
+      return '(no stack trace available)';
+    }
+  }
+  return err.stack.toString();
 }
+
+function stackTrace() {
+  return demangleAll(jsStackTrace());
+}
+Module['stackTrace'] = stackTrace;
 
 // Memory management
 
@@ -2033,7 +2083,6 @@ function copyTempDouble(ptr) {
             sizePerPixel = 2;
             break;
           case 0x1406 /* GL_FLOAT */:
-            assert(GL.floatExt, 'Must have OES_texture_float to use float textures');
             switch (format) {
               case 0x1907 /* GL_RGB */:
                 sizePerPixel = 3*4;
@@ -2049,6 +2098,28 @@ function copyTempDouble(ptr) {
                 };
             }
             internalFormat = GLctx.RGBA;
+            break;
+          case 0x8D61 /* GL_HALF_FLOAT_OES */:
+            switch (format) {
+              case 0x1903 /* GL_RED */:
+                sizePerPixel = 2;
+                break;
+              case 0x8277 /* GL_RG */:
+                sizePerPixel = 2*2;
+                break;
+              case 0x1907 /* GL_RGB */:
+                sizePerPixel = 3*2;
+                break;
+              case 0x1908 /* GL_RGBA */:
+                sizePerPixel = 4*2;
+                break;
+              default:
+                GL.recordError(0x0500); // GL_INVALID_ENUM
+                return {
+                  pixels: null,
+                  internalFormat: 0x0
+                };
+            }
             break;
           default:
             GL.recordError(0x0500); // GL_INVALID_ENUM
@@ -2111,6 +2182,8 @@ function copyTempDouble(ptr) {
         // Extension available from Firefox 25 and WebKit
         GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');
   
+        GL.drawBuffersExt = Module.ctx.getExtension('WEBGL_draw_buffers');
+  
         // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
         // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
         // As new extensions are ratified at http://www.khronos.org/registry/webgl/extensions/ , feel free to add your new extensions
@@ -2125,22 +2198,22 @@ function copyTempDouble(ptr) {
                                                "EXT_shader_texture_lod" ];
   
         function shouldEnableAutomatically(extension) {
-          for(var i in automaticallyEnabledExtensions) {
-            var include = automaticallyEnabledExtensions[i];
+          var ret = false;
+          automaticallyEnabledExtensions.forEach(function(include) {
             if (ext.indexOf(include) != -1) {
-              return true;
+              ret = true;
             }
-          }
-          return false;
+          });
+          return ret;
         }
   
-        var extensions = GLctx.getSupportedExtensions();
-        for(var e in extensions) {
-          var ext = extensions[e].replace('MOZ_', '').replace('WEBKIT_', '');
+   
+        GLctx.getSupportedExtensions().forEach(function(ext) {
+          ext = ext.replace('MOZ_', '').replace('WEBKIT_', '');
           if (automaticallyEnabledExtensions.indexOf(ext) != -1) {
             GLctx.getExtension(ext); // Calling .getExtension enables that extension permanently, no need to store the return value to be enabled.
           }
-        }
+        });
       },populateUniformTable:function (program) {
         var p = GL.programs[program];
         GL.programInfos[program] = {
@@ -2284,7 +2357,7 @@ function copyTempDouble(ptr) {
           if (typeof path !== 'string') {
             throw new TypeError('Arguments to path.resolve must be strings');
           } else if (!path) {
-            continue;
+            return ''; // an invalid portion invalidates the whole thing
           }
           resolvedPath = path + '/' + resolvedPath;
           resolvedAbsolute = path.charAt(0) === '/';
@@ -2576,7 +2649,9 @@ function copyTempDouble(ptr) {
         if (!node.contents || node.contents.subarray) { // Resize a typed array if that is being used as the backing store.
           var oldContents = node.contents;
           node.contents = new Uint8Array(new ArrayBuffer(newSize)); // Allocate new storage.
-          node.contents.set(oldContents.subarray(0, Math.min(newSize, node.usedBytes))); // Copy old data over to the new storage.
+          if (oldContents) {
+            node.contents.set(oldContents.subarray(0, Math.min(newSize, node.usedBytes))); // Copy old data over to the new storage.
+          }
           node.usedBytes = newSize;
           return;
         }
@@ -2764,7 +2839,11 @@ function copyTempDouble(ptr) {
         }}};
   
   var IDBFS={dbs:{},indexedDB:function () {
-        return window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+        if (typeof indexedDB !== 'undefined') return indexedDB;
+        var ret = null;
+        if (typeof window === 'object') ret = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+        assert(ret, 'IDBFS used, but indexedDB not supported');
+        return ret;
       },DB_VERSION:21,DB_STORE_NAME:"FILE_DATA",mount:function (mount) {
         // reuse all of the core MEMFS functionality
         return MEMFS.mount.apply(null, arguments);
@@ -3258,6 +3337,8 @@ function copyTempDouble(ptr) {
         path = PATH.resolve(FS.cwd(), path);
         opts = opts || {};
   
+        if (!path) return { path: '', node: null };
+  
         var defaults = {
           follow_mount: true,
           recurse_count: 0
@@ -3463,7 +3544,10 @@ function copyTempDouble(ptr) {
         }
         return 0;
       },mayLookup:function (dir) {
-        return FS.nodePermissions(dir, 'x');
+        var err = FS.nodePermissions(dir, 'x');
+        if (err) return err;
+        if (!dir.node_ops.lookup) return ERRNO_CODES.EACCES;
+        return 0;
       },mayCreate:function (dir, name) {
         try {
           var node = FS.lookupNode(dir, name);
@@ -3704,6 +3788,9 @@ function copyTempDouble(ptr) {
         var lookup = FS.lookupPath(path, { parent: true });
         var parent = lookup.node;
         var name = PATH.basename(path);
+        if (!name || name === '.' || name === '..') {
+          throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+        }
         var err = FS.mayCreate(parent, name);
         if (err) {
           throw new FS.ErrnoError(err);
@@ -3730,8 +3817,14 @@ function copyTempDouble(ptr) {
         mode |= 8192;
         return FS.mknod(path, mode, dev);
       },symlink:function (oldpath, newpath) {
+        if (!PATH.resolve(oldpath)) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
+        }
         var lookup = FS.lookupPath(newpath, { parent: true });
         var parent = lookup.node;
+        if (!parent) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
+        }
         var newname = PATH.basename(newpath);
         var err = FS.mayCreate(parent, newname);
         if (err) {
@@ -3756,6 +3849,7 @@ function copyTempDouble(ptr) {
         } catch (e) {
           throw new FS.ErrnoError(ERRNO_CODES.EBUSY);
         }
+        if (!old_dir || !new_dir) throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
         // need to be part of the same mount
         if (old_dir.mount !== new_dir.mount) {
           throw new FS.ErrnoError(ERRNO_CODES.EXDEV);
@@ -3911,6 +4005,9 @@ function copyTempDouble(ptr) {
       },stat:function (path, dontFollow) {
         var lookup = FS.lookupPath(path, { follow: !dontFollow });
         var node = lookup.node;
+        if (!node) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
+        }
         if (!node.node_ops.getattr) {
           throw new FS.ErrnoError(ERRNO_CODES.EPERM);
         }
@@ -4032,6 +4129,7 @@ function copyTempDouble(ptr) {
           }
         }
         // perhaps we need to create the node
+        var created = false;
         if ((flags & 64)) {
           if (node) {
             // if O_CREAT and O_EXCL are set, error out if the node already exists
@@ -4041,6 +4139,7 @@ function copyTempDouble(ptr) {
           } else {
             // node doesn't exist, try to create it
             node = FS.mknod(path, mode, 0);
+            created = true;
           }
         }
         if (!node) {
@@ -4050,10 +4149,14 @@ function copyTempDouble(ptr) {
         if (FS.isChrdev(node.mode)) {
           flags &= ~512;
         }
-        // check permissions
-        var err = FS.mayOpen(node, flags);
-        if (err) {
-          throw new FS.ErrnoError(err);
+        // check permissions, if this is not a file we just created now (it is ok to
+        // create and write to a file with read-only permissions; it is read-only
+        // for later use)
+        if (!created) {
+          var err = FS.mayOpen(node, flags);
+          if (err) {
+            throw new FS.ErrnoError(err);
+          }
         }
         // do truncation if necessary
         if ((flags & 512)) {
@@ -4252,6 +4355,8 @@ function copyTempDouble(ptr) {
         FS.currentPath = lookup.path;
       },createDefaultDirectories:function () {
         FS.mkdir('/tmp');
+        FS.mkdir('/home');
+        FS.mkdir('/home/web_user');
       },createDefaultDevices:function () {
         // create /dev
         FS.mkdir('/dev');
@@ -4557,57 +4662,57 @@ function copyTempDouble(ptr) {
           this.getter = getter;
         }
         LazyUint8Array.prototype.cacheLength = function LazyUint8Array_cacheLength() {
-            // Find length
+          // Find length
+          var xhr = new XMLHttpRequest();
+          xhr.open('HEAD', url, false);
+          xhr.send(null);
+          if (!(xhr.status >= 200 && xhr.status < 300 || xhr.status === 304)) throw new Error("Couldn't load " + url + ". Status: " + xhr.status);
+          var datalength = Number(xhr.getResponseHeader("Content-length"));
+          var header;
+          var hasByteServing = (header = xhr.getResponseHeader("Accept-Ranges")) && header === "bytes";
+          var chunkSize = 1024*1024; // Chunk size in bytes
+  
+          if (!hasByteServing) chunkSize = datalength;
+  
+          // Function to get a range from the remote URL.
+          var doXHR = (function(from, to) {
+            if (from > to) throw new Error("invalid range (" + from + ", " + to + ") or no bytes requested!");
+            if (to > datalength-1) throw new Error("only " + datalength + " bytes available! programmer error!");
+  
+            // TODO: Use mozResponseArrayBuffer, responseStream, etc. if available.
             var xhr = new XMLHttpRequest();
-            xhr.open('HEAD', url, false);
+            xhr.open('GET', url, false);
+            if (datalength !== chunkSize) xhr.setRequestHeader("Range", "bytes=" + from + "-" + to);
+  
+            // Some hints to the browser that we want binary data.
+            if (typeof Uint8Array != 'undefined') xhr.responseType = 'arraybuffer';
+            if (xhr.overrideMimeType) {
+              xhr.overrideMimeType('text/plain; charset=x-user-defined');
+            }
+  
             xhr.send(null);
             if (!(xhr.status >= 200 && xhr.status < 300 || xhr.status === 304)) throw new Error("Couldn't load " + url + ". Status: " + xhr.status);
-            var datalength = Number(xhr.getResponseHeader("Content-length"));
-            var header;
-            var hasByteServing = (header = xhr.getResponseHeader("Accept-Ranges")) && header === "bytes";
-            var chunkSize = 1024*1024; // Chunk size in bytes
+            if (xhr.response !== undefined) {
+              return new Uint8Array(xhr.response || []);
+            } else {
+              return intArrayFromString(xhr.responseText || '', true);
+            }
+          });
+          var lazyArray = this;
+          lazyArray.setDataGetter(function(chunkNum) {
+            var start = chunkNum * chunkSize;
+            var end = (chunkNum+1) * chunkSize - 1; // including this byte
+            end = Math.min(end, datalength-1); // if datalength-1 is selected, this is the last block
+            if (typeof(lazyArray.chunks[chunkNum]) === "undefined") {
+              lazyArray.chunks[chunkNum] = doXHR(start, end);
+            }
+            if (typeof(lazyArray.chunks[chunkNum]) === "undefined") throw new Error("doXHR failed!");
+            return lazyArray.chunks[chunkNum];
+          });
   
-            if (!hasByteServing) chunkSize = datalength;
-  
-            // Function to get a range from the remote URL.
-            var doXHR = (function(from, to) {
-              if (from > to) throw new Error("invalid range (" + from + ", " + to + ") or no bytes requested!");
-              if (to > datalength-1) throw new Error("only " + datalength + " bytes available! programmer error!");
-  
-              // TODO: Use mozResponseArrayBuffer, responseStream, etc. if available.
-              var xhr = new XMLHttpRequest();
-              xhr.open('GET', url, false);
-              if (datalength !== chunkSize) xhr.setRequestHeader("Range", "bytes=" + from + "-" + to);
-  
-              // Some hints to the browser that we want binary data.
-              if (typeof Uint8Array != 'undefined') xhr.responseType = 'arraybuffer';
-              if (xhr.overrideMimeType) {
-                xhr.overrideMimeType('text/plain; charset=x-user-defined');
-              }
-  
-              xhr.send(null);
-              if (!(xhr.status >= 200 && xhr.status < 300 || xhr.status === 304)) throw new Error("Couldn't load " + url + ". Status: " + xhr.status);
-              if (xhr.response !== undefined) {
-                return new Uint8Array(xhr.response || []);
-              } else {
-                return intArrayFromString(xhr.responseText || '', true);
-              }
-            });
-            var lazyArray = this;
-            lazyArray.setDataGetter(function(chunkNum) {
-              var start = chunkNum * chunkSize;
-              var end = (chunkNum+1) * chunkSize - 1; // including this byte
-              end = Math.min(end, datalength-1); // if datalength-1 is selected, this is the last block
-              if (typeof(lazyArray.chunks[chunkNum]) === "undefined") {
-                lazyArray.chunks[chunkNum] = doXHR(start, end);
-              }
-              if (typeof(lazyArray.chunks[chunkNum]) === "undefined") throw new Error("doXHR failed!");
-              return lazyArray.chunks[chunkNum];
-            });
-  
-            this._length = datalength;
-            this._chunkSize = chunkSize;
-            this.lengthKnown = true;
+          this._length = datalength;
+          this._chunkSize = chunkSize;
+          this.lengthKnown = true;
         }
         if (typeof XMLHttpRequest !== 'undefined') {
           if (!ENVIRONMENT_IS_WORKER) throw 'Cannot do synchronous binary XHRs outside webworkers in modern browsers. Use --embed-file or --preload-file in emcc';
@@ -10084,9 +10189,7 @@ function copyTempDouble(ptr) {
       GLImmediate.vertexData = GLImmediate.tempData;
     }
 
-  function _sqrt() {
-  return Math_sqrt.apply(null, arguments)
-  }
+  var _sqrt=Math_sqrt;
 
   
   
@@ -10095,6 +10198,30 @@ function copyTempDouble(ptr) {
   
   
   function _mkport() { throw 'TODO' }var SOCKFS={mount:function (mount) {
+        // If Module['websocket'] has already been defined (e.g. for configuring
+        // the subprotocol/url) use that, if not initialise it to a new object.
+        Module['websocket'] = (Module['websocket'] && 
+                               ('object' === typeof Module['websocket'])) ? Module['websocket'] : {};
+  
+        // Add the Event registration mechanism to the exported websocket configuration
+        // object so we can register network callbacks from native JavaScript too.
+        // For more documentation see system/include/emscripten/emscripten.h
+        Module['websocket']._callbacks = {};
+        Module['websocket']['on'] = function(event, callback) {
+  	    if ('function' === typeof callback) {
+  		  this._callbacks[event] = callback;
+          }
+  	    return this;
+        };
+  
+        Module['websocket'].emit = function(event, param) {
+  	    if ('function' === typeof this._callbacks[event]) {
+  		  this._callbacks[event].call(this, param);
+          }
+        };
+  
+        // If debug is enabled register simple default logging callbacks for each Event.
+  
         return FS.createNode(null, '/', 16384 | 511 /* 0777 */, 0);
       },createSocket:function (family, type, protocol) {
         var streaming = type == 1;
@@ -10108,6 +10235,7 @@ function copyTempDouble(ptr) {
           type: type,
           protocol: protocol,
           server: null,
+          error: null, // Used in getsockopt for SOL_SOCKET/SO_ERROR test
           peers: {},
           pending: [],
           recv_queue: [],
@@ -10198,8 +10326,8 @@ function copyTempDouble(ptr) {
               // runtimeConfig gets set to true if WebSocket runtime configuration is available.
               var runtimeConfig = (Module['websocket'] && ('object' === typeof Module['websocket']));
   
-              // The default value is 'ws://' the replace is needed because the compiler replaces "//" comments with '#'
-              // comments without checking context, so we'd end up with ws:#, the replace swaps the "#" for "//" again.
+              // The default value is 'ws://' the replace is needed because the compiler replaces '//' comments with '#'
+              // comments without checking context, so we'd end up with ws:#, the replace swaps the '#' for '//' again.
               var url = 'ws:#'.replace('#', '//');
   
               if (runtimeConfig) {
@@ -10270,6 +10398,9 @@ function copyTempDouble(ptr) {
           var first = true;
   
           var handleOpen = function () {
+  
+            Module['websocket'].emit('open', sock.stream.fd);
+  
             try {
               var queued = peer.dgram_send_queue.shift();
               while (queued) {
@@ -10304,6 +10435,7 @@ function copyTempDouble(ptr) {
             }
   
             sock.recv_queue.push({ addr: peer.addr, port: peer.port, data: data });
+            Module['websocket'].emit('message', sock.stream.fd);
           };
   
           if (ENVIRONMENT_IS_NODE) {
@@ -10314,13 +10446,31 @@ function copyTempDouble(ptr) {
               }
               handleMessage((new Uint8Array(data)).buffer);  // copy from node Buffer -> ArrayBuffer
             });
-            peer.socket.on('error', function() {
+            peer.socket.on('close', function() {
+              Module['websocket'].emit('close', sock.stream.fd);
+            });
+            peer.socket.on('error', function(error) {
+              // Although the ws library may pass errors that may be more descriptive than
+              // ECONNREFUSED they are not necessarily the expected error code e.g. 
+              // ENOTFOUND on getaddrinfo seems to be node.js specific, so using ECONNREFUSED
+              // is still probably the most useful thing to do.
+              sock.error = ERRNO_CODES.ECONNREFUSED; // Used in getsockopt for SOL_SOCKET/SO_ERROR test.
+              Module['websocket'].emit('error', [sock.stream.fd, sock.error, 'ECONNREFUSED: Connection refused']);
               // don't throw
             });
           } else {
             peer.socket.onopen = handleOpen;
+            peer.socket.onclose = function() {
+              Module['websocket'].emit('close', sock.stream.fd);
+            };
             peer.socket.onmessage = function peer_socket_onmessage(event) {
               handleMessage(event.data);
+            };
+            peer.socket.onerror = function(error) {
+              // The WebSocket spec only allows a 'simple event' to be thrown on error,
+              // so we only really know as much as ECONNREFUSED.
+              sock.error = ERRNO_CODES.ECONNREFUSED; // Used in getsockopt for SOL_SOCKET/SO_ERROR test.
+              Module['websocket'].emit('error', [sock.stream.fd, sock.error, 'ECONNREFUSED: Connection refused']);
             };
           }
         },poll:function (sock) {
@@ -10411,7 +10561,7 @@ function copyTempDouble(ptr) {
           }
         },connect:function (sock, addr, port) {
           if (sock.server) {
-            throw new FS.ErrnoError(ERRNO_CODS.EOPNOTSUPP);
+            throw new FS.ErrnoError(ERRNO_CODES.EOPNOTSUPP);
           }
   
           // TODO autobind
@@ -10452,6 +10602,7 @@ function copyTempDouble(ptr) {
             port: sock.sport
             // TODO support backlog
           });
+          Module['websocket'].emit('listen', sock.stream.fd); // Send Event with listen fd.
   
           sock.server.on('connection', function(ws) {
             if (sock.type === 1) {
@@ -10464,17 +10615,28 @@ function copyTempDouble(ptr) {
   
               // push to queue for accept to pick up
               sock.pending.push(newsock);
+              Module['websocket'].emit('connection', newsock.stream.fd);
             } else {
               // create a peer on the listen socket so calling sendto
               // with the listen socket and an address will resolve
               // to the correct client
               SOCKFS.websocket_sock_ops.createPeer(sock, ws);
+              Module['websocket'].emit('connection', sock.stream.fd);
             }
           });
           sock.server.on('closed', function() {
+            Module['websocket'].emit('close', sock.stream.fd);
             sock.server = null;
           });
-          sock.server.on('error', function() {
+          sock.server.on('error', function(error) {
+            // Although the ws library may pass errors that may be more descriptive than
+            // ECONNREFUSED they are not necessarily the expected error code e.g. 
+            // ENOTFOUND on getaddrinfo seems to be node.js specific, so using EHOSTUNREACH
+            // is still probably the most useful thing to do. This error shouldn't
+            // occur in a well written app as errors should get trapped in the compiled
+            // app's own getaddrinfo call.
+            sock.error = ERRNO_CODES.EHOSTUNREACH; // Used in getsockopt for SOL_SOCKET/SO_ERROR test.
+            Module['websocket'].emit('error', [sock.stream.fd, sock.error, 'EHOSTUNREACH: Host is unreachable']);
             // don't throw
           });
         },accept:function (listensock) {
@@ -11152,43 +11314,62 @@ function copyTempDouble(ptr) {
   
   var CL={cl_init:0,cl_extensions:["KHR_gl_sharing","KHR_fp16","KHR_fp64"],cl_digits:[1,2,3,4,5,6,7,8,9,0],cl_kernels_sig:{},cl_structs_sig:{},cl_pn_type:[],cl_objects:{},cl_objects_map:{},cl_objects_retains:{},cl_objects_mem_callback:{},cl_validator:{},cl_validator_argsize:{},init:function () {
         if (CL.cl_init == 0) {
-          console.log('%c WebCL-Translator + Validator V2.0 ! ', 'background: #222; color: #bada55');
-          var nodejs = (typeof window === 'undefined');
-          if(nodejs) {
-            webcl = require('../../node_modules/node-webcl/webcl');
-          }
   
-          if (webcl == undefined) {
-            alert("Unfortunately your system does not support WebCL. " +
-            "Make sure that you have WebKit Samsung or Firefox Nokia plugin");
+          if (ENVIRONMENT_IS_NODE) {
+            console.log('WebCL-Translator + Validator V2.0 !');
+            try {
   
-            console.error("Unfortunately your system does not support WebCL.\n");
-            console.error("Make sure that you have WebKit Samsung or Firefox Nokia plugin\n");  
-          } else {
+              WebCLEvent      = webcl.WebCLEvent;
+              WebCLSampler    = webcl.WebCLSampler;
+              WebCLContext    = webcl.WebCLContext;
+              WebCLProgram    = webcl.WebCLProgram;
+              WebCLException  = webcl.WebCLException;
   
-            // Add webcl constant for parser
-            // Object.defineProperty(webcl, "SAMPLER"      , { value : 0x1300,writable : false });
-            // Object.defineProperty(webcl, "IMAGE2D"      , { value : 0x1301,writable : false });
-            // Object.defineProperty(webcl, "IMAGE3D"      , { value : 0x1302,writable : false });          
-            // Object.defineProperty(webcl, "UNSIGNED_LONG", { value : 0x1304,writable : false });
-            // Object.defineProperty(webcl, "LONG"         , { value : 0x1303,writable : false });
-            // Object.defineProperty(webcl, "MAP_READ"     , { value : 0x1   ,writable : false });
-            // Object.defineProperty(webcl, "MAP_WRITE"    , { value : 0x2   ,writable : false });
+            } catch (e) {
+              console.error("Unfortunately your system does not support WebCL.\n");
+              console.error("You are using node, make sure you have node-webcl modules from Motorola.\n");
+              console.error("You must define webcl=require('webcl-node'); before require this file.\n");
   
-            for (var i = 0; i < CL.cl_extensions.length; i ++) {
-  
-              if (webcl.enableExtension(CL.cl_extensions[i])) {
-                console.info("WebCL Init : extension "+CL.cl_extensions[i]+" supported.");
-              } else {
-                console.info("WebCL Init : extension "+CL.cl_extensions[i]+" not supported !!!");
-              }
+              exit(1);
             }
-            CL.cl_init = 1;
+  
+          } else {
+            console.log('%c WebCL-Translator + Validator V2.0 ! ', 'background: #222; color: #bada55');
+            try {
+  
+              // Add webcl constant for parser
+              Object.defineProperty(webcl, "SAMPLER"      , { value : 0x1300,writable : false });
+              Object.defineProperty(webcl, "IMAGE2D"      , { value : 0x1301,writable : false });
+              Object.defineProperty(webcl, "IMAGE3D"      , { value : 0x1302,writable : false });
+              Object.defineProperty(webcl, "UNSIGNED_LONG", { value : 0x1304,writable : false });
+              Object.defineProperty(webcl, "LONG"         , { value : 0x1303,writable : false });
+              Object.defineProperty(webcl, "MAP_READ"     , { value : 0x1   ,writable : false });
+              Object.defineProperty(webcl, "MAP_WRITE"    , { value : 0x2   ,writable : false });
+  
+            } catch (e) {
+              alert("Unfortunately your system does not support WebCL. " +
+              "Make sure that you have WebKit Samsung or Firefox Nokia plugin. ");
+  
+              console.error("Unfortunately your system does not support WebCL.\n");
+              console.error("Make sure that you have WebKit Samsung or Firefox Nokia plugin.\n");
+  
+              exit(1);
+            }
           }
+  
+          for (var i = 0; i < CL.cl_extensions.length; i ++) {
+  
+            if (webcl.enableExtension(CL.cl_extensions[i])) {
+              console.info("WebCL Init : extension "+CL.cl_extensions[i]+" supported.");
+            } else {
+              console.info("WebCL Init : extension "+CL.cl_extensions[i]+" not supported !!!");
+            }
+          }
+          CL.cl_init = 1;
         }
   
         return CL.cl_init;
-      },udid:function (obj) {    
+      },udid:function (obj) {
         var _id;
   
         if (obj !== undefined) {
@@ -11209,14 +11390,14 @@ function copyTempDouble(ptr) {
   
         _id = _uuid.join('');
   
-      
+  
         // /!\ Call udid when you add inside cl_objects if you pass object in parameter
         if (obj !== undefined) {
           Object.defineProperty(obj, "udid", { value : _id,writable : false });
           CL.cl_objects[_id]=obj;
         }
   
-        return _id;      
+        return _id;
       },cast_long:function (arg_size) {
         var _sizelong = [];
         _sizelong.push(((arg_size & 0xFFFFFFFF00000000) >> 32));
@@ -11240,28 +11421,28 @@ function copyTempDouble(ptr) {
           case 0x1304 /*webcl.UNSIGNED_LONG*/:
             return 'ULONG';
           case 0x1303 /*webcl.SIGNED_LONG*/:
-            return 'LONG';       
+            return 'LONG';
           case webcl.FLOAT:
             return 'FLOAT';
           case webcl.LOCAL:
-            return '__local';   
+            return '__local';
           case 0x1300 /*webcl.SAMPLER*/:
-            return 'sampler_t';   
+            return 'sampler_t';
           case 0x1301 /*webcl.IMAGE2D*/:
-            return 'image2d_t';        
+            return 'image2d_t';
           case 0x1302 /*webcl.IMAGE3D*/:
-            return 'image3d_t';            
+            return 'image3d_t';
           default:
             if (typeof(pn_type) == "string") return 'struct';
             return 'UNKNOWN';
         }
       },parseType:function (string) {
         var _value = -1;
-      
+  
         // First ulong for the webcl validator
         if ( (string.indexOf("ulong") >= 0 ) || (string.indexOf("unsigned long") >= 0 ) ) {
-          // \todo : long ???? 
-          _value = 0x1304 /*webcl.UNSIGNED_LONG*/;  
+          // \todo : long ????
+          _value = 0x1304 /*webcl.UNSIGNED_LONG*/;
         } else if ( string.indexOf("long") >= 0 ) {
           _value = 0x1303 /*webcl.SIGNED_LONG*/;
         } else if (string.indexOf("float") >= 0 ) {
@@ -11273,13 +11454,13 @@ function copyTempDouble(ptr) {
         } else if ( (string.indexOf("ushort") >= 0 ) || (string.indexOf("unsigned short") >= 0 ) ) {
           _value = webcl.UNSIGNED_INT16;
         } else if ( string.indexOf("short") >= 0 ) {
-          _value = webcl.SIGNED_INT16;                     
+          _value = webcl.SIGNED_INT16;
         } else if ( (string.indexOf("uint") >= 0 ) || (string.indexOf("unsigned int") >= 0 ) ) {
-          _value = webcl.UNSIGNED_INT32;          
+          _value = webcl.UNSIGNED_INT32;
         } else if ( ( string.indexOf("int") >= 0 ) || ( string.indexOf("enum") >= 0 ) ) {
           _value = webcl.SIGNED_INT32;
         } else if ( string.indexOf("image3d_t") >= 0 ) {
-          _value = 0x1302 /*webcl.IMAGE3D*/;        
+          _value = 0x1302 /*webcl.IMAGE3D*/;
         } else if ( string.indexOf("image2d_t") >= 0 ) {
           _value = 0x1301 /*webcl.IMAGE2D*/;
         } else if ( string.indexOf("sampler_t") >= 0 ) {
@@ -11313,7 +11494,7 @@ function copyTempDouble(ptr) {
           // Get type of the line
           var _str = _define[0];
           var _type = CL.parseType(_str);
-          
+  
           if (_type != -1) {
             CL.cl_structs_sig[struct_name].push(_type);
           } else {
@@ -11322,7 +11503,7 @@ function copyTempDouble(ptr) {
   
             CL.parseStruct(kernel_string,_res);
           }
-      
+  
           return;
         }
   
@@ -11343,10 +11524,10 @@ function copyTempDouble(ptr) {
             var _firstSpace = _str.indexOf(" ");
             var _lastSpace = _str.lastIndexOf(" ");
             var _res = _str.substr(_firstSpace + 1,_lastSpace - _firstSpace - 1);
-            
+  
             CL.parseStruct(kernel_string,_res);
           }
-          
+  
           return;
         }
   
@@ -11358,7 +11539,7 @@ function copyTempDouble(ptr) {
   
         var _res = kernel_string.match(_re_before);
         var _contains_struct = "";
-        
+  
         if (_res != null && _res.length == 2) {
           _contains_struct = _res[1];
         } else {
@@ -11373,16 +11554,16 @@ function copyTempDouble(ptr) {
         var _var = _contains_struct.split(";");
         for (var i = 0; i < _var.length-1; i++ ) {
           // Need for unsigned int width, height;
-          var _subvar = _var[i].split(","); 
-          
+          var _subvar = _var[i].split(",");
+  
           // Get type of the line
           var _type = CL.parseType(_var[i]);
-        
+  
           // Need for float mu[4];
           var _arrayNum = 0;
-          _res = _var[i].match(/[0-9]+/); 
+          _res = _var[i].match(/[0-9]+/);
           if (_res != null) _arrayNum = _res;
-        
+  
           if ( _type != -1) {
             for (var j = 0; j < Math.max(_subvar.length,_arrayNum) ; j++ ) {
               CL.cl_structs_sig[struct_name].push(_type);
@@ -11391,7 +11572,7 @@ function copyTempDouble(ptr) {
             // Search name of the parameter
             var _struct = _subvar[0].replace(/^\s+|\s+$/g, ""); // trim
             var _name = "";
-            var _start = _struct.lastIndexOf(" "); 
+            var _start = _struct.lastIndexOf(" ");
             for (var j = _start - 1; j >= 0 ; j--) {
               var _chara = _struct.charAt(j);
               if (_chara == ' ' && _name.length > 0) {
@@ -11400,14 +11581,14 @@ function copyTempDouble(ptr) {
                 _name = _chara + _name;
               }
             }
-            
+  
             // If struct is unknow search it
             if (!(_name in CL.cl_structs_sig && CL.cl_structs_sig[_name].length > 0)) {
               CL.parseStruct(kernel_string,_name);
             }
   
             for (var j = 0; j < Math.max(_subvar.length,_arrayNum) ; j++ ) {
-              CL.cl_structs_sig[struct_name] = CL.cl_structs_sig[struct_name].concat(CL.cl_structs_sig[_name]);  
+              CL.cl_structs_sig[struct_name] = CL.cl_structs_sig[struct_name].concat(CL.cl_structs_sig[_name]);
             }
           }
         }
@@ -11418,10 +11599,10 @@ function copyTempDouble(ptr) {
         // ----------------------------
         //
         // /!\ The minify kernel could be use by the program but some trouble with line
-        // /!\ containing macro #define, for the moment only use the minify kernel for 
+        // /!\ containing macro #define, for the moment only use the minify kernel for
         // /!\ parsing __kernel and struct
         //
-        // Search kernel function like __kernel ... NAME ( p1 , p2 , p3)  
+        // Search kernel function like __kernel ... NAME ( p1 , p2 , p3)
         // --------------------------------------------------------------------------------
         // Step 1 : Minimize kernel removing all the comment and \r \n \t and multispace
         // Step 2 : Search pattern __kernel ... ( ... )
@@ -11435,7 +11616,7 @@ function copyTempDouble(ptr) {
         // Remove all comments ...
         var _mini_kernel_string  = kernel_string.replace(/(?:((["'])(?:(?:\\\\)|\\\2|(?!\\\2)\\|(?!\2).|[\n\r])*\2)|(\/\*(?:(?!\*\/).|[\n\r])*\*\/)|(\/\/[^\n\r]*(?:[\n\r]+|$))|((?:=|:)\s*(?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/))|((?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/)[gimy]?\.(?:exec|test|match|search|replace|split)\()|(\.(?:exec|test|match|search|replace|split)\((?:\/(?:(?:(?!\\*\/).)|\\\\|\\\/|[^\\]\[(?:\\\\|\\\]|[^]])+\])+\/))|(<!--(?:(?!-->).)*-->))/g
   , "");
-        
+  
         // Remove all char \n \r \t ...
         _mini_kernel_string = _mini_kernel_string.replace(/\n/g, " ");
         _mini_kernel_string = _mini_kernel_string.replace(/\r/g, " ");
@@ -11467,7 +11648,7 @@ function copyTempDouble(ptr) {
           if (_kern == -1) {
             _pattern = " kernel ";
             _kern = _stringKern.indexOf(" kernel ");
-            if (_kern == -1) { 
+            if (_kern == -1) {
               _pattern = "kernel ";
               _kern = _stringKern.indexOf("kernel ");
               if (_kern == -1) {
@@ -11482,7 +11663,7 @@ function copyTempDouble(ptr) {
           }
   
           _stringKern = _stringKern.substr(_kern + _pattern.length,_stringKern.length - _kern);
-   
+  
           var _brace = _stringKern.indexOf("{");
           var _stringKern2 = _stringKern.substr(0,_brace);
           var _braceOpen = _stringKern2.lastIndexOf("(");
@@ -11522,7 +11703,7 @@ function copyTempDouble(ptr) {
   
           var _param_validator = [];
           var _param_argsize_validator = [];
-          var _array = _second_part.split(","); 
+          var _array = _second_part.split(",");
           for (var j = 0; j < _array.length; j++) {
             var _type = CL.parseType(_array[j]);
   
@@ -11536,11 +11717,11 @@ function copyTempDouble(ptr) {
               }
   
             } else if (_type == -1) {
-                         
+  
               _array[j] = _array[j].replace(/^\s+|\s+$/g, "");
               _array[j] = _array[j].replace("*", "");
   
-              var _start = _array[j].lastIndexOf(" "); 
+              var _start = _array[j].lastIndexOf(" ");
               if (_start != -1) {
                 var _kernels_struct_name = "";
                 // Search Parameter type Name
@@ -11552,14 +11733,14 @@ function copyTempDouble(ptr) {
                   } else if (_chara != ' ') {
                     _kernels_struct_name = _chara + _kernels_struct_name;
                   }
-                }             
+                }
   
                 // Parse struct only if is not already inside the map
                 if (!(_kernels_struct_name in CL.cl_structs_sig))
                   CL.parseStruct(_mini_kernel_string, _kernels_struct_name);
-              
+  
                 // Add the name of the struct inside the map of param kernel
-                _param.push(_kernels_struct_name);         
+                _param.push(_kernels_struct_name);
   
               } else {
                 _param.push(webcl.FLOAT);
@@ -11580,7 +11761,7 @@ function copyTempDouble(ptr) {
                 _param_argsize_validator.push(_param.length - 1);
               }
             }
-          }        
+          }
   
           CL.cl_kernels_sig[_name] = _param;
   
@@ -11593,25 +11774,25 @@ function copyTempDouble(ptr) {
       },getImageSizeType:function (image) {
         var _sizeType = 0;
   
-        
+  
         var _info = CL.cl_objects[image].getInfo();
   
         switch (_info.channelType) {
           case webcl.SNORM_INT8:
           case webcl.SIGNED_INT8:
-          case webcl.UNORM_INT8:        
+          case webcl.UNORM_INT8:
           case webcl.UNSIGNED_INT8:
             _sizeType = 1;
             break;
           case webcl.SNORM_INT16:
           case webcl.SIGNED_INT16:
-          case webcl.UNORM_INT16:        
+          case webcl.UNORM_INT16:
           case webcl.UNSIGNED_INT16:
           case webcl.HALF_FLOAT:
-            _sizeType = 2;      
+            _sizeType = 2;
             break;
           case webcl.SIGNED_INT32:
-          case webcl.UNSIGNED_INT32:      
+          case webcl.UNSIGNED_INT32:
           case webcl.FLOAT:
             _sizeType = 4;
             break;
@@ -11631,7 +11812,7 @@ function copyTempDouble(ptr) {
           case webcl.SIGNED_INT8:
             _type = webcl.SIGNED_INT8;
             break;
-          case webcl.UNORM_INT8:        
+          case webcl.UNORM_INT8:
           case webcl.UNSIGNED_INT8:
             _type = webcl.UNSIGNED_INT8;
             break;
@@ -11639,7 +11820,7 @@ function copyTempDouble(ptr) {
           case webcl.SIGNED_INT16:
             _type = webcl.SIGNED_INT16;
             break;
-          case webcl.UNORM_INT16:        
+          case webcl.UNORM_INT16:
           case webcl.UNSIGNED_INT16:
             _type = webcl.UNSIGNED_INT16;
             break;
@@ -11647,7 +11828,7 @@ function copyTempDouble(ptr) {
             _type = webcl.SIGNED_INT32;
           case webcl.UNSIGNED_INT32:
             _type = webcl.UNSIGNED_INT32;
-            break;        
+            break;
           case webcl.FLOAT:
             _type = webcl.FLOAT;
             break;
@@ -11675,18 +11856,18 @@ function copyTempDouble(ptr) {
             break;
           case webcl.RGB:
             _sizeOrder = 3;
-            break; 
+            break;
           case webcl.RGBA:
           case webcl.BGRA:
-          case webcl.ARGB:      
+          case webcl.ARGB:
             _sizeOrder = 4;
-            break;        
+            break;
           default:
             console.error("getImageFormatType : This channel order is not yet implemented => "+_info.channelOrder);
         }
   
         return _sizeOrder;
-      },getHostPtrArray:function (size,type) { 
+      },getHostPtrArray:function (size,type) {
   
         var _host_ptr = null;
   
@@ -11712,7 +11893,7 @@ function copyTempDouble(ptr) {
               break;
             case webcl.UNSIGNED_INT32:
               _host_ptr = new Uint32Array( size >> 2 );
-              break;         
+              break;
             default:
               _host_ptr = new Float32Array( size >> 2 );
               break;
@@ -11722,7 +11903,7 @@ function copyTempDouble(ptr) {
         }
   
         return _host_ptr;
-      },getCopyPointerToArray:function (ptr,size,type) { 
+      },getCopyPointerToArray:function (ptr,size,type) {
         var _host_ptr = null;
   
         if (type.length == 0) {
@@ -11747,7 +11928,7 @@ function copyTempDouble(ptr) {
               break;
             case webcl.UNSIGNED_INT32:
               _host_ptr = new Uint32Array( HEAPU32.subarray((ptr)>>2,(ptr+size)>>2) );
-              break;         
+              break;
             default:
               _host_ptr = new Float32Array( HEAPF32.subarray((ptr)>>2,(ptr+size)>>2) );
               break;
@@ -11757,7 +11938,7 @@ function copyTempDouble(ptr) {
         }
   
         return _host_ptr;
-      },getCopyPointerToArrayPowTwo:function (ptr,size,type) { 
+      },getCopyPointerToArrayPowTwo:function (ptr,size,type) {
         var _host_ptr = null
   
         if (type.length == 0) {
@@ -11769,7 +11950,7 @@ function copyTempDouble(ptr) {
               var _size = size;
               var _offset = CL.getNextPowOfTwo(_size);
               _host_ptr = new Int8Array(_offset);
-              _host_ptr.set( HEAP8.subarray((ptr),(ptr+size)) );            
+              _host_ptr.set( HEAP8.subarray((ptr),(ptr+size)) );
               break;
             case webcl.SIGNED_INT16:
               var _size = size >> 1;
@@ -11780,46 +11961,46 @@ function copyTempDouble(ptr) {
             case webcl.SIGNED_INT32:
               var _size = size >> 2;
               var _offset = CL.getNextPowOfTwo(_size);
-              _host_ptr = new Int32Array(_offset);      
+              _host_ptr = new Int32Array(_offset);
               _host_ptr.set( HEAP32.subarray((ptr)>>2,(ptr+size)>>2) );
               break;
             case webcl.UNSIGNED_INT8:
               var _size = size;
               var _offset = CL.getNextPowOfTwo(_size);
-              _host_ptr = new Uint8Array(_offset);      
+              _host_ptr = new Uint8Array(_offset);
               _host_ptr.set( HEAPU8.subarray((ptr),(ptr+size)) );
               break;
             case webcl.UNSIGNED_INT16:
               var _size = size >> 1;
               var _offset = CL.getNextPowOfTwo(_size);
-              _host_ptr = new Uint16Array(_offset);       
+              _host_ptr = new Uint16Array(_offset);
               _host_ptr.set( HEAPU16.subarray((ptr)>>1,(ptr+size)>>1) );
-              break;     
+              break;
             case webcl.UNSIGNED_INT32:
               var _size = size >> 2;
               var _offset = CL.getNextPowOfTwo(_size);
-              _host_ptr = new Uint32Array(_offset);       
+              _host_ptr = new Uint32Array(_offset);
               _host_ptr.set( HEAPU32.subarray((ptr)>>2,(ptr+size)>>2) );
-              break;      
+              break;
             default:
               var _size = size >> 2;
               var _offset = CL.getNextPowOfTwo(_size);
-              _host_ptr = new Float32Array(_offset);   
+              _host_ptr = new Float32Array(_offset);
               _host_ptr.set( HEAPF32.subarray((ptr)>>2,(ptr+size)>>2) );
               break;
           }
         } else {
           var _size = size >> 2;
           var _offset = CL.getNextPowOfTwo(_size);
-          _host_ptr = new Float32Array(_offset);    
+          _host_ptr = new Float32Array(_offset);
           _host_ptr.set( HEAPF32.subarray((ptr)>>2,(ptr+size)>>2) );
         }
   
-        return _host_ptr;           
-      },getNextPowOfTwo:function (v) { 
+        return _host_ptr;
+      },getNextPowOfTwo:function (v) {
         // Accept 1 / 2 / 3 / 4
         if (v <= 4) return v;
-        // Accept 8 / 16 / 32 
+        // Accept 8 / 16 / 32
         var _v = v;
         _v--;
         _v |= _v >> 1;
@@ -11829,7 +12010,7 @@ function copyTempDouble(ptr) {
         _v |= _v >> 16;
         _v++;
         return _v
-      },copyDataToHeap:function (dest, src, size, type) { 
+      },copyDataToHeap:function (dest, src, size, type) {
   
         // Copy data to Emscripten heap
         //var dataHeap = new Uint8Array(Module.HEAPU8.buffer, dataPtr, nDataBytes);
@@ -11863,7 +12044,7 @@ function copyTempDouble(ptr) {
             case webcl.UNSIGNED_INT32:
               var _data_heap = new Uint32Array(Module.HEAPU32.buffer, dest, size >> 2);
               _data_heap.set( new Uint32Array(src) );
-              break;         
+              break;
             default:
               var _data_heap = new Float32Array(Module.HEAPF32.buffer, dest, size >> 2);
               _data_heap.set( new Float32Array(src) );
@@ -11876,13 +12057,12 @@ function copyTempDouble(ptr) {
       },catchError:function (e) {
         console.error(e);
         var _error = -1;
-  
         if (e instanceof WebCLException) {
           var _str=e.message;
           var _n=_str.lastIndexOf(" ");
           _error = _str.substr(_n+1,_str.length-_n-1);
         }
-        
+  
         return _error;
       }};function _clGetPlatformIDs(num_entries,platforms,num_platforms) {
   
@@ -11902,7 +12082,7 @@ function copyTempDouble(ptr) {
   
       var _platforms = null;
   
-      try { 
+      try {
   
         _platforms = webcl.getPlatforms();
   
@@ -11914,7 +12094,7 @@ function copyTempDouble(ptr) {
   
       if (num_platforms != 0) {
         HEAP32[((num_platforms)>>2)]=_platforms.length /* Num of platforms */;
-      } 
+      }
   
       if (platforms != 0) {
         for (var i = 0; i < Math.min(num_entries,_platforms.length); i++) {
@@ -12073,13 +12253,13 @@ function copyTempDouble(ptr) {
 
   function _clGetDeviceInfo(device,param_name,param_value_size,param_value,param_value_size_ret) {
   
-    
+  
       var  _info = null;
   
-      try { 
+      try {
   
           var _object = CL.cl_objects[device];
-     
+  
         switch (param_name) {
           case 0x102B /*CL_DEVICE_NAME*/ :
             var _type = _object.getInfo(webcl.DEVICE_TYPE);
@@ -12105,28 +12285,28 @@ function copyTempDouble(ptr) {
             _info = 0;
           break;
           case 0x1030 /*CL_DEVICE_EXTENSIONS*/ :
-            _info = webcl.getSupportedExtensions().join(' ') ; 
+            _info = webcl.getSupportedExtensions().join(' ') ;
           break;
           case 0x101A /*CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE*/ :
             _info = _object.getInfo(webcl.DEVICE_MEM_BASE_ADDR_ALIGN) >> 3;
           break;
           default:
             _info = _object.getInfo(param_name);
-        }  
+        }
       } catch (e) {
         var _error = CL.catchError(e);
   
         if (param_value != 0) {
           HEAP32[((param_value)>>2)]=0;
         }
-      
+  
         if (param_value_size_ret != 0) {
           HEAP32[((param_value_size_ret)>>2)]=0;
         }
   
         return _error;
       }
-          
+  
       if(typeof(_info) == "number") {
   
         if (param_value_size == 8) {
@@ -12135,8 +12315,8 @@ function copyTempDouble(ptr) {
         } else {
           if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
           if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-        } 
-        
+        }
+  
       } else if(typeof(_info) == "boolean") {
   
         if (param_value != 0) (_info == true) ? HEAP32[((param_value)>>2)]=1 : HEAP32[((param_value)>>2)]=0;
@@ -12151,18 +12331,18 @@ function copyTempDouble(ptr) {
       } else if(typeof(_info) == "object") {
   
         if (_info instanceof Array) {
-         
+  
           for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
             if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_info[i];
           }
           if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length * 4;
-        
+  
         } else if (_info instanceof WebCLPlatform) {
-       
+  
           var _id = CL.udid(_info);
           if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
           if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-        
+  
         } else if (_info == null) {
   
           if (param_value != 0) HEAP32[((param_value)>>2)]=0;
@@ -12186,7 +12366,7 @@ function copyTempDouble(ptr) {
   
       var _global_work_offset = [];
       var _global_work_size = [];
-      
+  
   
       for (var i = 0; i < work_dim; i++) {
         _global_work_size.push(HEAP32[(((global_work_size)+(i*4))>>2)]);
@@ -12202,19 +12382,19 @@ function copyTempDouble(ptr) {
   
       for (var i = 0; i < num_events_in_wait_list; i++) {
         var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
-         
+  
         _event_wait_list.push(CL.cl_objects[_event_wait]);
       }
-             
-      try { 
-        
+  
+      try {
+  
         if (event != 0) {
           _event = new WebCLEvent();
         }
   
-        CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);  
-         
-        if (event != 0) { 
+        CL.cl_objects[command_queue].enqueueNDRangeKernel(CL.cl_objects[kernel],work_dim,_global_work_offset,_global_work_size,_local_work_size,_event_wait_list,_event);
+  
+        if (event != 0) {
           HEAP32[((event)>>2)]=CL.udid(_event);
         }
   
@@ -12225,8 +12405,8 @@ function copyTempDouble(ptr) {
         return _error;
       }
   
-      
-      return webcl.SUCCESS;    
+  
+      return webcl.SUCCESS;
   
     }
 
@@ -12269,7 +12449,7 @@ function copyTempDouble(ptr) {
 
   function _clSetKernelArg(kernel,arg_index,arg_size,arg_value) {
       if (CL.cl_objects[kernel].sig.length < arg_index) {
-        return webcl.INVALID_KERNEL;          
+        return webcl.INVALID_KERNEL;
       }
   
       var _kernel = CL.cl_objects[kernel];
@@ -12277,7 +12457,7 @@ function copyTempDouble(ptr) {
       var _posarg = _kernel.val_param[arg_index];
   
       var _sig = _kernel.sig[_posarg];
-      
+  
       try {
   
         // LOCAL ARG
@@ -12301,10 +12481,10 @@ function copyTempDouble(ptr) {
           if (_value in CL.cl_objects) {
   
             _kernel.setArg(_posarg,CL.cl_objects[_value]);
-            
+  
+  
             if (! (CL.cl_objects[_value] instanceof WebCLSampler)) {
   
-            
               var _size = CL.cl_objects[_value].getInfo(webcl.MEM_SIZE);
               var _sizearg = CL.cast_long(_size);
   
@@ -12312,11 +12492,12 @@ function copyTempDouble(ptr) {
                 _kernel.setArg(_posarg+1,_sizearg);
               }
             }
-            
+  
+  
           } else {
-    
+  
             var _array = CL.getCopyPointerToArrayPowTwo(arg_value,arg_size,[[_sig,1]]);
-           
+  
             _kernel.setArg(_posarg,_array);
   
             var _sizearg = CL.cast_long(arg_size);
@@ -12476,12 +12657,12 @@ function copyTempDouble(ptr) {
     }
 
   function _clGetPlatformInfo(platform,param_name,param_value_size,param_value,param_value_size_ret) {
-      
   
-    
+  
+  
       var _info = null;
-    
-      try { 
+  
+      try {
   
   
         switch (param_name) {
@@ -12495,17 +12676,17 @@ function copyTempDouble(ptr) {
             _info = "WEBCL_PLATFORM_EXTENSIONS";
           break;
           default:
-            _info = CL.cl_objects[platform].getInfo(param_name);  
-        }      
+            _info = CL.cl_objects[platform].getInfo(param_name);
+        }
       } catch (e) {
-        
+  
         var _error = CL.catchError(e);
         var _info = "undefined";
   
         if (param_value != 0) {
           writeStringToMemory(_info, param_value);
         }
-    
+  
         if (param_value_size_ret != 0) {
           HEAP32[((param_value_size_ret)>>2)]=_info.length + 1;
         }
@@ -12513,12 +12694,12 @@ function copyTempDouble(ptr) {
         return _error;
       }
   
-      if (param_name == webcl.PLATFORM_VERSION) _info += " "; 
-      
+      if (param_name == webcl.PLATFORM_VERSION) _info += " ";
+  
       if (param_value != 0) {
         writeStringToMemory(_info, param_value);
       }
-    
+  
       if (param_value_size_ret != 0) {
         HEAP32[((param_value_size_ret)>>2)]=_info.length + 1;
       }
@@ -12528,42 +12709,42 @@ function copyTempDouble(ptr) {
     }
 
   function _clEnqueueReadBuffer(command_queue,buffer,blocking_read,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event) {
-    
+  
       var _block = blocking_read ? true : false;
       var _event = null;
       var _event_wait_list = [];
       var _host_ptr = CL.getHostPtrArray(cb,CL.cl_pn_type);
-    
+  
       for (var i = 0; i < num_events_in_wait_list; i++) {
         var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
   
         _event_wait_list.push(CL.cl_objects[_event_wait]);
-      } 
+      }
   
       try {
   
         if (event != 0) {
           _event = new WebCLEvent();
         }
-        
+  
         CL.cl_objects[command_queue].enqueueReadBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);
-         
-      
+  
+  
         // Copy array to heap
         CL.copyDataToHeap(ptr,_host_ptr.buffer,cb,CL.cl_pn_type);
-        
+  
         if (event != 0) {
           HEAP32[((event)>>2)]=CL.udid(_event);
         }
   
       } catch (e) {
         var _error = CL.catchError(e);
-          
+  
   
         return _error;
       }
   
-      return webcl.SUCCESS;    
+      return webcl.SUCCESS;
     }
 
   function _glutInitWindowPosition(x, y) {
@@ -12575,7 +12756,7 @@ function copyTempDouble(ptr) {
   
       var _info = null;
   
-      try { 
+      try {
   
   
         if (param_name == 0x1080 /* CL_CONTEXT_REFERENCE_COUNT */) {
@@ -12590,7 +12771,7 @@ function copyTempDouble(ptr) {
           }
   
         }  else if (param_name == 0x1082 /* CL_CONTEXT_PROPERTIES */) {
-        
+  
           _info = "WebCLContextProperties";
   
         } else {
@@ -12598,7 +12779,7 @@ function copyTempDouble(ptr) {
           _info = CL.cl_objects[context].getInfo(param_name);
   
         }
-        
+  
   
       } catch (e) {
         var _error = CL.catchError(e);
@@ -12606,14 +12787,14 @@ function copyTempDouble(ptr) {
         if (param_value != 0) {
           HEAP32[((param_value)>>2)]=0;
         }
-      
+  
         if (param_value_size_ret != 0) {
           HEAP32[((param_value_size_ret)>>2)]=0;
         }
   
         return _error;
       }
-      
+  
        if (_info == "WebCLContextProperties") {
   
         var _size = 0;
@@ -12646,7 +12827,7 @@ function copyTempDouble(ptr) {
       } else if(typeof(_info) == "object") {
   
         if (_info instanceof WebCLPlatform) {
-       
+  
           var _id = CL.udid(_info);
           if (param_value != 0) HEAP32[((param_value)>>2)]=_id;
           if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
@@ -13046,8 +13227,8 @@ function copyTempDouble(ptr) {
         CL.cl_objects_retains[memobj] = _retain;
   
         if (_retain >= 0) {
-          
-          // Call the callback 
+  
+          // Call the callback
           if (memobj in CL.cl_objects_mem_callback) {
             if (CL.cl_objects_mem_callback[memobj].length > 0)
               CL.cl_objects_mem_callback[memobj].pop()();
@@ -13059,14 +13240,14 @@ function copyTempDouble(ptr) {
   
       try {
   
-        // Call the callback 
+        // Call the callback
         if (memobj in CL.cl_objects_mem_callback) {
           if (CL.cl_objects_mem_callback[memobj].length > 0)
             CL.cl_objects_mem_callback[memobj].pop()();
         }
   
         CL.cl_objects[memobj].release();
-        delete CL.cl_objects[memobj];  
+        delete CL.cl_objects[memobj];
   
       } catch (e) {
         var _error = CL.catchError(e);
@@ -13082,7 +13263,7 @@ function copyTempDouble(ptr) {
 
   
   function _clEnqueueWriteBuffer(command_queue,buffer,blocking_write,offset,cb,ptr,num_events_in_wait_list,event_wait_list,event) {
-      
+  
       var _event = null;
       var _block = blocking_write ? true : false;
       var _event_wait_list = [];
@@ -13092,15 +13273,15 @@ function copyTempDouble(ptr) {
         var _event_wait = HEAP32[(((event_wait_list)+(i*4))>>2)];
   
         _event_wait_list.push(CL.cl_objects[_event_wait]);
-      } 
+      }
   
       try {
   
         if (event != 0) {
           _event = new WebCLEvent();
         }
-        
-        CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);    
+  
+        CL.cl_objects[command_queue].enqueueWriteBuffer(CL.cl_objects[buffer],_block,offset,cb,_host_ptr,_event_wait_list,_event);
   
         if (event != 0) {
           HEAP32[((event)>>2)]=CL.udid(_event);
@@ -13108,23 +13289,23 @@ function copyTempDouble(ptr) {
   
       } catch (e) {
         var _error = CL.catchError(e);
-   
+  
   
         return _error;
       }
   
   
-      return webcl.SUCCESS;  
+      return webcl.SUCCESS;
     }function _clCreateBuffer(context,flags_i64_1,flags_i64_2,size,host_ptr,cl_errcode_ret) {
-      // Assume the flags is i32 
+      // Assume the flags is i32
       assert(flags_i64_2 == 0, 'Invalid flags i64');
-      
+  
   
       var _id = null;
       var _buffer = null;
   
       // Context must be created
-      
+  
       var _flags;
   
       if (flags_i64_1 & webcl.MEM_READ_WRITE) {
@@ -13139,18 +13320,18 @@ function copyTempDouble(ptr) {
   
       var _host_ptr = null;
   
-      if ( host_ptr != 0 ) _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type); 
+      if ( host_ptr != 0 ) _host_ptr = CL.getCopyPointerToArray(host_ptr,size,CL.cl_pn_type);
       else if (
         (flags_i64_1 & (1 << 4) /* CL_MEM_ALLOC_HOST_PTR  */) ||
         (flags_i64_1 & (1 << 5) /* CL_MEM_COPY_HOST_PTR   */) ||
         (flags_i64_1 & (1 << 3) /* CL_MEM_USE_HOST_PTR    */)
         ) {
         _host_ptr = CL.getHostPtrArray(size,CL.cl_pn_type);
-      } 
+      }
   
       try {
   
-      
+  
         if (_host_ptr != null) {
           _buffer = CL.cl_objects[context].createBuffer(_flags,size,_host_ptr);
         } else
@@ -13158,11 +13339,11 @@ function copyTempDouble(ptr) {
   
       } catch (e) {
         var _error = CL.catchError(e);
-      
+  
         if (cl_errcode_ret != 0) {
           HEAP32[((cl_errcode_ret)>>2)]=_error;
         }
-        
+  
         return 0; // NULL Pointer
       }
   
@@ -13173,7 +13354,7 @@ function copyTempDouble(ptr) {
       // Add flags property
       Object.defineProperty(_buffer, "flags", { value : flags_i64_1,writable : false });
       _id = CL.udid(_buffer);
-    
+  
       // \todo need to be remove when firefox will be support hot_ptr
       /**** **** **** **** **** **** **** ****
       if (_host_ptr != null) {
@@ -13186,7 +13367,7 @@ function copyTempDouble(ptr) {
               break;
             }
           }
-          
+  
           if (commandqueue != null) {
             _clEnqueueWriteBuffer(obj,_id,true,0,size,host_ptr,0,0,0);
           } else {
@@ -13194,7 +13375,7 @@ function copyTempDouble(ptr) {
               HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_VALUE;
             }
   
-            return 0; 
+            return 0;
           }
         }
       }
@@ -13208,7 +13389,7 @@ function copyTempDouble(ptr) {
   
       var _info = null;
   
-      try { 
+      try {
   
   
         _info = CL.cl_objects[program].getBuildInfo(CL.cl_objects[device], param_name);
@@ -13236,7 +13417,7 @@ function copyTempDouble(ptr) {
         if (param_value != 0) {
           writeStringToMemory(_info, param_value);
         }
-      
+  
         if (param_value_size_ret != 0) {
           HEAP32[((param_value_size_ret)>>2)]=_info.length + 1;
         }
@@ -13302,10 +13483,10 @@ function copyTempDouble(ptr) {
 
 
   function _clGetDeviceIDs(platform,device_type_i64_1,device_type_i64_2,num_entries,devices,num_devices) {
-      // Assume the device_type is i32 
+      // Assume the device_type is i32
       assert(device_type_i64_2 == 0, 'Invalid device_type i64');
   
-      
+  
       // Init webcl variable if necessary
       if (CL.init() == 0) {
         return webcl.INVALID_VALUE;
@@ -13320,7 +13501,7 @@ function copyTempDouble(ptr) {
       }
   
       if ( platform != 0 && !(platform in CL.cl_objects)) {
-        return webcl.INVALID_PLATFORM;  
+        return webcl.INVALID_PLATFORM;
       }
   
       var _device = null;
@@ -13331,12 +13512,12 @@ function copyTempDouble(ptr) {
         if (platform == 0) {
           var _platforms = webcl.getPlatforms();
           if (_platforms.length == 0) {
-            return webcl.INVALID_PLATFORM;  
+            return webcl.INVALID_PLATFORM;
           }
   
-          // Create a new UDID 
+          // Create a new UDID
           platform = CL.udid(_platforms[0]);
-        } 
+        }
   
         var _platform = CL.cl_objects[platform];
   
@@ -13355,7 +13536,7 @@ function copyTempDouble(ptr) {
   
       if (num_devices != 0) {
         HEAP32[((num_devices)>>2)]=_devices.length /* Num of device */;
-      } 
+      }
   
       if (devices != 0) {
         for (var i = 0; i < Math.min(num_entries,_devices.length); i++) {
@@ -13393,18 +13574,7 @@ function copyTempDouble(ptr) {
       } else {
         return ___setErrNo(ERRNO_CODES.EINVAL);
       }
-    }
-  
-  function _malloc(bytes) {
-      /* Over-allocate to make sure it is byte-aligned by 8.
-       * This will leak memory, but this is only the dummy
-       * implementation (replaced by dlmalloc normally) so
-       * not an issue.
-       */
-      var ptr = Runtime.dynamicAlloc(bytes + 8);
-      return (ptr+8) & 0xFFFFFFF8;
-    }
-  Module["_malloc"] = _malloc;function _strerror(errnum) {
+    }function _strerror(errnum) {
       if (!_strerror.buffer) _strerror.buffer = _malloc(256);
       _strerror_r(errnum, _strerror.buffer, 256);
       return _strerror.buffer;
@@ -13426,13 +13596,13 @@ function copyTempDouble(ptr) {
           HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_VALUE;
         }
   
-        return 0; // NULL Pointer      
+        return 0; // NULL Pointer
       }
-      
+  
       var _id = null;
       var _context = null;
   
-      try { 
+      try {
   
         var _platform = null;
         var _devices = [];
@@ -13469,10 +13639,10 @@ function copyTempDouble(ptr) {
               case (0x200B) /*CL_WGL_HDC_KHR*/:
               case (0x200A) /*CL_GLX_DISPLAY_KHR*/:
               case (0x2008) /*CL_GL_CONTEXT_KHR*/:
-              case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:            
+              case (0x200C) /*CL_CGL_SHAREGROUP_KHR*/:
                 _propertiesCounter ++;
                 _glclSharedContext = true;
-                
+  
                 break;
   
               default:
@@ -13480,7 +13650,7 @@ function copyTempDouble(ptr) {
                   HEAP32[((cl_errcode_ret)>>2)]=webcl.INVALID_PROPERTY;
                 }
   
-                return 0; 
+                return 0;
             };
   
             _propertiesCounter ++;
@@ -13488,26 +13658,26 @@ function copyTempDouble(ptr) {
         }
   
         if (num_devices > 0) {
-          if (_glclSharedContext && (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) ) {       
+          if (_glclSharedContext && (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) ) {
   
-            _context = webcl.createContext(Module.ctx,_devices); 
-            
+            _context = webcl.createContext(Module.ctx,_devices);
+  
           } else {
-          
-            _context = webcl.createContext(_devices);  
+  
+            _context = webcl.createContext(_devices);
   
           }
         } else if (_platform != null) {
-          
+  
           if (_glclSharedContext && (navigator.userAgent.toLowerCase().indexOf('firefox') == -1) ) {
-            _context = webcl.createContext(Module.ctx,_platform);  
+            _context = webcl.createContext(Module.ctx,_platform);
           } else {
-            _context = webcl.createContext(_platform);  
+            _context = webcl.createContext(_platform);
           }
   
         } else {
           // If no device and no platfomr peek the first one
-          
+  
           // Search platform
           for (var obj in CL.cl_objects) {
             if (CL.cl_objects[obj] instanceof WebCLPlatform) {
@@ -13519,20 +13689,20 @@ function copyTempDouble(ptr) {
             var _platforms = webcl.getPlatforms();
   
             _platform = _platforms[0];
-          
-            CL.udid(_platforms[i]);         
+  
+            CL.udid(_platforms[i]);
           }
   
           if (_glclSharedContext) {
-            _context = webcl.createContext(Module.ctx,_platform);  
+            _context = webcl.createContext(Module.ctx,_platform);
           } else {
-            _context = webcl.createContext(_platform);  
-          }    
+            _context = webcl.createContext(_platform);
+          }
         }
   
       } catch (e) {
         var _error = CL.catchError(e);
-      
+  
         if (cl_errcode_ret != 0) {
           HEAP32[((cl_errcode_ret)>>2)]=_error;
         }
@@ -13554,7 +13724,7 @@ function copyTempDouble(ptr) {
     }
 
   function _clCreateKernel(program,kernel_name,cl_errcode_ret) {
-      
+  
   
       var _id = null;
       var _kernel = null;
@@ -13562,20 +13732,20 @@ function copyTempDouble(ptr) {
   
       // program must be created
       try {
-      
+  
   
         _kernel = CL.cl_objects[program].createKernel(_name);
-        
+  
         Object.defineProperty(_kernel, "name", { value : _name,writable : false });
         Object.defineProperty(_kernel, "sig", { value : CL.cl_kernels_sig[_name],writable : false });
   
         Object.defineProperty(_kernel, "val_param", { value : CL.cl_validator[_name],writable : false });
         Object.defineProperty(_kernel, "val_param_argsize", { value : CL.cl_validator_argsize[_name],writable : false });
   
-        
+  
       } catch (e) {
         var _error = CL.catchError(e);
-      
+  
         if (cl_errcode_ret != 0) {
           HEAP32[((cl_errcode_ret)>>2)]=_error;
         }
@@ -13605,16 +13775,16 @@ function copyTempDouble(ptr) {
           if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
   
         } else if (_info instanceof Int32Array) {
-         
+  
           for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
             if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_info[i];
           }
           if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length * 4;
-        
+  
         } else {
   
           console.error("clGetKernelWorkGroupInfo: unknow type of info '"+_info+"'")
-          
+  
           if (param_value != 0) HEAP32[((param_value)>>2)]=0;
           if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
   
@@ -13625,7 +13795,7 @@ function copyTempDouble(ptr) {
   
         if (param_value != 0) HEAP32[((param_value)>>2)]=0;
         if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
-        
+  
         return _error;
       }
   
@@ -13633,7 +13803,7 @@ function copyTempDouble(ptr) {
     }
 
   function _clCreateCommandQueue(context,device,properties_1,properties_2,cl_errcode_ret) {
-      // Assume the properties is i32 
+      // Assume the properties is i32
       assert(properties_2 == 0, 'Invalid properties i64');
   
   
@@ -13644,14 +13814,14 @@ function copyTempDouble(ptr) {
   
       // Context must be created
   
-      try { 
+      try {
   
   
         _command = CL.cl_objects[context].createCommandQueue(CL.cl_objects[device],properties_1);
   
       } catch (e) {
         var _error = CL.catchError(e);
-      
+  
         if (cl_errcode_ret != 0) {
           HEAP32[((cl_errcode_ret)>>2)]=_error;
         }
@@ -13688,7 +13858,7 @@ function copyTempDouble(ptr) {
       try {
   
         var _devices = [];
-        var _option = (options == 0) ? "" : Pointer_stringify(options); 
+        var _option = (options == 0) ? "" : Pointer_stringify(options);
   
         if (_option) {
           // Add space after -D
@@ -13707,22 +13877,26 @@ function copyTempDouble(ptr) {
   
         // If device_list is NULL value, the program executable is built for all devices associated with program.
         if (_devices.length == 0) {
-          _devices = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES); 
+          var _num_devices = CL.cl_objects[program].getInfo(webcl.PROGRAM_NUM_DEVICES);
+  
+          _devices = CL.cl_objects[program].getInfo(webcl.PROGRAM_DEVICES);
+  
+          _devices = _devices.slice(0,_num_devices);
         }
   
         var _callback = null
         if (pfn_notify != 0) {
           /**
            * Description
-           * @return 
+           * @return
            */
-          _callback = function() { 
+          _callback = function() {
             console.info("\nCall ( clBuildProgram ) callback function : FUNCTION_TABLE["+pfn_notify+"]("+program+", "+user_data+")");
-            FUNCTION_TABLE[pfn_notify](program, user_data) 
+            FUNCTION_TABLE[pfn_notify](program, user_data)
           };
         }
   
-        
+  
         CL.cl_objects[program].build(_devices,_option,_callback);
   
       } catch (e) {
@@ -13733,7 +13907,7 @@ function copyTempDouble(ptr) {
       }
   
   
-      return webcl.SUCCESS;      
+      return webcl.SUCCESS;
   
     }
 
@@ -13828,9 +14002,7 @@ function copyTempDouble(ptr) {
       GLImmediate.modifiedClientAttributes = true;
     }
 
-  function _sin() {
-  return Math_sin.apply(null, arguments)
-  }
+  var _sin=Math_sin;
 
   function _glBlendFunc(x0, x1) { GLctx.blendFunc(x0, x1) }
 
@@ -13873,7 +14045,7 @@ function copyTempDouble(ptr) {
     }
 
   function _clCreateProgramWithSource(context,count,strings,lengths,cl_errcode_ret) {
-      
+  
   
       var _id = null;
       var _program = null;
@@ -13881,19 +14053,19 @@ function copyTempDouble(ptr) {
       // Context must be created
   
       try {
-        
+  
         var _string = "";
   
         for (var i = 0; i < count; i++) {
           if (lengths) {
             var _len = HEAP32[(((lengths)+(i*4))>>2)];
             if (_len < 0) {
-              _string += Pointer_stringify(HEAP32[(((strings)+(i*4))>>2)]);   
+              _string += Pointer_stringify(HEAP32[(((strings)+(i*4))>>2)]);
             } else {
-              _string += Pointer_stringify(HEAP32[(((strings)+(i*4))>>2)], _len);   
+              _string += Pointer_stringify(HEAP32[(((strings)+(i*4))>>2)], _len);
             }
           } else {
-            _string += Pointer_stringify(HEAP32[(((strings)+(i*4))>>2)]); 
+            _string += Pointer_stringify(HEAP32[(((strings)+(i*4))>>2)]);
           }
         }
   
@@ -13901,7 +14073,7 @@ function copyTempDouble(ptr) {
   
   
         _program = CL.cl_objects[context].createProgram(_string);
-    
+  
       } catch (e) {
         var _error = CL.catchError(e);
   
@@ -13952,9 +14124,7 @@ function copyTempDouble(ptr) {
       GLImmediate.clientActiveTexture = texture - 0x84C0; // GL_TEXTURE0
     }
 
-  function _cos() {
-  return Math_cos.apply(null, arguments)
-  }
+  var _cos=Math_cos;
 
   function _glTexParameteri(x0, x1, x2) { GLctx.texParameteri(x0, x1, x2) }
 
@@ -14318,6 +14488,7 @@ function invoke_v(index) {
     top = top|0;
     STACKTOP = top;
   }
+
   function setThrew(threw, value) {
     threw = threw|0;
     value = value|0;
@@ -16390,12 +16561,12 @@ function _keyFunc($key,$x,$y) {
  var $vararg_ptr22 = 0, $vararg_ptr23 = 0, $vararg_ptr3 = 0, $vararg_ptr4 = 0, $vararg_ptr8 = 0, $vararg_ptr9 = 0, $x1 = 0, $y2 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 224|0;
- $vararg_buffer18 = sp;
- $vararg_buffer12 = sp + 48|0;
- $vararg_buffer10 = sp + 32|0;
- $vararg_buffer5 = sp + 80|0;
- $vararg_buffer1 = sp + 96|0;
- $vararg_buffer = sp + 40|0;
+ $vararg_buffer18 = sp + 48|0;
+ $vararg_buffer12 = sp;
+ $vararg_buffer10 = sp + 104|0;
+ $vararg_buffer5 = sp + 32|0;
+ $vararg_buffer1 = sp + 80|0;
+ $vararg_buffer = sp + 96|0;
  $dir = sp + 108|0;
  $dir4 = sp + 168|0;
  $dir8 = sp + 192|0;
@@ -16996,6 +17167,86 @@ function _specialFunc($key,$x,$y) {
  $2 = $y;
  $3 = $0;
  switch ($3|0) {
+ case 102:  {
+  ;HEAP32[$t3+0>>2]=HEAP32[((600 + 12|0))+0>>2]|0;HEAP32[$t3+4>>2]=HEAP32[((600 + 12|0))+4>>2]|0;HEAP32[$t3+8>>2]=HEAP32[((600 + 12|0))+8>>2]|0;
+  $159 = +HEAPF32[$t3>>2];
+  $160 = +HEAPF32[600>>2];
+  $161 = $159 - $160;
+  HEAPF32[$t3>>2] = $161;
+  $162 = (($t3) + 4|0);
+  $163 = +HEAPF32[$162>>2];
+  $164 = +HEAPF32[((600 + 4|0))>>2];
+  $165 = $163 - $164;
+  $166 = (($t3) + 4|0);
+  HEAPF32[$166>>2] = $165;
+  $167 = (($t3) + 8|0);
+  $168 = +HEAPF32[$167>>2];
+  $169 = +HEAPF32[((600 + 8|0))>>2];
+  $170 = $168 - $169;
+  $171 = (($t3) + 8|0);
+  HEAPF32[$171>>2] = $170;
+  $172 = +HEAPF32[$t3>>2];
+  $173 = $172;
+  $174 = (+Math_cos(0.0349065850398865909487));
+  $175 = $173 * $174;
+  $176 = (($t3) + 8|0);
+  $177 = +HEAPF32[$176>>2];
+  $178 = $177;
+  $179 = (+Math_sin(0.0349065850398865909487));
+  $180 = $178 * $179;
+  $181 = $175 - $180;
+  $182 = $181;
+  HEAPF32[$t3>>2] = $182;
+  $183 = +HEAPF32[$t3>>2];
+  $184 = $183;
+  $185 = (+Math_sin(0.0349065850398865909487));
+  $186 = $184 * $185;
+  $187 = (($t3) + 8|0);
+  $188 = +HEAPF32[$187>>2];
+  $189 = $188;
+  $190 = (+Math_cos(0.0349065850398865909487));
+  $191 = $189 * $190;
+  $192 = $186 + $191;
+  $193 = $192;
+  $194 = (($t3) + 8|0);
+  HEAPF32[$194>>2] = $193;
+  $195 = +HEAPF32[$t3>>2];
+  $196 = +HEAPF32[600>>2];
+  $197 = $195 + $196;
+  HEAPF32[$t3>>2] = $197;
+  $198 = (($t3) + 4|0);
+  $199 = +HEAPF32[$198>>2];
+  $200 = +HEAPF32[((600 + 4|0))>>2];
+  $201 = $199 + $200;
+  $202 = (($t3) + 4|0);
+  HEAPF32[$202>>2] = $201;
+  $203 = (($t3) + 8|0);
+  $204 = +HEAPF32[$203>>2];
+  $205 = +HEAPF32[((600 + 8|0))>>2];
+  $206 = $204 + $205;
+  $207 = (($t3) + 8|0);
+  HEAPF32[$207>>2] = $206;
+  ;HEAP32[((600 + 12|0))+0>>2]=HEAP32[$t3+0>>2]|0;HEAP32[((600 + 12|0))+4>>2]=HEAP32[$t3+4>>2]|0;HEAP32[((600 + 12|0))+8>>2]=HEAP32[$t3+8>>2]|0;
+  _ReInit(0);
+  STACKTOP = sp;return;
+  break;
+ }
+ case 104:  {
+  $208 = +HEAPF32[((600 + 16|0))>>2];
+  $209 = $208 + 10.0;
+  HEAPF32[((600 + 16|0))>>2] = $209;
+  _ReInit(0);
+  STACKTOP = sp;return;
+  break;
+ }
+ case 105:  {
+  $210 = +HEAPF32[((600 + 16|0))>>2];
+  $211 = $210 - 10.0;
+  HEAPF32[((600 + 16|0))>>2] = $211;
+  _ReInit(0);
+  STACKTOP = sp;return;
+  break;
+ }
  case 101:  {
   ;HEAP32[$t+0>>2]=HEAP32[((600 + 12|0))+0>>2]|0;HEAP32[$t+4>>2]=HEAP32[((600 + 12|0))+4>>2]|0;HEAP32[$t+8>>2]=HEAP32[((600 + 12|0))+8>>2]|0;
   $4 = +HEAPF32[$t>>2];
@@ -17192,86 +17443,6 @@ function _specialFunc($key,$x,$y) {
   $158 = (($t2) + 8|0);
   HEAPF32[$158>>2] = $157;
   ;HEAP32[((600 + 12|0))+0>>2]=HEAP32[$t2+0>>2]|0;HEAP32[((600 + 12|0))+4>>2]=HEAP32[$t2+4>>2]|0;HEAP32[((600 + 12|0))+8>>2]=HEAP32[$t2+8>>2]|0;
-  _ReInit(0);
-  STACKTOP = sp;return;
-  break;
- }
- case 102:  {
-  ;HEAP32[$t3+0>>2]=HEAP32[((600 + 12|0))+0>>2]|0;HEAP32[$t3+4>>2]=HEAP32[((600 + 12|0))+4>>2]|0;HEAP32[$t3+8>>2]=HEAP32[((600 + 12|0))+8>>2]|0;
-  $159 = +HEAPF32[$t3>>2];
-  $160 = +HEAPF32[600>>2];
-  $161 = $159 - $160;
-  HEAPF32[$t3>>2] = $161;
-  $162 = (($t3) + 4|0);
-  $163 = +HEAPF32[$162>>2];
-  $164 = +HEAPF32[((600 + 4|0))>>2];
-  $165 = $163 - $164;
-  $166 = (($t3) + 4|0);
-  HEAPF32[$166>>2] = $165;
-  $167 = (($t3) + 8|0);
-  $168 = +HEAPF32[$167>>2];
-  $169 = +HEAPF32[((600 + 8|0))>>2];
-  $170 = $168 - $169;
-  $171 = (($t3) + 8|0);
-  HEAPF32[$171>>2] = $170;
-  $172 = +HEAPF32[$t3>>2];
-  $173 = $172;
-  $174 = (+Math_cos(0.0349065850398865909487));
-  $175 = $173 * $174;
-  $176 = (($t3) + 8|0);
-  $177 = +HEAPF32[$176>>2];
-  $178 = $177;
-  $179 = (+Math_sin(0.0349065850398865909487));
-  $180 = $178 * $179;
-  $181 = $175 - $180;
-  $182 = $181;
-  HEAPF32[$t3>>2] = $182;
-  $183 = +HEAPF32[$t3>>2];
-  $184 = $183;
-  $185 = (+Math_sin(0.0349065850398865909487));
-  $186 = $184 * $185;
-  $187 = (($t3) + 8|0);
-  $188 = +HEAPF32[$187>>2];
-  $189 = $188;
-  $190 = (+Math_cos(0.0349065850398865909487));
-  $191 = $189 * $190;
-  $192 = $186 + $191;
-  $193 = $192;
-  $194 = (($t3) + 8|0);
-  HEAPF32[$194>>2] = $193;
-  $195 = +HEAPF32[$t3>>2];
-  $196 = +HEAPF32[600>>2];
-  $197 = $195 + $196;
-  HEAPF32[$t3>>2] = $197;
-  $198 = (($t3) + 4|0);
-  $199 = +HEAPF32[$198>>2];
-  $200 = +HEAPF32[((600 + 4|0))>>2];
-  $201 = $199 + $200;
-  $202 = (($t3) + 4|0);
-  HEAPF32[$202>>2] = $201;
-  $203 = (($t3) + 8|0);
-  $204 = +HEAPF32[$203>>2];
-  $205 = +HEAPF32[((600 + 8|0))>>2];
-  $206 = $204 + $205;
-  $207 = (($t3) + 8|0);
-  HEAPF32[$207>>2] = $206;
-  ;HEAP32[((600 + 12|0))+0>>2]=HEAP32[$t3+0>>2]|0;HEAP32[((600 + 12|0))+4>>2]=HEAP32[$t3+4>>2]|0;HEAP32[((600 + 12|0))+8>>2]=HEAP32[$t3+8>>2]|0;
-  _ReInit(0);
-  STACKTOP = sp;return;
-  break;
- }
- case 104:  {
-  $208 = +HEAPF32[((600 + 16|0))>>2];
-  $209 = $208 + 10.0;
-  HEAPF32[((600 + 16|0))>>2] = $209;
-  _ReInit(0);
-  STACKTOP = sp;return;
-  break;
- }
- case 105:  {
-  $210 = +HEAPF32[((600 + 16|0))>>2];
-  $211 = $210 - 10.0;
-  HEAPF32[((600 + 16|0))>>2] = $211;
   _ReInit(0);
   STACKTOP = sp;return;
   break;
@@ -20755,10 +20926,7 @@ function _frexp($x,$e) {
  $2 = (_bitshift64Lshr(($0|0),($1|0),52)|0);
  $3 = tempRet0;
  $4 = $2 & 2047;
- if ((($4|0) == 2047)) {
-  $$0 = $x;
-  STACKTOP = sp;return (+$$0);
- } else if ((($4|0) == 0)) {
+ if ((($4|0) == 0)) {
   $5 = $x != 0.0;
   if ($5) {
    $6 = $x * 18446744073709551616.0;
@@ -20771,6 +20939,9 @@ function _frexp($x,$e) {
   }
   HEAP32[$e>>2] = $storemerge;
   $$0 = $$01;
+  STACKTOP = sp;return (+$$0);
+ } else if ((($4|0) == 2047)) {
+  $$0 = $x;
   STACKTOP = sp;return (+$$0);
  } else {
   $10 = (($4) + -1022)|0;
@@ -21575,6 +21746,19 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     } else {
      do {
       switch ($142|0) {
+      case 17:  {
+       $arglist_current29 = HEAP32[$ap>>2]|0;
+       HEAP32[tempDoublePtr>>2]=HEAP32[$arglist_current29>>2];HEAP32[tempDoublePtr+4>>2]=HEAP32[$arglist_current29+4>>2];$190 = +HEAPF64[tempDoublePtr>>3];
+       $arglist_next30 = (($arglist_current29) + 8|0);
+       HEAP32[$ap>>2] = $arglist_next30;
+       HEAPF64[tempDoublePtr>>3] = $190;$191 = HEAP32[tempDoublePtr>>2]|0;
+       $192 = HEAP32[tempDoublePtr+4>>2]|0;
+       $193 = $191;
+       $1051 = $193;$1052 = $192;
+       label = 64;
+       break L65;
+       break;
+      }
       case 18:  {
        $arglist_current32 = HEAP32[$ap>>2]|0;
        HEAP32[tempDoublePtr>>2]=HEAP32[$arglist_current32>>2];HEAP32[tempDoublePtr+4>>2]=HEAP32[$arglist_current32+4>>2];$194 = +HEAPF64[tempDoublePtr>>3];
@@ -21585,18 +21769,6 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $197 = $195;
        $1049 = $196;$1050 = $197;
        label = 63;
-       break L65;
-       break;
-      }
-      case 14:  {
-       $arglist_current20 = HEAP32[$ap>>2]|0;
-       $179 = HEAP32[$arglist_current20>>2]|0;
-       $arglist_next21 = (($arglist_current20) + 4|0);
-       HEAP32[$ap>>2] = $arglist_next21;
-       $$mask1$i29 = $179 & 65535;
-       $180 = $$mask1$i29;
-       $1051 = $180;$1052 = 0;
-       label = 64;
        break L65;
        break;
       }
@@ -21625,19 +21797,6 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $$mask$i30 = $188 & 255;
        $189 = $$mask$i30;
        $1051 = $189;$1052 = 0;
-       label = 64;
-       break L65;
-       break;
-      }
-      case 17:  {
-       $arglist_current29 = HEAP32[$ap>>2]|0;
-       HEAP32[tempDoublePtr>>2]=HEAP32[$arglist_current29>>2];HEAP32[tempDoublePtr+4>>2]=HEAP32[$arglist_current29+4>>2];$190 = +HEAPF64[tempDoublePtr>>3];
-       $arglist_next30 = (($arglist_current29) + 8|0);
-       HEAP32[$ap>>2] = $arglist_next30;
-       HEAPF64[tempDoublePtr>>3] = $190;$191 = HEAP32[tempDoublePtr>>2]|0;
-       $192 = HEAP32[tempDoublePtr+4>>2]|0;
-       $193 = $191;
-       $1051 = $193;$1052 = $192;
        label = 64;
        break L65;
        break;
@@ -21699,6 +21858,18 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        break L65;
        break;
       }
+      case 14:  {
+       $arglist_current20 = HEAP32[$ap>>2]|0;
+       $179 = HEAP32[$arglist_current20>>2]|0;
+       $arglist_next21 = (($arglist_current20) + 4|0);
+       HEAP32[$ap>>2] = $arglist_next21;
+       $$mask1$i29 = $179 & 65535;
+       $180 = $$mask1$i29;
+       $1051 = $180;$1052 = 0;
+       label = 64;
+       break L65;
+       break;
+      }
       case 9:  {
        $arglist_current5 = HEAP32[$ap>>2]|0;
        $158 = HEAP32[$arglist_current5>>2]|0;
@@ -21751,73 +21922,6 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
   $fl$1$ = $205 ? $fl$1 : $206;
   L92: do {
    switch ($t$0|0) {
-   case 110:  {
-    switch ($st$0|0) {
-    case 0:  {
-     HEAP32[$207>>2] = $cnt$1;
-     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    case 1:  {
-     HEAP32[$207>>2] = $cnt$1;
-     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    case 2:  {
-     $208 = ($cnt$1|0)<(0);
-     $209 = $208 << 31 >> 31;
-     $210 = $207;
-     $211 = $210;
-     HEAP32[$211>>2] = $cnt$1;
-     $212 = (($210) + 4)|0;
-     $213 = $212;
-     HEAP32[$213>>2] = $209;
-     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    case 3:  {
-     $214 = $cnt$1&65535;
-     HEAP16[$207>>1] = $214;
-     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    case 4:  {
-     $215 = $cnt$1&255;
-     HEAP8[$207>>0] = $215;
-     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    case 6:  {
-     HEAP32[$207>>2] = $cnt$1;
-     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    case 7:  {
-     $216 = ($cnt$1|0)<(0);
-     $217 = $216 << 31 >> 31;
-     $218 = $207;
-     $219 = $218;
-     HEAP32[$219>>2] = $cnt$1;
-     $220 = (($218) + 4)|0;
-     $221 = $220;
-     HEAP32[$221>>2] = $217;
-     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    default: {
-     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-    }
-    }
-    break;
-   }
    case 112:  {
     $222 = ($p$0>>>0)>(8);
     $223 = $222 ? $p$0 : 8;
@@ -21829,36 +21933,6 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
    case 88: case 120:  {
     $fl$3 = $fl$1$;$p$1 = $p$0;$t$1 = $t$0;
     label = 77;
-    break;
-   }
-   case 105: case 100:  {
-    $267 = $207;
-    $268 = ($229|0)<(0);
-    if ($268) {
-     $269 = (_i64Subtract(0,0,($267|0),($229|0))|0);
-     $270 = tempRet0;
-     $271 = $269;
-     $277 = $271;$279 = $270;$pl$0 = 1;$prefix$0 = 5736;
-     label = 89;
-     break L92;
-    }
-    $272 = $fl$1$ & 2048;
-    $273 = ($272|0)==(0);
-    if ($273) {
-     $274 = $fl$1$ & 1;
-     $275 = ($274|0)==(0);
-     $$15 = $275 ? 5736 : ((5736 + 2|0));
-     $277 = $207;$279 = $229;$pl$0 = $274;$prefix$0 = $$15;
-     label = 89;
-    } else {
-     $277 = $207;$279 = $229;$pl$0 = 1;$prefix$0 = ((5736 + 1|0));
-     label = 89;
-    }
-    break;
-   }
-   case 117:  {
-    $277 = $207;$279 = $229;$pl$0 = 0;$prefix$0 = 5736;
-    label = 89;
     break;
    }
    case 111:  {
@@ -21901,6 +21975,36 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
      $308 = $207;$311 = $229;$a$0 = $$0$lcssa$i43;$fl$4 = $fl$1$;$p$2 = $p$0;$pl$1 = $$14;$prefix$1 = $$13;
      label = 94;
     }
+    break;
+   }
+   case 105: case 100:  {
+    $267 = $207;
+    $268 = ($229|0)<(0);
+    if ($268) {
+     $269 = (_i64Subtract(0,0,($267|0),($229|0))|0);
+     $270 = tempRet0;
+     $271 = $269;
+     $277 = $271;$279 = $270;$pl$0 = 1;$prefix$0 = 5736;
+     label = 89;
+     break L92;
+    }
+    $272 = $fl$1$ & 2048;
+    $273 = ($272|0)==(0);
+    if ($273) {
+     $274 = $fl$1$ & 1;
+     $275 = ($274|0)==(0);
+     $$15 = $275 ? 5736 : ((5736 + 2|0));
+     $277 = $207;$279 = $229;$pl$0 = $274;$prefix$0 = $$15;
+     label = 89;
+    } else {
+     $277 = $207;$279 = $229;$pl$0 = 1;$prefix$0 = ((5736 + 1|0));
+     label = 89;
+    }
+    break;
+   }
+   case 117:  {
+    $277 = $207;$279 = $229;$pl$0 = 0;$prefix$0 = 5736;
+    label = 89;
     break;
    }
    case 99:  {
@@ -22550,7 +22654,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
      $$pr146$i = $$pr$i;$a$1$lcssa$i = $$31$i;$z$1$lcssa$i = $584;
     }
     $613 = ($$pr146$i|0)<(0);
-    L254: do {
+    L245: do {
      if ($613) {
       $614 = (($$p$i) + 25)|0;
       $615 = (($614|0) / 9)&-1;
@@ -22619,7 +22723,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
          $621 = $638;$a$3249$us$i = $$a$3$us323$i;$z$3248$us$i = $$z$4$us$i;
         } else {
          $a$3$lcssa$i = $$a$3$us323$i;$z$3$lcssa$i = $$z$4$us$i;
-         break L254;
+         break L245;
         }
        }
       } else {
@@ -23484,6 +23588,73 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     continue L1;
     break;
    }
+   case 110:  {
+    switch ($st$0|0) {
+    case 7:  {
+     $216 = ($cnt$1|0)<(0);
+     $217 = $216 << 31 >> 31;
+     $218 = $207;
+     $219 = $218;
+     HEAP32[$219>>2] = $cnt$1;
+     $220 = (($218) + 4)|0;
+     $221 = $220;
+     HEAP32[$221>>2] = $217;
+     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    case 0:  {
+     HEAP32[$207>>2] = $cnt$1;
+     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    case 1:  {
+     HEAP32[$207>>2] = $cnt$1;
+     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    case 2:  {
+     $208 = ($cnt$1|0)<(0);
+     $209 = $208 << 31 >> 31;
+     $210 = $207;
+     $211 = $210;
+     HEAP32[$211>>2] = $cnt$1;
+     $212 = (($210) + 4)|0;
+     $213 = $212;
+     HEAP32[$213>>2] = $209;
+     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    case 3:  {
+     $214 = $cnt$1&65535;
+     HEAP16[$207>>1] = $214;
+     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    case 4:  {
+     $215 = $cnt$1&255;
+     HEAP8[$207>>0] = $215;
+     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    case 6:  {
+     HEAP32[$207>>2] = $cnt$1;
+     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    default: {
+     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+    }
+    }
+    break;
+   }
    default: {
     $1053 = $229;$1054 = $207;$a$2 = $22;$fl$6 = $fl$1$;$p$5 = $p$0;$pl$2 = 0;$prefix$2 = 5736;$z$2 = $2;
    }
@@ -23906,43 +24077,10 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
    }
    $983 = (($nl_arg) + ($i$289<<3)|0);
    $984 = ($981>>>0)>(20);
-   L531: do {
+   L540: do {
     if (!($984)) {
      do {
       switch ($981|0) {
-      case 16:  {
-       $arglist_current56 = HEAP32[$ap>>2]|0;
-       $1031 = HEAP32[$arglist_current56>>2]|0;
-       $arglist_next57 = (($arglist_current56) + 4|0);
-       HEAP32[$ap>>2] = $arglist_next57;
-       $$mask$i = $1031 & 255;
-       $1032 = $983;
-       $1033 = $1032;
-       HEAP32[$1033>>2] = $$mask$i;
-       $1034 = (($1032) + 4)|0;
-       $1035 = $1034;
-       HEAP32[$1035>>2] = 0;
-       break L531;
-       break;
-      }
-      case 17:  {
-       $arglist_current59 = HEAP32[$ap>>2]|0;
-       HEAP32[tempDoublePtr>>2]=HEAP32[$arglist_current59>>2];HEAP32[tempDoublePtr+4>>2]=HEAP32[$arglist_current59+4>>2];$1036 = +HEAPF64[tempDoublePtr>>3];
-       $arglist_next60 = (($arglist_current59) + 8|0);
-       HEAP32[$ap>>2] = $arglist_next60;
-       HEAPF64[$983>>3] = $1036;
-       break L531;
-       break;
-      }
-      case 18:  {
-       $arglist_current62 = HEAP32[$ap>>2]|0;
-       HEAP32[tempDoublePtr>>2]=HEAP32[$arglist_current62>>2];HEAP32[tempDoublePtr+4>>2]=HEAP32[$arglist_current62+4>>2];$1037 = +HEAPF64[tempDoublePtr>>3];
-       $arglist_next63 = (($arglist_current62) + 8|0);
-       HEAP32[$ap>>2] = $arglist_next63;
-       HEAPF64[$983>>3] = $1037;
-       break L531;
-       break;
-      }
       case 15:  {
        $arglist_current53 = HEAP32[$ap>>2]|0;
        $1022 = HEAP32[$arglist_current53>>2]|0;
@@ -23958,7 +24096,55 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $1029 = (($1027) + 4)|0;
        $1030 = $1029;
        HEAP32[$1030>>2] = $1026;
-       break L531;
+       break L540;
+       break;
+      }
+      case 16:  {
+       $arglist_current56 = HEAP32[$ap>>2]|0;
+       $1031 = HEAP32[$arglist_current56>>2]|0;
+       $arglist_next57 = (($arglist_current56) + 4|0);
+       HEAP32[$ap>>2] = $arglist_next57;
+       $$mask$i = $1031 & 255;
+       $1032 = $983;
+       $1033 = $1032;
+       HEAP32[$1033>>2] = $$mask$i;
+       $1034 = (($1032) + 4)|0;
+       $1035 = $1034;
+       HEAP32[$1035>>2] = 0;
+       break L540;
+       break;
+      }
+      case 17:  {
+       $arglist_current59 = HEAP32[$ap>>2]|0;
+       HEAP32[tempDoublePtr>>2]=HEAP32[$arglist_current59>>2];HEAP32[tempDoublePtr+4>>2]=HEAP32[$arglist_current59+4>>2];$1036 = +HEAPF64[tempDoublePtr>>3];
+       $arglist_next60 = (($arglist_current59) + 8|0);
+       HEAP32[$ap>>2] = $arglist_next60;
+       HEAPF64[$983>>3] = $1036;
+       break L540;
+       break;
+      }
+      case 18:  {
+       $arglist_current62 = HEAP32[$ap>>2]|0;
+       HEAP32[tempDoublePtr>>2]=HEAP32[$arglist_current62>>2];HEAP32[tempDoublePtr+4>>2]=HEAP32[$arglist_current62+4>>2];$1037 = +HEAPF64[tempDoublePtr>>3];
+       $arglist_next63 = (($arglist_current62) + 8|0);
+       HEAP32[$ap>>2] = $arglist_next63;
+       HEAPF64[$983>>3] = $1037;
+       break L540;
+       break;
+      }
+      case 14:  {
+       $arglist_current50 = HEAP32[$ap>>2]|0;
+       $1017 = HEAP32[$arglist_current50>>2]|0;
+       $arglist_next51 = (($arglist_current50) + 4|0);
+       HEAP32[$ap>>2] = $arglist_next51;
+       $$mask1$i = $1017 & 65535;
+       $1018 = $983;
+       $1019 = $1018;
+       HEAP32[$1019>>2] = $$mask1$i;
+       $1020 = (($1018) + 4)|0;
+       $1021 = $1020;
+       HEAP32[$1021>>2] = 0;
+       break L540;
        break;
       }
       case 9:  {
@@ -23967,7 +24153,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $arglist_next36 = (($arglist_current35) + 4|0);
        HEAP32[$ap>>2] = $arglist_next36;
        HEAP32[$983>>2] = $985;
-       break L531;
+       break L540;
        break;
       }
       case 10:  {
@@ -23983,7 +24169,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $991 = (($989) + 4)|0;
        $992 = $991;
        HEAP32[$992>>2] = $988;
-       break L531;
+       break L540;
        break;
       }
       case 11:  {
@@ -23997,7 +24183,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $996 = (($994) + 4)|0;
        $997 = $996;
        HEAP32[$997>>2] = 0;
-       break L531;
+       break L540;
        break;
       }
       case 12:  {
@@ -24016,7 +24202,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $1006 = (($1004) + 4)|0;
        $1007 = $1006;
        HEAP32[$1007>>2] = $1003;
-       break L531;
+       break L540;
        break;
       }
       case 13:  {
@@ -24034,26 +24220,11 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $1015 = (($1013) + 4)|0;
        $1016 = $1015;
        HEAP32[$1016>>2] = $1012;
-       break L531;
-       break;
-      }
-      case 14:  {
-       $arglist_current50 = HEAP32[$ap>>2]|0;
-       $1017 = HEAP32[$arglist_current50>>2]|0;
-       $arglist_next51 = (($arglist_current50) + 4|0);
-       HEAP32[$ap>>2] = $arglist_next51;
-       $$mask1$i = $1017 & 65535;
-       $1018 = $983;
-       $1019 = $1018;
-       HEAP32[$1019>>2] = $$mask1$i;
-       $1020 = (($1018) + 4)|0;
-       $1021 = $1020;
-       HEAP32[$1021>>2] = 0;
-       break L531;
+       break L540;
        break;
       }
       default: {
-       break L531;
+       break L540;
       }
       }
      } while(0);
@@ -24207,11 +24378,11 @@ function _atoi($s) {
  }
  $5 = HEAP8[$$0>>0]|0;
  $6 = $5 << 24 >> 24;
- if ((($6|0) == 45)) {
-  $neg$0 = 1;
-  label = 5;
- } else if ((($6|0) == 43)) {
+ if ((($6|0) == 43)) {
   $neg$0 = 0;
+  label = 5;
+ } else if ((($6|0) == 45)) {
+  $neg$0 = 1;
   label = 5;
  } else {
   $$1$ph = $$0;$8 = $5;$neg$1$ph = 0;
@@ -26571,6 +26742,9 @@ var i64Math = (function() { // Emscripten wrapper
 // === Auto-generated postamble setup entry stuff ===
 
 if (memoryInitializer) {
+  if (Module['memoryInitializerPrefixURL']) {
+    memoryInitializer = Module['memoryInitializerPrefixURL'] + memoryInitializer;
+  }
   if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
     var data = Module['readBinary'](memoryInitializer);
     HEAPU8.set(data, STATIC_BASE);
@@ -26620,7 +26794,7 @@ Module['callMain'] = Module.callMain = function callMain(args) {
       argv.push(0);
     }
   }
-  var argv = [allocate(intArrayFromString(Module['thisProgram'] || '/bin/this.program'), 'i8', ALLOC_NORMAL) ];
+  var argv = [allocate(intArrayFromString(Module['thisProgram']), 'i8', ALLOC_NORMAL) ];
   pad();
   for (var i = 0; i < argc-1; i = i + 1) {
     argv.push(allocate(intArrayFromString(args[i]), 'i8', ALLOC_NORMAL));
@@ -26637,9 +26811,7 @@ Module['callMain'] = Module.callMain = function callMain(args) {
 
 
     // if we're not running an evented main loop, it's time to exit
-    if (!Module['noExitRuntime']) {
-      exit(ret);
-    }
+    exit(ret);
   }
   catch(e) {
     if (e instanceof ExitStatus) {
@@ -26713,6 +26885,11 @@ function run(args) {
 Module['run'] = Module.run = run;
 
 function exit(status) {
+  if (Module['noExitRuntime']) {
+    Module.printErr('exit(' + status + ') called, but noExitRuntime, so not exiting');
+    return;
+  }
+
   ABORT = true;
   EXITSTATUS = status;
   STACKTOP = initialStackTop;
@@ -26720,16 +26897,14 @@ function exit(status) {
   // exit the runtime
   exitRuntime();
 
-  // TODO We should handle this differently based on environment.
-  // In the browser, the best we can do is throw an exception
-  // to halt execution, but in node we could process.exit and
-  // I'd imagine SM shell would have something equivalent.
-  // This would let us set a proper exit status (which
-  // would be great for checking test exit statuses).
-  // https://github.com/kripken/emscripten/issues/1371
-
-  // throw an exception to halt the current execution
-  throw new ExitStatus(status);
+  if (ENVIRONMENT_IS_NODE) {
+    process['exit'](status);
+  } else if (ENVIRONMENT_IS_SHELL && typeof quit === 'function') {
+    quit(status);
+  } else {
+    // no proper way to exit with a return code, throw an exception to halt the current execution
+    throw new ExitStatus(status);
+  }
 }
 Module['exit'] = Module.exit = exit;
 
