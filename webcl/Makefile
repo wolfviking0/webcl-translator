@@ -110,7 +110,7 @@ endif
 
 endif
 
-
+SOURCES_khrfp64					=	vecAdd.cpp
 SOURCES_imagecopy				=	image_copy.cpp
 SOURCES_eventprofiling	=	event_profiling.cpp
 SOURCES_dxtcompressor		=	./common/src/oclUtils.cpp ./shared/src/cmd_arg_reader.cpp ./shared/src/shrUtils.cpp block.cpp DXTCompressor.cpp
@@ -119,9 +119,10 @@ SOURCES_attractor				=	src/Application.cpp src/Demo.cpp src/error.cpp src/global
 SOURCES_fluids					= 	cl-helper.c main.c
 SOURCES_sakura					= src/utils/ResourceLoader.cpp src/core/Camera.cpp src/core/Drawable.cpp src/core/ObjParser.cpp src/core/ShaderLoader.cpp src/app/CLParticleSystem.cpp src/app/ParticlePrototype.cpp src/app/PetalView.cpp src/app/ShaderPlane.cpp src/main.cpp kazmath/aabb.c kazmath/GL/mat4stack.c kazmath/GL/matrix.c kazmath/mat3.c kazmath/mat4.c kazmath/plane.c kazmath/quaternion.c kazmath/ray2.c kazmath/ray3.c kazmath/utility.c kazmath/vec2.c kazmath/vec3.c kazmath/vec4.c
 
+INCLUDES_khrfp64				=	-I./ -I$(EMSCRIPTEN_ROOT)/system/include/
 INCLUDES_imagecopy			=	-I./
 INCLUDES_eventprofiling	=	-I./
-INCLUDES_dxtcompressor 	= 	-I./common/inc -I./shared/inc
+INCLUDES_dxtcompressor 	= -I./common/inc -I./shared/inc
 INCLUDES_particles			=	-I$(EMSCRIPTEN_ROOT)/system/include/
 INCLUDES_attractor			=	-I./ -I$(EMSCRIPTEN_ROOT)/system/include/
 INCLUDES_fluids					=	-I./ -I$(EMSCRIPTEN_ROOT)/system/include/
@@ -131,19 +132,20 @@ ifeq ($(NAT),0)
 
 KERNEL_imagecopy			= 	$(PRELOAD_FILE) image_copy.cl
 KERNEL_eventprofiling	= 	$(PRELOAD_FILE) event_profiling.cl
-KERNEL_dxtcompressor	=	$(PRELOAD_FILE) data/lena_ref.dds $(PRELOAD_FILE) data/lena.ppm $(PRELOAD_FILE) DXTCompressor_kernel.cl
+KERNEL_dxtcompressor	=	  $(PRELOAD_FILE) data/lena_ref.dds $(PRELOAD_FILE) data/lena.ppm $(PRELOAD_FILE) DXTCompressor_kernel.cl
 KERNEL_particles			= 	$(PRELOAD_FILE) part2.cl
 KERNEL_attractor			= 	$(PRELOAD_FILE) kernel/lorenz.cl $(PRELOAD_FILE) shader/lorenz.frag $(PRELOAD_FILE) shader/lorenz.vert
 KERNEL_fluids					= 	$(PRELOAD_FILE) kernels.cl
 KERNEL_sakura					= 	$(PRELOAD_FILE) res/flat_petal.mtl $(PRELOAD_FILE) res/tri_petal_normals.obj $(PRELOAD_FILE) src/kernel/kernel_petal_motion.cl $(PRELOAD_FILE) src/shaders/fs_background.h $(PRELOAD_FILE) src/shaders/fs_diffuse.h $(PRELOAD_FILE) src/shaders/vs_diffuse.h $(PRELOAD_FILE) src/shaders/vs_ndcPlane.h
 
-CFLAGS_eventprofiling	=	-s TOTAL_MEMORY=1024*1024*100
+CFLAGS_eventprofiling	=	  -s TOTAL_MEMORY=1024*1024*100
 CFLAGS_dxtcompressor	= 	-s GL_FFP_ONLY=1 -s LEGACY_GL_EMULATION=1
 CFLAGS_particles			= 	-s GL_FFP_ONLY=1 -s LEGACY_GL_EMULATION=1 -s TOTAL_MEMORY=1024*1024*256
 CFLAGS_attractor			= 	-s FULL_ES2=1 -s TOTAL_MEMORY=1024*1024*256 -std=c++11
 CFLAGS_fluids					= 	-s GL_FFP_ONLY=1 -s LEGACY_GL_EMULATION=1 -s TOTAL_MEMORY=1024*1024*512
 CFLAGS_sakura					= 	-s FULL_ES2=1 -s TOTAL_MEMORY=1024*1024*256
 
+VALPARAM_khrfp64				=	-s CL_VAL_PARAM='[""]'
 VALPARAM_imagecopy			=	-s CL_VAL_PARAM='[""]'
 VALPARAM_eventprofiling	=	-s CL_VAL_PARAM='[""]'
 VALPARAM_particles			=	-s CL_VAL_PARAM='[""]'
@@ -158,9 +160,9 @@ CFLAGS_attractor	= 	-std=c++11
 
 COPY_imagecopy			= 	cp image_copy.cl $(BUILD_FOLDER) &&
 COPY_eventprofiling	= 	cp event_profiling.cl $(BUILD_FOLDER) &&
-COPY_dxtcompressor	=	mkdir -p $(BUILD_FOLDER)data/ && cp data/lena_ref.dds $(BUILD_FOLDER)data/ && cp data/lena.ppm $(BUILD_FOLDER)data/ && cp DXTCompressor_kernel.cl $(BUILD_FOLDER) &&
+COPY_dxtcompressor	=		mkdir -p $(BUILD_FOLDER)data/ && cp data/lena_ref.dds $(BUILD_FOLDER)data/ && cp data/lena.ppm $(BUILD_FOLDER)data/ && cp DXTCompressor_kernel.cl $(BUILD_FOLDER) &&
 COPY_particles			= 	cp part2.cl $(BUILD_FOLDER) &&
-COPY_attractor			=	mkdir -p $(BUILD_FOLDER)kernel/ && mkdir -p $(BUILD_FOLDER)shader/ && cp kernel/lorenz.cl $(BUILD_FOLDER)kernel/ && cp shader/lorenz_nat.frag $(BUILD_FOLDER)shader/lorenz.frag && cp shader/lorenz_nat.vert $(BUILD_FOLDER)shader/lorenz.vert &&
+COPY_attractor			=		mkdir -p $(BUILD_FOLDER)kernel/ && mkdir -p $(BUILD_FOLDER)shader/ && cp kernel/lorenz.cl $(BUILD_FOLDER)kernel/ && cp shader/lorenz_nat.frag $(BUILD_FOLDER)shader/lorenz.frag && cp shader/lorenz_nat.vert $(BUILD_FOLDER)shader/lorenz.vert &&
 COPY_fluids					= 	cp kernels.cl $(BUILD_FOLDER) &&
 COPY_sakura					= 	mkdir -p $(BUILD_FOLDER)src/ && mkdir -p $(BUILD_FOLDER)src/shaders/ && mkdir -p $(BUILD_FOLDER)src/kernel/ && mkdir -p $(BUILD_FOLDER)res/ && cp res/flat_petal.mtl $(BUILD_FOLDER)res/ && cp res/tri_petal_normals.obj $(BUILD_FOLDER)res/ && cp src/kernel/kernel_petal_motion.cl $(BUILD_FOLDER)src/kernel/ && cp src/shaders/*.h $(BUILD_FOLDER)src/shaders/ &&
 
@@ -184,6 +186,10 @@ all_3: \
 # Create build folder is necessary))
 mkdir:
 	mkdir -p $(BUILD_FOLDER);
+
+khrfp64_sample: mkdir
+	$(call chdir,khrfp64/)
+	$(COPY_khrfp64) 				$(GLOBAL) $(CXX) 	$(CFLAGS) $(CFLAGS_khrfp64)					$(SOURCES_khrfp64) 				$(VALPARAM_khrfp64)					$(KERNEL_khrfp64) 				$(INCLUDES_khrfp64) 				-o $(BUILD_FOLDER)$(PREFIX)khrfp64$(EXTENSION)
 
 imagecopy_sample: mkdir
 	$(call chdir,imagecopy/)
