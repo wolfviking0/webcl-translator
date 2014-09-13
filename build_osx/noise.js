@@ -25,7 +25,7 @@ Module.expectedDataFileDownloads++;
                               Module['locateFile'](REMOTE_PACKAGE_BASE) :
                               ((Module['filePackagePrefixURL'] || '') + REMOTE_PACKAGE_BASE);
     var REMOTE_PACKAGE_SIZE = 23200;
-    var PACKAGE_UUID = 'b9daea87-fb5a-4f64-a25a-efbe5d72ce12';
+    var PACKAGE_UUID = '3489b0bd-8c40-4106-8456-fc6c2bc7fcf4';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -14303,9 +14303,54 @@ function _Keyboard($key,$x,$y) {
  $4 = $3&255;
  do {
   switch ($4|0) {
+  case 52: case 51: case 50: case 49:  {
+   $5 = $0;
+   $6 = $5&255;
+   $7 = (($6) - 49)|0;
+   HEAP32[328>>2] = $7;
+   $8 = HEAP32[328>>2]|0;
+   $9 = (344 + ($8<<2)|0);
+   $10 = HEAP32[$9>>2]|0;
+   HEAP32[$vararg_buffer>>2] = $10;
+   (_printf((336|0),($vararg_buffer|0))|0);
+   HEAP32[288>>2] = 1;
+   _glutPostRedisplay();
+   STACKTOP = sp;return;
+   break;
+  }
+  case 61:  {
+   $11 = +HEAPF32[264>>2];
+   $12 = $11;
+   $13 = $12 * 0.900000000000000022204;
+   $14 = $13;
+   HEAPF32[264>>2] = $14;
+   $15 = +HEAPF32[264>>2];
+   $16 = $15;
+   HEAPF64[tempDoublePtr>>3]=$16;HEAP32[$vararg_buffer1>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer1+4>>2]=HEAP32[tempDoublePtr+4>>2];
+   (_printf((360|0),($vararg_buffer1|0))|0);
+   HEAP32[288>>2] = 1;
+   _glutPostRedisplay();
+   STACKTOP = sp;return;
+   break;
+  }
   case 113:  {
    _exit(0);
    // unreachable;
+   break;
+  }
+  case 45:  {
+   $17 = +HEAPF32[264>>2];
+   $18 = $17;
+   $19 = $18 * 1.10000000000000008882;
+   $20 = $19;
+   HEAPF32[264>>2] = $20;
+   $21 = +HEAPF32[264>>2];
+   $22 = $21;
+   HEAPF64[tempDoublePtr>>3]=$22;HEAP32[$vararg_buffer4>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer4+4>>2]=HEAP32[tempDoublePtr+4>>2];
+   (_printf((360|0),($vararg_buffer4|0))|0);
+   HEAP32[288>>2] = 1;
+   _glutPostRedisplay();
+   STACKTOP = sp;return;
    break;
   }
   case 122:  {
@@ -14413,36 +14458,6 @@ function _Keyboard($key,$x,$y) {
    STACKTOP = sp;return;
    break;
   }
-  case 61:  {
-   $11 = +HEAPF32[264>>2];
-   $12 = $11;
-   $13 = $12 * 0.900000000000000022204;
-   $14 = $13;
-   HEAPF32[264>>2] = $14;
-   $15 = +HEAPF32[264>>2];
-   $16 = $15;
-   HEAPF64[tempDoublePtr>>3]=$16;HEAP32[$vararg_buffer1>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer1+4>>2]=HEAP32[tempDoublePtr+4>>2];
-   (_printf((360|0),($vararg_buffer1|0))|0);
-   HEAP32[288>>2] = 1;
-   _glutPostRedisplay();
-   STACKTOP = sp;return;
-   break;
-  }
-  case 45:  {
-   $17 = +HEAPF32[264>>2];
-   $18 = $17;
-   $19 = $18 * 1.10000000000000008882;
-   $20 = $19;
-   HEAPF32[264>>2] = $20;
-   $21 = +HEAPF32[264>>2];
-   $22 = $21;
-   HEAPF64[tempDoublePtr>>3]=$22;HEAP32[$vararg_buffer4>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer4+4>>2]=HEAP32[tempDoublePtr+4>>2];
-   (_printf((360|0),($vararg_buffer4|0))|0);
-   HEAP32[288>>2] = 1;
-   _glutPostRedisplay();
-   STACKTOP = sp;return;
-   break;
-  }
   case 109:  {
    $59 = +HEAPF32[456>>2];
    $60 = $59 * 0.909090876579284667968;
@@ -14470,21 +14485,6 @@ function _Keyboard($key,$x,$y) {
    $66 = $65;
    HEAPF64[tempDoublePtr>>3]=$66;HEAP32[$vararg_buffer28>>2]=HEAP32[tempDoublePtr>>2];HEAP32[$vararg_buffer28+4>>2]=HEAP32[tempDoublePtr+4>>2];
    (_printf((464|0),($vararg_buffer28|0))|0);
-   HEAP32[288>>2] = 1;
-   _glutPostRedisplay();
-   STACKTOP = sp;return;
-   break;
-  }
-  case 52: case 51: case 50: case 49:  {
-   $5 = $0;
-   $6 = $5&255;
-   $7 = (($6) - 49)|0;
-   HEAP32[328>>2] = $7;
-   $8 = HEAP32[328>>2]|0;
-   $9 = (344 + ($8<<2)|0);
-   $10 = HEAP32[$9>>2]|0;
-   HEAP32[$vararg_buffer>>2] = $10;
-   (_printf((336|0),($vararg_buffer|0))|0);
    HEAP32[288>>2] = 1;
    _glutPostRedisplay();
    STACKTOP = sp;return;
@@ -17204,7 +17204,7 @@ function _malloc($bytes) {
      $276 = ((3216 + ($idx$0$i<<2)|0) + 304|0);
      $277 = HEAP32[$276>>2]|0;
      $278 = ($277|0)==(0|0);
-     L126: do {
+     L9: do {
       if ($278) {
        $rsize$2$i = $250;$t$1$i = 0;$v$2$i = 0;
       } else {
@@ -17228,7 +17228,7 @@ function _malloc($bytes) {
          $289 = ($286|0)==($247|0);
          if ($289) {
           $rsize$2$i = $287;$t$1$i = $t$0$i14;$v$2$i = $t$0$i14;
-          break L126;
+          break L9;
          } else {
           $rsize$1$i = $287;$v$1$i = $t$0$i14;
          }
@@ -17513,7 +17513,7 @@ function _malloc($bytes) {
         }
        } while(0);
        $412 = ($rsize$3$lcssa$i>>>0)<(16);
-       L204: do {
+       L87: do {
         if ($412) {
          $413 = (($rsize$3$lcssa$i) + ($247))|0;
          $414 = $413 | 3;
@@ -17652,7 +17652,7 @@ function _malloc($bytes) {
          $482 = HEAP32[$481>>2]|0;
          $483 = $482 & -8;
          $484 = ($483|0)==($rsize$3$lcssa$i|0);
-         L225: do {
+         L108: do {
           if ($484) {
            $T$0$lcssa$i = $477;
           } else {
@@ -17673,7 +17673,7 @@ function _malloc($bytes) {
             $492 = ($491|0)==($rsize$3$lcssa$i|0);
             if ($492) {
              $T$0$lcssa$i = $489;
-             break L225;
+             break L108;
             } else {
              $K12$025$i = $487;$T$024$i = $489;
             }
@@ -17694,7 +17694,7 @@ function _malloc($bytes) {
             $$sum13$i = (($247) + 8)|0;
             $500 = (($v$3$lcssa$i) + ($$sum13$i)|0);
             HEAP32[$500>>2] = $349;
-            break L204;
+            break L87;
            }
           }
          } while(0);
@@ -19798,7 +19798,7 @@ function _free($mem) {
    $292 = HEAP32[$291>>2]|0;
    $293 = $292 & -8;
    $294 = ($293|0)==($psize$1|0);
-   L205: do {
+   L204: do {
     if ($294) {
      $T$0$lcssa = $287;
     } else {
@@ -19819,7 +19819,7 @@ function _free($mem) {
       $302 = ($301|0)==($psize$1|0);
       if ($302) {
        $T$0$lcssa = $299;
-       break L205;
+       break L204;
       } else {
        $K19$057 = $297;$T$056 = $299;
       }
@@ -19935,10 +19935,7 @@ function _frexp($x,$e) {
  $2 = (_bitshift64Lshr(($0|0),($1|0),52)|0);
  $3 = tempRet0;
  $4 = $2 & 2047;
- if ((($4|0) == 2047)) {
-  $$0 = $x;
-  STACKTOP = sp;return (+$$0);
- } else if ((($4|0) == 0)) {
+ if ((($4|0) == 0)) {
   $5 = $x != 0.0;
   if ($5) {
    $6 = $x * 18446744073709551616.0;
@@ -19951,6 +19948,9 @@ function _frexp($x,$e) {
   }
   HEAP32[$e>>2] = $storemerge;
   $$0 = $$01;
+  STACKTOP = sp;return (+$$0);
+ } else if ((($4|0) == 2047)) {
+  $$0 = $x;
   STACKTOP = sp;return (+$$0);
  } else {
   $10 = (($4) + -1022)|0;

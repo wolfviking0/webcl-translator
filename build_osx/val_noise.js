@@ -25,7 +25,7 @@ Module.expectedDataFileDownloads++;
                               Module['locateFile'](REMOTE_PACKAGE_BASE) :
                               ((Module['filePackagePrefixURL'] || '') + REMOTE_PACKAGE_BASE);
     var REMOTE_PACKAGE_SIZE = 47888;
-    var PACKAGE_UUID = 'e20e9602-bdcc-4646-bc47-a3023a9213a4';
+    var PACKAGE_UUID = '8b4212d5-a41c-4ac2-832d-801adfcebda9';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -14513,6 +14513,12 @@ function _Keyboard($key,$x,$y) {
    STACKTOP = sp;return;
    break;
   }
+  case 27:  {
+   _ShutdownCompute();
+   _exit(0);
+   // unreachable;
+   break;
+  }
   case 44:  {
    $63 = +HEAPF32[456>>2];
    $64 = $63 * 1.10000002384185791016;
@@ -14524,12 +14530,6 @@ function _Keyboard($key,$x,$y) {
    HEAP32[288>>2] = 1;
    _glutPostRedisplay();
    STACKTOP = sp;return;
-   break;
-  }
-  case 27:  {
-   _ShutdownCompute();
-   _exit(0);
-   // unreachable;
    break;
   }
   default: {
@@ -19840,7 +19840,7 @@ function _free($mem) {
    $292 = HEAP32[$291>>2]|0;
    $293 = $292 & -8;
    $294 = ($293|0)==($psize$1|0);
-   L205: do {
+   L204: do {
     if ($294) {
      $T$0$lcssa = $287;
     } else {
@@ -19861,7 +19861,7 @@ function _free($mem) {
       $302 = ($301|0)==($psize$1|0);
       if ($302) {
        $T$0$lcssa = $299;
-       break L205;
+       break L204;
       } else {
        $K19$057 = $297;$T$056 = $299;
       }
@@ -19977,10 +19977,7 @@ function _frexp($x,$e) {
  $2 = (_bitshift64Lshr(($0|0),($1|0),52)|0);
  $3 = tempRet0;
  $4 = $2 & 2047;
- if ((($4|0) == 2047)) {
-  $$0 = $x;
-  STACKTOP = sp;return (+$$0);
- } else if ((($4|0) == 0)) {
+ if ((($4|0) == 0)) {
   $5 = $x != 0.0;
   if ($5) {
    $6 = $x * 18446744073709551616.0;
@@ -19993,6 +19990,9 @@ function _frexp($x,$e) {
   }
   HEAP32[$e>>2] = $storemerge;
   $$0 = $$01;
+  STACKTOP = sp;return (+$$0);
+ } else if ((($4|0) == 2047)) {
+  $$0 = $x;
   STACKTOP = sp;return (+$$0);
  } else {
   $10 = (($4) + -1022)|0;

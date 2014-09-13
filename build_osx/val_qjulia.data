@@ -191,11 +191,11 @@ float4 qmult(_WclProgramAllocations *_wcl_allocs,  float4 q1, float4 q2 )
     float3 q2yzw = (float3)(q2.y, q2.z, q2.w);
     float3 c = cross( q1yzw, q2yzw );
 
-    _wcl_allocs->pa._wcl_t = q2yzw * q1.x + q1yzw * q2.x + c;
-    _wcl_allocs->pa._wcl_r.x = q1.x * q2.x - dot( q1yzw, q2yzw );
-    _wcl_allocs->pa._wcl_r.yzw = _wcl_allocs->pa._wcl_t.xyz;
+    _wcl_allocs->pa._wcl_2_t = q2yzw * q1.x + q1yzw * q2.x + c;
+    _wcl_allocs->pa._wcl_2_r.x = q1.x * q2.x - dot( q1yzw, q2yzw );
+    _wcl_allocs->pa._wcl_2_r.yzw = _wcl_allocs->pa._wcl_2_t.xyz;
 
-    return _wcl_allocs->pa._wcl_r;
+    return _wcl_allocs->pa._wcl_2_r;
 }
 
 float4 qsqr(_WclProgramAllocations *_wcl_allocs,  float4 q )
@@ -205,11 +205,11 @@ float4 qsqr(_WclProgramAllocations *_wcl_allocs,  float4 q )
 
     float3 qyzw = (float3)(q.y, q.z, q.w);
 
-    _wcl_allocs->pa._wcl_2_t = 2.0f * q.x * qyzw;
-    _wcl_allocs->pa._wcl_2_r.x = q.x * q.x - dot( qyzw, qyzw );
-    _wcl_allocs->pa._wcl_2_r.yzw = _wcl_allocs->pa._wcl_2_t.xyz;
+    _wcl_allocs->pa._wcl_t = 2.0f * q.x * qyzw;
+    _wcl_allocs->pa._wcl_r.x = q.x * q.x - dot( qyzw, qyzw );
+    _wcl_allocs->pa._wcl_r.yzw = _wcl_allocs->pa._wcl_t.xyz;
 
-    return _wcl_allocs->pa._wcl_2_r;
+    return _wcl_allocs->pa._wcl_r;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -217,6 +217,13 @@ typedef struct mat4
 }mat4;
 
 typedef struct {
+    vec4 _wcl_v;
+    mat4 _wcl_tmp;
+    float _wcl_det;
+    int _wcl_i;
+    float _wcl_mat[16];
+    const float *_wcl_m1;
+    const float *_wcl_m2;
     mat4 _wcl_transform;
     mat4 _wcl_cam;
     quat _wcl_rotation;
@@ -225,13 +232,6 @@ typedef struct {
     mat4 _wcl_invCam;
     vec _wcl_translation;
     mat4 _wcl_rMatrix;
-    vec4 _wcl_v;
-    mat4 _wcl_tmp;
-    float _wcl_det;
-    int _wcl_i;
-    float _wcl_mat[16];
-    const float *_wcl_m1;
-    const float *_wcl_m2;
 } __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
 
 typedef struct {
