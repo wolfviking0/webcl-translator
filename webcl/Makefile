@@ -223,9 +223,9 @@ clean:
 	rm -rf bin/
 	mkdir -p bin/
 	mkdir -p tmp/
-	cp js/memoryprofiler.js tmp/ && cp js/settings.js tmp/ && cp js/index.html tmp/
+	cp js/memoryprofiler.js tmp/ && cp js/settings.js tmp/ && cp js/index.html tmp/ && cp js/node_index.js tmp/
 	rm -rf js/
 	mkdir js/
-	cp tmp/memoryprofiler.js js/ && cp tmp/settings.js js/ && cp tmp/index.html js/
+	cp tmp/memoryprofiler.js js/ && cp tmp/settings.js js/ && cp tmp/index.html js/ && cp tmp/node_index.js js/
 	rm -rf tmp/
 	$(EMSCRIPTEN_ROOT)/emcc --clear-cache
