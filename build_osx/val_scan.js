@@ -16,9 +16,16 @@ Module.expectedDataFileDownloads++;
       PACKAGE_PATH = encodeURIComponent(location.pathname.toString().substring(0, location.pathname.toString().lastIndexOf('/')) + '/');
     }
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-osx-sample/js/val_scan.data';
-    var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_scan.data';
+    var REMOTE_PACKAGE_BASE = 'val_scan.data';
+    if (typeof Module['locateFilePackage'] === 'function' && !Module['locateFile']) {
+      Module['locateFile'] = Module['locateFilePackage'];
+      Module.printErr('warning: you defined Module.locateFilePackage, that has been renamed to Module.locateFile (using your locateFilePackage for now)');
+    }
+    var REMOTE_PACKAGE_NAME = typeof Module['locateFile'] === 'function' ?
+                              Module['locateFile'](REMOTE_PACKAGE_BASE) :
+                              ((Module['filePackagePrefixURL'] || '') + REMOTE_PACKAGE_BASE);
     var REMOTE_PACKAGE_SIZE = 102638;
-    var PACKAGE_UUID = 'd13d9d88-3157-4777-b7db-ec07043c33dd';
+    var PACKAGE_UUID = 'd9025ae7-a8fc-406f-954e-7ebdccc892bb';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -221,10 +228,19 @@ if (ENVIRONMENT_IS_NODE) {
     globalEval(read(f));
   };
 
-  Module['thisProgram'] = process['argv'][1];
+  Module['thisProgram'] = process['argv'][1].replace(/\\/g, '/');
   Module['arguments'] = process['argv'].slice(2);
 
-  module['exports'] = Module;
+  if (typeof module !== 'undefined') {
+    module['exports'] = Module;
+  }
+
+  process['on']('uncaughtException', function(ex) {
+    // suppress ExitStatus exceptions from showing an error
+    if (!(ex instanceof ExitStatus)) {
+      throw ex;
+    }
+  });
 }
 else if (ENVIRONMENT_IS_SHELL) {
   if (!Module['print']) Module['print'] = print;
@@ -237,7 +253,12 @@ else if (ENVIRONMENT_IS_SHELL) {
   }
 
   Module['readBinary'] = function readBinary(f) {
-    return read(f, 'binary');
+    if (typeof readbuffer === 'function') {
+      return new Uint8Array(readbuffer(f));
+    }
+    var data = read(f, 'binary');
+    assert(typeof data === 'object');
+    return data;
   };
 
   if (typeof scriptArgs != 'undefined') {
@@ -292,7 +313,7 @@ else {
 function globalEval(x) {
   eval.call(null, x);
 }
-if (!Module['load'] == 'undefined' && Module['read']) {
+if (!Module['load'] && Module['read']) {
   Module['load'] = function load(f) {
     globalEval(Module['read'](f));
   };
@@ -329,7 +350,15 @@ for (var key in moduleOverrides) {
 
 
 
-// === Auto-generated preamble library stuff ===
+// === Preamble library stuff ===
+
+// Documentation for the public APIs defined in this file must be updated in: 
+//    site/source/docs/api_reference/preamble.js.rst
+// A prebuilt local version of the documentation is available at: 
+//    site/build/text/docs/api_reference/preamble.js.txt
+// You can also build docs locally as HTML or other formats in site/
+// An online HTML version (which may be of a different version of Emscripten)
+//    is up at http://kripken.github.io/emscripten-site/docs/api_reference/preamble.js.html
 
 //========================================
 // Runtime code shared with compiler
@@ -347,46 +376,6 @@ var Runtime = {
   },
   stackRestore: function (stackTop) {
     STACKTOP = stackTop;
-  },
-  forceAlign: function (target, quantum) {
-    quantum = quantum || 4;
-    if (quantum == 1) return target;
-    if (isNumber(target) && isNumber(quantum)) {
-      return Math.ceil(target/quantum)*quantum;
-    } else if (isNumber(quantum) && isPowerOfTwo(quantum)) {
-      return '(((' +target + ')+' + (quantum-1) + ')&' + -quantum + ')';
-    }
-    return 'Math.ceil((' + target + ')/' + quantum + ')*' + quantum;
-  },
-  isNumberType: function (type) {
-    return type in Runtime.INT_TYPES || type in Runtime.FLOAT_TYPES;
-  },
-  isPointerType: function isPointerType(type) {
-  return type[type.length-1] == '*';
-},
-  isStructType: function isStructType(type) {
-  if (isPointerType(type)) return false;
-  if (isArrayType(type)) return true;
-  if (/<?\{ ?[^}]* ?\}>?/.test(type)) return true; // { i32, i8 } etc. - anonymous struct types
-  // See comment in isStructPointerType()
-  return type[0] == '%';
-},
-  INT_TYPES: {"i1":0,"i8":0,"i16":0,"i32":0,"i64":0},
-  FLOAT_TYPES: {"float":0,"double":0},
-  or64: function (x, y) {
-    var l = (x | 0) | (y | 0);
-    var h = (Math.round(x / 4294967296) | Math.round(y / 4294967296)) * 4294967296;
-    return l + h;
-  },
-  and64: function (x, y) {
-    var l = (x | 0) & (y | 0);
-    var h = (Math.round(x / 4294967296) & Math.round(y / 4294967296)) * 4294967296;
-    return l + h;
-  },
-  xor64: function (x, y) {
-    var l = (x | 0) ^ (y | 0);
-    var h = (Math.round(x / 4294967296) ^ Math.round(y / 4294967296)) * 4294967296;
-    return l + h;
   },
   getNativeTypeSize: function (type) {
     switch (type) {
@@ -412,138 +401,12 @@ var Runtime = {
   getNativeFieldSize: function (type) {
     return Math.max(Runtime.getNativeTypeSize(type), Runtime.QUANTUM_SIZE);
   },
-  dedup: function dedup(items, ident) {
-  var seen = {};
-  if (ident) {
-    return items.filter(function(item) {
-      if (seen[item[ident]]) return false;
-      seen[item[ident]] = true;
-      return true;
-    });
-  } else {
-    return items.filter(function(item) {
-      if (seen[item]) return false;
-      seen[item] = true;
-      return true;
-    });
-  }
-},
-  set: function set() {
-  var args = typeof arguments[0] === 'object' ? arguments[0] : arguments;
-  var ret = {};
-  for (var i = 0; i < args.length; i++) {
-    ret[args[i]] = 0;
-  }
-  return ret;
-},
-  STACK_ALIGN: 8,
+  STACK_ALIGN: 16,
   getAlignSize: function (type, size, vararg) {
     // we align i64s and doubles on 64-bit boundaries, unlike x86
     if (!vararg && (type == 'i64' || type == 'double')) return 8;
     if (!type) return Math.min(size, 8); // align structures internally to 64 bits
     return Math.min(size || (type ? Runtime.getNativeFieldSize(type) : 0), Runtime.QUANTUM_SIZE);
-  },
-  calculateStructAlignment: function calculateStructAlignment(type) {
-    type.flatSize = 0;
-    type.alignSize = 0;
-    var diffs = [];
-    var prev = -1;
-    var index = 0;
-    type.flatIndexes = type.fields.map(function(field) {
-      index++;
-      var size, alignSize;
-      if (Runtime.isNumberType(field) || Runtime.isPointerType(field)) {
-        size = Runtime.getNativeTypeSize(field); // pack char; char; in structs, also char[X]s.
-        alignSize = Runtime.getAlignSize(field, size);
-      } else if (Runtime.isStructType(field)) {
-        if (field[1] === '0') {
-          // this is [0 x something]. When inside another structure like here, it must be at the end,
-          // and it adds no size
-          // XXX this happens in java-nbody for example... assert(index === type.fields.length, 'zero-length in the middle!');
-          size = 0;
-          if (Types.types[field]) {
-            alignSize = Runtime.getAlignSize(null, Types.types[field].alignSize);
-          } else {
-            alignSize = type.alignSize || QUANTUM_SIZE;
-          }
-        } else {
-          size = Types.types[field].flatSize;
-          alignSize = Runtime.getAlignSize(null, Types.types[field].alignSize);
-        }
-      } else if (field[0] == 'b') {
-        // bN, large number field, like a [N x i8]
-        size = field.substr(1)|0;
-        alignSize = 1;
-      } else if (field[0] === '<') {
-        // vector type
-        size = alignSize = Types.types[field].flatSize; // fully aligned
-      } else if (field[0] === 'i') {
-        // illegal integer field, that could not be legalized because it is an internal structure field
-        // it is ok to have such fields, if we just use them as markers of field size and nothing more complex
-        size = alignSize = parseInt(field.substr(1))/8;
-        assert(size % 1 === 0, 'cannot handle non-byte-size field ' + field);
-      } else {
-        assert(false, 'invalid type for calculateStructAlignment');
-      }
-      if (type.packed) alignSize = 1;
-      type.alignSize = Math.max(type.alignSize, alignSize);
-      var curr = Runtime.alignMemory(type.flatSize, alignSize); // if necessary, place this on aligned memory
-      type.flatSize = curr + size;
-      if (prev >= 0) {
-        diffs.push(curr-prev);
-      }
-      prev = curr;
-      return curr;
-    });
-    if (type.name_ && type.name_[0] === '[') {
-      // arrays have 2 elements, so we get the proper difference. then we scale here. that way we avoid
-      // allocating a potentially huge array for [999999 x i8] etc.
-      type.flatSize = parseInt(type.name_.substr(1))*type.flatSize/2;
-    }
-    type.flatSize = Runtime.alignMemory(type.flatSize, type.alignSize);
-    if (diffs.length == 0) {
-      type.flatFactor = type.flatSize;
-    } else if (Runtime.dedup(diffs).length == 1) {
-      type.flatFactor = diffs[0];
-    }
-    type.needsFlattening = (type.flatFactor != 1);
-    return type.flatIndexes;
-  },
-  generateStructInfo: function (struct, typeName, offset) {
-    var type, alignment;
-    if (typeName) {
-      offset = offset || 0;
-      type = (typeof Types === 'undefined' ? Runtime.typeInfo : Types.types)[typeName];
-      if (!type) return null;
-      if (type.fields.length != struct.length) {
-        printErr('Number of named fields must match the type for ' + typeName + ': possibly duplicate struct names. Cannot return structInfo');
-        return null;
-      }
-      alignment = type.flatIndexes;
-    } else {
-      var type = { fields: struct.map(function(item) { return item[0] }) };
-      alignment = Runtime.calculateStructAlignment(type);
-    }
-    var ret = {
-      __size__: type.flatSize
-    };
-    if (typeName) {
-      struct.forEach(function(item, i) {
-        if (typeof item === 'string') {
-          ret[item] = alignment[i] + offset;
-        } else {
-          // embedded struct
-          var key;
-          for (var k in item) key = k;
-          ret[key] = Runtime.generateStructInfo(item[key], type.fields[i], alignment[i]);
-        }
-      });
-    } else {
-      struct.forEach(function(item, i) {
-        ret[item[1]] = alignment[i];
-      });
-    }
-    return ret;
   },
   dynCall: function (sig, ptr, args) {
     if (args && args.length) {
@@ -591,7 +454,8 @@ var Runtime = {
       }
     }
     try {
-      var evalled = eval('(function(' + args.join(',') + '){ ' + source + ' })'); // new Function does not allow upvars in node
+      // Module is the only 'upvar', which we provide directly. We also provide FS for legacy support.
+      var evalled = eval('(function(Module, FS) { return function(' + args.join(',') + '){ ' + source + ' } })')(Module, typeof FS !== 'undefined' ? FS : null);
     } catch(e) {
       Module.printErr('error in executing inline EM_ASM code: ' + e + ' on: \n\n' + source + '\n\nwith args |' + args + '| (make sure to use the right one out of EM_ASM, EM_ASM_ARGS, etc.)');
       throw e;
@@ -660,7 +524,7 @@ var Runtime = {
         var codePoint = ((c1 & 0x07) << 18) | ((c2 & 0x3F) << 12) |
                         ((c3 & 0x3F) << 6)  | (c4 & 0x3F);
         ret = String.fromCharCode(
-          Math.floor((codePoint - 0x10000) / 0x400) + 0xD800,
+          (((codePoint - 0x10000) / 0x400)|0) + 0xD800,
           (codePoint - 0x10000) % 0x400 + 0xDC00);
       }
       buffer.length = 0;
@@ -683,10 +547,10 @@ var Runtime = {
   getCompilerSetting: function (name) {
     throw 'You must build with -s RETAIN_COMPILER_SETTINGS=1 for Runtime.getCompilerSetting or emscripten_get_compiler_setting to work';
   },
-  stackAlloc: function (size) { var ret = STACKTOP;STACKTOP = (STACKTOP + size)|0;STACKTOP = (((STACKTOP)+7)&-8);(assert((((STACKTOP|0) < (STACK_MAX|0))|0))|0); return ret; },
-  staticAlloc: function (size) { var ret = STATICTOP;STATICTOP = (STATICTOP + (assert(!staticSealed),size))|0;STATICTOP = (((STATICTOP)+7)&-8); return ret; },
-  dynamicAlloc: function (size) { var ret = DYNAMICTOP;DYNAMICTOP = (DYNAMICTOP + (assert(DYNAMICTOP > 0),size))|0;DYNAMICTOP = (((DYNAMICTOP)+7)&-8); if (DYNAMICTOP >= TOTAL_MEMORY) enlargeMemory();; return ret; },
-  alignMemory: function (size,quantum) { var ret = size = Math.ceil((size)/(quantum ? quantum : 8))*(quantum ? quantum : 8); return ret; },
+  stackAlloc: function (size) { var ret = STACKTOP;STACKTOP = (STACKTOP + size)|0;STACKTOP = (((STACKTOP)+15)&-16);(assert((((STACKTOP|0) < (STACK_MAX|0))|0))|0); return ret; },
+  staticAlloc: function (size) { var ret = STATICTOP;STATICTOP = (STATICTOP + (assert(!staticSealed),size))|0;STATICTOP = (((STATICTOP)+15)&-16); return ret; },
+  dynamicAlloc: function (size) { var ret = DYNAMICTOP;DYNAMICTOP = (DYNAMICTOP + (assert(DYNAMICTOP > 0),size))|0;DYNAMICTOP = (((DYNAMICTOP)+15)&-16); if (DYNAMICTOP >= TOTAL_MEMORY) enlargeMemory();; return ret; },
+  alignMemory: function (size,quantum) { var ret = size = Math.ceil((size)/(quantum ? quantum : 16))*(quantum ? quantum : 16); return ret; },
   makeBigInt: function (low,high,unsigned) { var ret = (unsigned ? ((+((low>>>0)))+((+((high>>>0)))*4294967296.0)) : ((+((low>>>0)))+((+((high|0)))*4294967296.0))); return ret; },
   GLOBAL_BASE: 8,
   QUANTUM_SIZE: 4,
@@ -759,7 +623,8 @@ var cwrap, ccall;
     'stringToC' : function(str) {
       var ret = 0;
       if (str !== null && str !== undefined && str !== 0) { // null string
-        ret = Runtime.stackAlloc(str.length + 1); // +1 for the trailing '\0'
+        // at most 4 bytes per UTF-8 code point, +1 for the trailing '\0'
+        ret = Runtime.stackAlloc((str.length << 2) + 1);
         writeStringToMemory(str, ret);
       }
       return ret;
@@ -768,30 +633,7 @@ var cwrap, ccall;
   // For fast lookup of conversion functions
   var toC = {'string' : JSfuncs['stringToC'], 'array' : JSfuncs['arrayToC']};
 
-  // C calling interface. A convenient way to call C functions (in C files, or
-  // defined with extern "C").
-  //
-  // Note: ccall/cwrap use the C stack for temporary values. If you pass a string
-  //       then it is only alive until the call is complete. If the code being
-  //       called saves the pointer to be used later, it may point to invalid
-  //       data. If you need a string to live forever, you can create it (and
-  //       must later delete it manually!) using malloc and writeStringToMemory,
-  //       for example.
-  //
-  // Note: LLVM optimizations can inline and remove functions, after which you will not be
-  //       able to call them. Closure can also do so. To avoid that, add your function to
-  //       the exports using something like
-  //
-  //         -s EXPORTED_FUNCTIONS='["_main", "_myfunc"]'
-  //
-  // @param ident      The name of the C function (note that C++ functions will be name-mangled - use extern "C")
-  // @param returnType The return type of the function, one of the JS types 'number', 'string' or 'array' (use 'number' for any C pointer, and
-  //                   'array' for JavaScript arrays and typed arrays; note that arrays are 8-bit).
-  // @param argTypes   An array of the types of arguments for the function (if there are no arguments, this can be ommitted). Types are as in returnType,
-  //                   except that 'array' is not possible (there is no way for us to know the length of the array)
-  // @param args       An array of the arguments to the function, as native JS values (as in returnType)
-  //                   Note that string arguments will be stored on the stack (the JS string will become a C string on the stack).
-  // @return           The return value, as a native JS value (as in returnType)
+  // C calling interface. 
   ccall = function ccallFunc(ident, returnType, argTypes, args) {
     var func = getCFunc(ident);
     var cArgs = [];
@@ -827,13 +669,8 @@ var cwrap, ccall;
       JSsource[fun] = parseJSFunc(JSfuncs[fun]);
     }
   }
-  // Returns a native JS wrapper for a C function. This is similar to ccall, but
-  // returns a function you can call repeatedly in a normal way. For example:
-  //
-  //   var my_function = cwrap('my_c_function', 'number', ['number', 'number']);
-  //   alert(my_function(5, 22));
-  //   alert(my_function(99, 12));
-  //
+
+  
   cwrap = function cwrap(ident, returnType, argTypes) {
     argTypes = argTypes || [];
     var cfunc = getCFunc(ident);
@@ -882,14 +719,7 @@ var cwrap, ccall;
 Module["cwrap"] = cwrap;
 Module["ccall"] = ccall;
 
-// Sets a value in memory in a dynamic way at run-time. Uses the
-// type data. This is the same as makeSetValue, except that
-// makeSetValue is done at compile-time and generates the needed
-// code then, whereas this function picks the right code at
-// run-time.
-// Note that setValue and getValue only do *aligned* writes and reads!
-// Note that ccall uses JS types as for defining types, while setValue and
-// getValue need LLVM types ('i8', 'i32') - this is a lower-level operation
+
 function setValue(ptr, value, type, noSafe) {
   type = type || 'i8';
   if (type.charAt(type.length-1) === '*') type = 'i32'; // pointers are 32-bit
@@ -906,7 +736,7 @@ function setValue(ptr, value, type, noSafe) {
 }
 Module['setValue'] = setValue;
 
-// Parallel to setValue.
+
 function getValue(ptr, type, noSafe) {
   type = type || 'i8';
   if (type.charAt(type.length-1) === '*') type = 'i32'; // pointers are 32-bit
@@ -1061,8 +891,6 @@ function Pointer_stringify(ptr, /* optional */ length) {
 }
 Module['Pointer_stringify'] = Pointer_stringify;
 
-// Given a pointer 'ptr' to a null-terminated UTF16LE-encoded string in the emscripten HEAP, returns
-// a copy of that string as a Javascript String object.
 function UTF16ToString(ptr) {
   var i = 0;
 
@@ -1078,8 +906,7 @@ function UTF16ToString(ptr) {
 }
 Module['UTF16ToString'] = UTF16ToString;
 
-// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr',
-// null-terminated and encoded in UTF16LE form. The copy will require at most (str.length*2+1)*2 bytes of space in the HEAP.
+
 function stringToUTF16(str, outPtr) {
   for(var i = 0; i < str.length; ++i) {
     // charCodeAt returns a UTF-16 encoded code unit, so it can be directly written to the HEAP.
@@ -1091,8 +918,7 @@ function stringToUTF16(str, outPtr) {
 }
 Module['stringToUTF16'] = stringToUTF16;
 
-// Given a pointer 'ptr' to a null-terminated UTF32LE-encoded string in the emscripten HEAP, returns
-// a copy of that string as a Javascript String object.
+
 function UTF32ToString(ptr) {
   var i = 0;
 
@@ -1113,9 +939,7 @@ function UTF32ToString(ptr) {
 }
 Module['UTF32ToString'] = UTF32ToString;
 
-// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr',
-// null-terminated and encoded in UTF32LE form. The copy will require at most (str.length+1)*4 bytes of space in the HEAP,
-// but can use less, since str.length does not return the number of characters in the string, but the number of UTF-16 code units in the string.
+
 function stringToUTF32(str, outPtr) {
   var iChar = 0;
   for(var iCodeUnit = 0; iCodeUnit < str.length; ++iCodeUnit) {
@@ -1356,7 +1180,7 @@ var TOTAL_STACK = Module['TOTAL_STACK'] || 5242880;
 var TOTAL_MEMORY = Module['TOTAL_MEMORY'] || 26624000;
 var FAST_MEMORY = Module['FAST_MEMORY'] || 2097152;
 
-var totalMemory = 4096;
+var totalMemory = 64*1024;
 while (totalMemory < TOTAL_MEMORY || totalMemory < 2*TOTAL_STACK) {
   if (totalMemory < 16*1024*1024) {
     totalMemory *= 2;
@@ -1494,8 +1318,7 @@ Module['addOnPostRun'] = Module.addOnPostRun = addOnPostRun;
 
 // Tools
 
-// This processes a JS string into a C-line array of numbers, 0-terminated.
-// For LLVM-originating strings, see parser.js:parseLLVMString function
+
 function intArrayFromString(stringy, dontAddNull, length /* optional */) {
   var ret = (new Runtime.UTF8Processor()).processJSString(stringy);
   if (length) {
@@ -1522,7 +1345,6 @@ function intArrayToString(array) {
 }
 Module['intArrayToString'] = intArrayToString;
 
-// Write a Javascript array to somewhere in the heap
 function writeStringToMemory(string, buffer, dontAddNull) {
   var array = intArrayFromString(string, dontAddNull);
   var i = 0;
@@ -1685,11 +1507,11 @@ var memoryInitializer = null;
 
 STATIC_BASE = 8;
 
-STATICTOP = STATIC_BASE + Runtime.alignMemory(2051);
+STATICTOP = STATIC_BASE + Runtime.alignMemory(2059);
   /* global initializers */ __ATINIT__.push();
   
 
-/* memory initializer */ allocate([0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,37,115,58,32,70,97,105,108,101,100,32,116,111,32,115,101,116,32,107,101,114,110,101,108,32,97,114,103,117,109,101,110,116,115,33,10,0,0,0,0,0,144,5,0,0,160,5,0,0,184,5,0,0,224,5,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,37,115,58,32,70,97,105,108,101,100,32,116,111,32,101,120,101,99,117,116,101,32,107,101,114,110,101,108,33,10,0,0,0,87,97,114,110,105,110,103,58,32,69,120,99,101,101,100,105,110,103,32,115,105,110,103,108,101,45,112,114,101,99,105,115,105,111,110,32,97,99,99,117,114,97,99,121,46,32,32,83,99,97,110,32,119,105,108,108,32,98,101,32,105,110,97,99,99,117,114,97,116,101,46,10,0,0,0,0,0,0,0,0,99,112,117,0,0,0,0,0,103,112,117,0,0,0,0,0,80,97,114,97,109,101,116,101,114,32,100,101,116,101,99,116,32,37,115,32,100,101,118,105,99,101,10,0,0,0,0,0,71,80,85,0,0,0,0,0,67,80,85,0,0,0,0,0,0,0,16,0,0,0,0,0,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,108,111,99,97,116,101,32,97,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,33,10,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,100,101,118,105,99,101,32,105,110,102,111,33,10,0,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,10,0,67,111,110,110,101,99,116,105,110,103,32,116,111,32,37,115,32,37,115,46,46,46,10,0,46,47,115,99,97,110,95,107,101,114,110,101,108,46,99,108,0,0,0,0,0,0,0,0,76,111,97,100,105,110,103,32,112,114,111,103,114,97,109,32,39,37,115,39,46,46,46,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,108,111,97,100,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,32,102,114,111,109,32,102,105,108,101,33,10,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,112,117,116,101,32,67,111,109,112,117,116,101,67,111,110,116,101,120,116,33,10,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,109,97,110,100,32,67,111,109,112,117,116,101,67,111,109,109,97,110,100,115,33,10,0,0,0,0,0,0,0,0,0,0,0,0,0,37,115,10,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,33,10,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,98,117,105,108,100,32,112,114,111,103,114,97,109,32,101,120,101,99,117,116,97,98,108,101,33,10,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,107,101,114,110,101,108,33,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,103,101,116,32,107,101,114,110,101,108,32,119,111,114,107,32,103,114,111,117,112,32,115,105,122,101,10,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,105,110,112,117,116,32,98,117,102,102,101,114,32,111,110,32,100,101,118,105,99,101,33,10,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,119,114,105,116,101,32,116,111,32,115,111,117,114,99,101,32,97,114,114,97,121,33,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,114,101,115,117,108,116,32,98,117,102,102,101,114,32,111,110,32,100,101,118,105,99,101,33,10,0,0,0,0,0,83,116,97,114,116,105,110,103,32,116,105,109,105,110,103,32,114,117,110,32,111,102,32,39,37,100,39,32,105,116,101,114,97,116,105,111,110,115,46,46,46,10,0,0,0,0,0,0,232,3,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,119,97,105,116,32,102,111,114,32,99,111,109,109,97,110,100,32,113,117,101,117,101,32,116,111,32,102,105,110,105,115,104,33,32,37,100,10,0,0,69,120,101,99,32,84,105,109,101,58,32,32,37,46,50,102,32,109,115,10,0,0,0,0,84,104,114,111,117,103,104,112,117,116,58,32,37,46,50,102,32,71,66,47,115,101,99,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,98,97,99,107,32,114,101,115,117,108,116,115,32,102,114,111,109,32,116,104,101,32,100,101,118,105,99,101,33,10,0,0,0,0,69,114,114,111,114,58,32,32,32,73,110,99,111,114,114,101,99,116,32,114,101,115,117,108,116,115,32,111,98,116,97,105,110,101,100,33,32,77,97,120,32,101,114,114,111,114,32,61,32,37,102,10,0,0,0,0,82,101,115,117,108,116,115,32,86,97,108,105,100,97,116,101,100,33,10,0,0,0,0,0,114,0,0,0,0,0,0,0,80,114,101,83,99,97,110,75,101,114,110,101,108,0,0,0,80,114,101,83,99,97,110,83,116,111,114,101,83,117,109,75,101,114,110,101,108,0,0,0,80,114,101,83,99,97,110,83,116,111,114,101,83,117,109,78,111,110,80,111,119,101,114,79,102,84,119,111,75,101,114,110,101,108,0,0,0,0,0,0,80,114,101,83,99,97,110,78,111,110,80,111,119,101,114,79,102,84,119,111,75,101,114,110,101,108,0,0,0,0,0,0,85,110,105,102,111,114,109,65,100,100,75,101,114,110,101,108,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], "i8", ALLOC_NONE, Runtime.GLOBAL_BASE);
+/* memory initializer */ allocate([0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,37,115,58,32,70,97,105,108,101,100,32,116,111,32,115,101,116,32,107,101,114,110,101,108,32,97,114,103,117,109,101,110,116,115,33,10,0,0,0,0,0,144,5,0,0,160,5,0,0,184,5,0,0,224,5,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,37,115,58,32,70,97,105,108,101,100,32,116,111,32,101,120,101,99,117,116,101,32,107,101,114,110,101,108,33,10,0,0,0,87,97,114,110,105,110,103,58,32,69,120,99,101,101,100,105,110,103,32,115,105,110,103,108,101,45,112,114,101,99,105,115,105,111,110,32,97,99,99,117,114,97,99,121,46,32,32,83,99,97,110,32,119,105,108,108,32,98,101,32,105,110,97,99,99,117,114,97,116,101,46,10,0,0,0,0,0,0,0,0,99,112,117,0,0,0,0,0,103,112,117,0,0,0,0,0,80,97,114,97,109,101,116,101,114,32,100,101,116,101,99,116,32,37,115,32,100,101,118,105,99,101,10,0,0,0,0,0,71,80,85,0,0,0,0,0,67,80,85,0,0,0,0,0,0,0,16,0,0,0,0,0,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,108,111,99,97,116,101,32,97,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,33,10,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,100,101,118,105,99,101,32,105,110,102,111,33,10,0,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,10,0,67,111,110,110,101,99,116,105,110,103,32,116,111,32,37,115,32,37,115,46,46,46,10,0,46,47,115,99,97,110,95,107,101,114,110,101,108,46,99,108,0,0,0,0,0,0,0,0,76,111,97,100,105,110,103,32,112,114,111,103,114,97,109,32,39,37,115,39,46,46,46,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,108,111,97,100,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,32,102,114,111,109,32,102,105,108,101,33,10,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,112,117,116,101,32,67,111,109,112,117,116,101,67,111,110,116,101,120,116,33,10,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,109,97,110,100,32,67,111,109,112,117,116,101,67,111,109,109,97,110,100,115,33,10,0,0,0,0,0,0,0,0,0,0,0,0,0,37,115,10,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,33,10,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,98,117,105,108,100,32,112,114,111,103,114,97,109,32,101,120,101,99,117,116,97,98,108,101,33,10,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,107,101,114,110,101,108,33,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,103,101,116,32,107,101,114,110,101,108,32,119,111,114,107,32,103,114,111,117,112,32,115,105,122,101,10,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,105,110,112,117,116,32,98,117,102,102,101,114,32,111,110,32,100,101,118,105,99,101,33,10,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,119,114,105,116,101,32,116,111,32,115,111,117,114,99,101,32,97,114,114,97,121,33,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,114,101,115,117,108,116,32,98,117,102,102,101,114,32,111,110,32,100,101,118,105,99,101,33,10,0,0,0,0,0,83,116,97,114,116,105,110,103,32,116,105,109,105,110,103,32,114,117,110,32,111,102,32,39,37,100,39,32,105,116,101,114,97,116,105,111,110,115,46,46,46,10,0,0,0,0,0,0,232,3,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,119,97,105,116,32,102,111,114,32,99,111,109,109,97,110,100,32,113,117,101,117,101,32,116,111,32,102,105,110,105,115,104,33,32,37,100,10,0,0,69,120,101,99,32,84,105,109,101,58,32,32,37,46,50,102,32,109,115,10,0,0,0,0,84,104,114,111,117,103,104,112,117,116,58,32,37,46,50,102,32,71,66,47,115,101,99,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,98,97,99,107,32,114,101,115,117,108,116,115,32,102,114,111,109,32,116,104,101,32,100,101,118,105,99,101,33,10,0,0,0,0,69,114,114,111,114,58,32,32,32,73,110,99,111,114,114,101,99,116,32,114,101,115,117,108,116,115,32,111,98,116,97,105,110,101,100,33,32,77,97,120,32,101,114,114,111,114,32,61,32,37,102,10,0,0,0,0,82,101,115,117,108,116,115,32,86,97,108,105,100,97,116,101,100,33,10,0,0,0,0,0,114,0,0,0,0,0,0,0,80,114,101,83,99,97,110,75,101,114,110,101,108,0,0,0,80,114,101,83,99,97,110,83,116,111,114,101,83,117,109,75,101,114,110,101,108,0,0,0,80,114,101,83,99,97,110,83,116,111,114,101,83,117,109,78,111,110,80,111,119,101,114,79,102,84,119,111,75,101,114,110,101,108,0,0,0,0,0,0,80,114,101,83,99,97,110,78,111,110,80,111,119,101,114,79,102,84,119,111,75,101,114,110,101,108,0,0,0,0,0,0,85,110,105,102,111,114,109,65,100,100,75,101,114,110,101,108,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], "i8", ALLOC_NONE, Runtime.GLOBAL_BASE);
 
 
 
@@ -1730,13 +1552,6 @@ function copyTempDouble(ptr) {
 
 }
 
-
-  
-   
-  Module["_rand_r"] = _rand_r;
-  
-  var ___rand_seed=allocate([0x0273459b, 0, 0, 0], "i32", ALLOC_STATIC); 
-  Module["_rand"] = _rand;
 
   
   
@@ -1891,9 +1706,11 @@ function copyTempDouble(ptr) {
 
   
   
-  var GL={counter:1,lastError:0,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],vaos:[],byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],programInfos:{},stringCache:{},packAlignment:4,unpackAlignment:4,init:function () {
-        GL.createLog2ceilLookup(GL.MAX_TEMP_BUFFER_SIZE);
-        Browser.moduleContextCreatedCallbacks.push(GL.initExtensions);
+  var GL={counter:1,lastError:0,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],vaos:[],contexts:[],byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],programInfos:{},stringCache:{},packAlignment:4,unpackAlignment:4,init:function () {
+        GL.miniTempBuffer = new Float32Array(GL.MINI_TEMP_BUFFER_SIZE);
+        for (var i = 0; i < GL.MINI_TEMP_BUFFER_SIZE; i++) {
+          GL.miniTempBufferViews[i] = GL.miniTempBuffer.subarray(0, i+1);
+        }
       },recordError:function recordError(errorCode) {
         if (!GL.lastError) {
           GL.lastError = errorCode;
@@ -1904,101 +1721,7 @@ function copyTempDouble(ptr) {
           table[i] = null;
         }
         return ret;
-      },MINI_TEMP_BUFFER_SIZE:16,miniTempBuffer:null,miniTempBufferViews:[0],MAX_TEMP_BUFFER_SIZE:2097152,tempVertexBuffers1:[],tempVertexBufferCounters1:[],tempVertexBuffers2:[],tempVertexBufferCounters2:[],numTempVertexBuffersPerSize:64,tempIndexBuffers:[],tempQuadIndexBuffer:null,log2ceilLookup:null,createLog2ceilLookup:function (maxValue) {
-        GL.log2ceilLookup = new Uint8Array(maxValue+1);
-        var log2 = 0;
-        var pow2 = 1;
-        GL.log2ceilLookup[0] = 0;
-        for(var i = 1; i <= maxValue; ++i) {
-          if (i > pow2) {
-            pow2 <<= 1;
-            ++log2;
-          }
-          GL.log2ceilLookup[i] = log2;
-        }
-      },generateTempBuffers:function (quads) {
-        var largestIndex = GL.log2ceilLookup[GL.MAX_TEMP_BUFFER_SIZE];
-        GL.tempVertexBufferCounters1.length = GL.tempVertexBufferCounters2.length = largestIndex+1;
-        GL.tempVertexBuffers1.length = GL.tempVertexBuffers2.length = largestIndex+1;
-        GL.tempIndexBuffers.length = largestIndex+1;
-        for(var i = 0; i <= largestIndex; ++i) {
-          GL.tempIndexBuffers[i] = null; // Created on-demand
-          GL.tempVertexBufferCounters1[i] = GL.tempVertexBufferCounters2[i] = 0;
-          var ringbufferLength = GL.numTempVertexBuffersPerSize;
-          GL.tempVertexBuffers1[i] = [];
-          GL.tempVertexBuffers2[i] = [];
-          var ringbuffer1 = GL.tempVertexBuffers1[i];
-          var ringbuffer2 = GL.tempVertexBuffers2[i];
-          ringbuffer1.length = ringbuffer2.length = ringbufferLength;
-          for(var j = 0; j < ringbufferLength; ++j) {
-            ringbuffer1[j] = ringbuffer2[j] = null; // Created on-demand
-          }
-        }
-  
-        if (quads) {
-          // GL_QUAD indexes can be precalculated
-          GL.tempQuadIndexBuffer = GLctx.createBuffer();
-          GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, GL.tempQuadIndexBuffer);
-          var numIndexes = GL.MAX_TEMP_BUFFER_SIZE >> 1;
-          var quadIndexes = new Uint16Array(numIndexes);
-          var i = 0, v = 0;
-          while (1) {
-            quadIndexes[i++] = v;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v+1;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v+2;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v+2;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v+3;
-            if (i >= numIndexes) break;
-            v += 4;
-          }
-          GLctx.bufferData(GLctx.ELEMENT_ARRAY_BUFFER, quadIndexes, GLctx.STATIC_DRAW);
-          GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, null);
-        }
-      },getTempVertexBuffer:function getTempVertexBuffer(sizeBytes) {
-        var idx = GL.log2ceilLookup[sizeBytes];
-        var ringbuffer = GL.tempVertexBuffers1[idx];
-        var nextFreeBufferIndex = GL.tempVertexBufferCounters1[idx];
-        GL.tempVertexBufferCounters1[idx] = (GL.tempVertexBufferCounters1[idx]+1) & (GL.numTempVertexBuffersPerSize-1);
-        var vbo = ringbuffer[nextFreeBufferIndex];
-        if (vbo) {
-          return vbo;
-        }
-        var prevVBO = GLctx.getParameter(GLctx.ARRAY_BUFFER_BINDING);
-        ringbuffer[nextFreeBufferIndex] = GLctx.createBuffer();
-        GLctx.bindBuffer(GLctx.ARRAY_BUFFER, ringbuffer[nextFreeBufferIndex]);
-        GLctx.bufferData(GLctx.ARRAY_BUFFER, 1 << idx, GLctx.DYNAMIC_DRAW);
-        GLctx.bindBuffer(GLctx.ARRAY_BUFFER, prevVBO);
-        return ringbuffer[nextFreeBufferIndex];
-      },getTempIndexBuffer:function getTempIndexBuffer(sizeBytes) {
-        var idx = GL.log2ceilLookup[sizeBytes];
-        var ibo = GL.tempIndexBuffers[idx];
-        if (ibo) {
-          return ibo;
-        }
-        var prevIBO = GLctx.getParameter(GLctx.ELEMENT_ARRAY_BUFFER_BINDING);
-        GL.tempIndexBuffers[idx] = GLctx.createBuffer();
-        GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, GL.tempIndexBuffers[idx]);
-        GLctx.bufferData(GLctx.ELEMENT_ARRAY_BUFFER, 1 << idx, GLctx.DYNAMIC_DRAW);
-        GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, prevIBO);
-        return GL.tempIndexBuffers[idx];
-      },newRenderingFrameStarted:function newRenderingFrameStarted() {
-        var vb = GL.tempVertexBuffers1;
-        GL.tempVertexBuffers1 = GL.tempVertexBuffers2;
-        GL.tempVertexBuffers2 = vb;
-        vb = GL.tempVertexBufferCounters1;
-        GL.tempVertexBufferCounters1 = GL.tempVertexBufferCounters2;
-        GL.tempVertexBufferCounters2 = vb;
-        var largestIndex = GL.log2ceilLookup[GL.MAX_TEMP_BUFFER_SIZE];
-        for(var i = 0; i <= largestIndex; ++i) {
-          GL.tempVertexBufferCounters1[i] = 0;
-        }
-      },getSource:function (shader, count, string, length) {
+      },MINI_TEMP_BUFFER_SIZE:16,miniTempBuffer:null,miniTempBufferViews:[0],getSource:function (shader, count, string, length) {
         var source = '';
         for (var i = 0; i < count; ++i) {
           var frag;
@@ -2016,6 +1739,7 @@ function copyTempDouble(ptr) {
         }
         return source;
       },computeImageSize:function (width, height, sizePerPixel, alignment) {
+        // FIXME: possible bug with negative x
         function roundedToNextMultipleOf(x, y) {
           return Math.floor((x + y - 1) / y) * y
         }
@@ -2243,37 +1967,85 @@ function copyTempDouble(ptr) {
           pixels: pixels,
           internalFormat: internalFormat
         };
-      },initExtensions:function () {
-        if (GL.initExtensions.done) return;
-        GL.initExtensions.done = true;
-  
-        if (!Module.useWebGL) return; // an app might link both gl and 2d backends
-  
-        GL.miniTempBuffer = new Float32Array(GL.MINI_TEMP_BUFFER_SIZE);
-        for (var i = 0; i < GL.MINI_TEMP_BUFFER_SIZE; i++) {
-          GL.miniTempBufferViews[i] = GL.miniTempBuffer.subarray(0, i+1);
+      },createContext:function (canvas, webGLContextAttributes) {
+        // Default to creating a WebGL 1.0 context if nothing else is specified.
+        if (typeof webGLContextAttributes.majorVersion === 'undefined' && typeof webGLContextAttributes.minorVersion === 'undefined') {
+          webGLContextAttributes.majorVersion = 1;
+          webGLContextAttributes.minorVersion = 0;
         }
+        var ctx;
+        var errorInfo = '?';
+        function onContextCreationError(event) {
+          errorInfo = event.statusMessage || errorInfo;
+        }
+        try {
+          canvas.addEventListener('webglcontextcreationerror', onContextCreationError, false);
+          try {
+            if (webGLContextAttributes.majorVersion == 1 && webGLContextAttributes.minorVersion == 0) {
+              ctx = canvas.getContext("webgl", webGLContextAttributes) || canvas.getContext("experimental-webgl", webGLContextAttributes);
+            } else {
+              throw 'Unsupported WebGL context version ' + majorVersion + '.' + minorVersion + '!'
+            }
+          } finally {
+            canvas.removeEventListener('webglcontextcreationerror', onContextCreationError, false);
+          }
+          if (!ctx) throw ':(';
+        } catch (e) {
+          Module.print('Could not create canvas: ' + [errorInfo, e]);
+          return 0;
+        }
+        // possible GL_DEBUG entry point: ctx = wrapDebugGL(ctx);
   
-        GL.maxVertexAttribs = GLctx.getParameter(GLctx.MAX_VERTEX_ATTRIBS);
+        if (!ctx) return 0;
+        var handle = GL.getNewId(GL.contexts);
+        var context = { handle: handle };
+        context.GLctx = ctx;
+        GL.contexts[handle] = context;
+        if (typeof webGLContextAttributes['webGLContextAttributes'] === 'undefined' || webGLContextAttributes.enableExtensionsByDefault) {
+          GL.initExtensions(context);
+        }
+        return handle;
+      },makeContextCurrent:function (contextHandle) {
+        var context = GL.contexts[contextHandle];
+        if (!context) return false;
+        GLctx = Module.ctx = context.GLctx; // Active WebGL context object.
+        GL.currentContext = context; // Active Emscripten GL layer context object.
+        return true;
+      },getContext:function (contextHandle) {
+        return GL.contexts[contextHandle];
+      },deleteContext:function (contextHandle) {
+        if (GL.currentContext === GL.contexts[contextHandle]) GL.currentContext = 0;
+        GL.contexts[contextHandle] = null;
+      },initExtensions:function (context) {
+  
+        // If this function is called without a specific context object, init the extensions of the currently active context.
+        if (!context) context = GL.currentContext;
+  
+        if (context.initExtensionsDone) return;
+        context.initExtensionsDone = true;
+  
+        var GLctx = context.GLctx;
+  
+        context.maxVertexAttribs = GLctx.getParameter(GLctx.MAX_VERTEX_ATTRIBS);
   
         // Detect the presence of a few extensions manually, this GL interop layer itself will need to know if they exist. 
-        GL.compressionExt = GLctx.getExtension('WEBGL_compressed_texture_s3tc') ||
+        context.compressionExt = GLctx.getExtension('WEBGL_compressed_texture_s3tc') ||
                             GLctx.getExtension('MOZ_WEBGL_compressed_texture_s3tc') ||
                             GLctx.getExtension('WEBKIT_WEBGL_compressed_texture_s3tc');
   
-        GL.anisotropicExt = GLctx.getExtension('EXT_texture_filter_anisotropic') ||
+        context.anisotropicExt = GLctx.getExtension('EXT_texture_filter_anisotropic') ||
                             GLctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
                             GLctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
   
-        GL.floatExt = GLctx.getExtension('OES_texture_float');
+        context.floatExt = GLctx.getExtension('OES_texture_float');
   
         // Extension available from Firefox 26 and Google Chrome 30
-        GL.instancedArraysExt = GLctx.getExtension('ANGLE_instanced_arrays');
+        context.instancedArraysExt = GLctx.getExtension('ANGLE_instanced_arrays');
         
         // Extension available from Firefox 25 and WebKit
-        GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');
+        context.vaoExt = GLctx.getExtension('OES_vertex_array_object');
   
-        GL.drawBuffersExt = Module.ctx.getExtension('WEBGL_draw_buffers');
+        context.drawBuffersExt = GLctx.getExtension('WEBGL_draw_buffers');
   
         // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
         // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
@@ -2865,6 +2637,9 @@ function copyTempDouble(ptr) {
             break;
           case webcl.FLOAT:
             _type = webcl.FLOAT;
+            break;
+          case webcl.HALF_FLOAT:
+            _type = webcl.HALF_FLOAT;
             break;
           default:
             console.error("getImageFormatType : This channel type is not yet implemented => "+_info.channelType);
@@ -4118,6 +3893,7 @@ function copyTempDouble(ptr) {
             return callback(new Error('node type not supported'));
           }
   
+          FS.chmod(path, entry.mode);
           FS.utime(path, entry.timestamp, entry.timestamp);
         } catch (e) {
           return callback(e);
@@ -4572,7 +4348,7 @@ function copyTempDouble(ptr) {
       },lookupNode:function (parent, name) {
         var err = FS.mayLookup(parent);
         if (err) {
-          throw new FS.ErrnoError(err);
+          throw new FS.ErrnoError(err, parent);
         }
         var hash = FS.hashName(parent.id, name);
         for (var node = FS.nameTable[hash]; node; node = node.name_next) {
@@ -5132,6 +4908,9 @@ function copyTempDouble(ptr) {
       },readlink:function (path) {
         var lookup = FS.lookupPath(path);
         var link = lookup.node;
+        if (!link) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
+        }
         if (!link.node_ops.readlink) {
           throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
         }
@@ -5518,7 +5297,7 @@ function copyTempDouble(ptr) {
           random_device = function() { return require('crypto').randomBytes(1)[0]; };
         } else {
           // default for ES5 platforms
-          random_device = function() { return Math.floor(Math.random()*256); };
+          random_device = function() { return (Math.random()*256)|0; };
         }
         FS.createDevice('/dev', 'random', random_device);
         FS.createDevice('/dev', 'urandom', random_device);
@@ -5565,14 +5344,18 @@ function copyTempDouble(ptr) {
         assert(stderr.fd === 2, 'invalid handle for stderr (' + stderr.fd + ')');
       },ensureErrnoError:function () {
         if (FS.ErrnoError) return;
-        FS.ErrnoError = function ErrnoError(errno) {
-          this.errno = errno;
-          for (var key in ERRNO_CODES) {
-            if (ERRNO_CODES[key] === errno) {
-              this.code = key;
-              break;
+        FS.ErrnoError = function ErrnoError(errno, node) {
+          this.node = node;
+          this.setErrno = function(errno) {
+            this.errno = errno;
+            for (var key in ERRNO_CODES) {
+              if (ERRNO_CODES[key] === errno) {
+                this.code = key;
+                break;
+              }
             }
-          }
+          };
+          this.setErrno(errno);
           this.message = ERRNO_MESSAGES[errno];
           if (this.stack) this.stack = demangleAll(this.stack);
         };
@@ -5789,7 +5572,7 @@ function copyTempDouble(ptr) {
             return undefined;
           }
           var chunkOffset = idx % this.chunkSize;
-          var chunkNum = Math.floor(idx / this.chunkSize);
+          var chunkNum = (idx / this.chunkSize)|0;
           return this.getter(chunkNum)[chunkOffset];
         }
         LazyUint8Array.prototype.setDataGetter = function LazyUint8Array_setDataGetter(getter) {
@@ -6173,7 +5956,8 @@ function copyTempDouble(ptr) {
               }
   
               if (url === 'ws://' || url === 'wss://') { // Is the supplied URL config just a prefix, if so complete it.
-                url = url + addr + ':' + port;
+                var parts = addr.split('/');
+                url = url + parts[0] + ":" + port + "/" + parts.slice(1).join('/');
               }
   
               // Make the WebSocket subprotocol (Sec-WebSocket-Protocol) default to binary if no configuration is set.
@@ -6670,7 +6454,7 @@ function copyTempDouble(ptr) {
         if (streamObj) streamObj.error = true;
         return 0;
       } else {
-        return Math.floor(bytesWritten / size);
+        return (bytesWritten / size)|0;
       }
     }
   
@@ -7144,6 +6928,44 @@ function copyTempDouble(ptr) {
       return fd === -1 ? 0 : FS.getPtrForStream(FS.getStream(fd));
     }
 
+  function _clGetKernelWorkGroupInfo(kernel,device,param_name,param_value_size,param_value,param_value_size_ret) {
+  
+      try {
+  
+        var _info = CL.cl_objects[kernel].getWorkGroupInfo(CL.cl_objects[device], param_name);
+  
+        if(typeof(_info) == "number") {
+  
+          if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
+  
+        } else if (_info instanceof Int32Array) {
+  
+          for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
+            if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_info[i];
+          }
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length * 4;
+  
+        } else {
+  
+          console.error("clGetKernelWorkGroupInfo: unknow type of info '"+_info+"'")
+  
+          if (param_value != 0) HEAP32[((param_value)>>2)]=0;
+          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
+  
+        }
+  
+      } catch (e) {
+        var _error = CL.catchError(e);
+  
+        if (param_value != 0) HEAP32[((param_value)>>2)]=0;
+        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
+  
+        return _error;
+      }
+  
+      return webcl.SUCCESS;
+    }
 
   function _clCreateCommandQueue(context,device,properties_1,properties_2,cl_errcode_ret) {
       // Assume the properties is i32
@@ -7181,6 +7003,9 @@ function copyTempDouble(ptr) {
   
       return _id;
     }
+
+   
+  Module["_i64Add"] = _i64Add;
 
   var _fabs=Math_abs;
 
@@ -7242,44 +7067,6 @@ function copyTempDouble(ptr) {
   
     }
 
-  function _clGetKernelWorkGroupInfo(kernel,device,param_name,param_value_size,param_value,param_value_size_ret) {
-  
-      try {
-  
-        var _info = CL.cl_objects[kernel].getWorkGroupInfo(CL.cl_objects[device], param_name);
-  
-        if(typeof(_info) == "number") {
-  
-          if (param_value != 0) HEAP32[((param_value)>>2)]=_info;
-          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=4;
-  
-        } else if (_info instanceof Int32Array) {
-  
-          for (var i = 0; i < Math.min(param_value_size>>2,_info.length); i++) {
-            if (param_value != 0) HEAP32[(((param_value)+(i*4))>>2)]=_info[i];
-          }
-          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=_info.length * 4;
-  
-        } else {
-  
-          console.error("clGetKernelWorkGroupInfo: unknow type of info '"+_info+"'")
-  
-          if (param_value != 0) HEAP32[((param_value)>>2)]=0;
-          if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
-  
-        }
-  
-      } catch (e) {
-        var _error = CL.catchError(e);
-  
-        if (param_value != 0) HEAP32[((param_value)>>2)]=0;
-        if (param_value_size_ret != 0) HEAP32[((param_value_size_ret)>>2)]=0;
-  
-        return _error;
-      }
-  
-      return webcl.SUCCESS;
-    }
 
   function _clGetDeviceInfo(device,param_name,param_value_size,param_value,param_value_size_ret) {
   
@@ -7696,53 +7483,40 @@ function copyTempDouble(ptr) {
           }
         }
       },createContext:function (canvas, useWebGL, setInModule, webGLContextAttributes) {
-        if (useWebGL && Module.ctx) return Module.ctx; // no need to recreate singleton GL context
+        if (useWebGL && Module.ctx && canvas == Module.canvas) return Module.ctx; // no need to recreate GL context if it's already been created for this canvas.
   
         var ctx;
-        var errorInfo = '?';
-        function onContextCreationError(event) {
-          errorInfo = event.statusMessage || errorInfo;
-        }
-        try {
-          if (useWebGL) {
-            var contextAttributes = {
-              antialias: false,
-              alpha: false
-            };
-  
-            if (webGLContextAttributes) {
-              for (var attribute in webGLContextAttributes) {
-                contextAttributes[attribute] = webGLContextAttributes[attribute];
-              }
-            }
-  
-  
-            canvas.addEventListener('webglcontextcreationerror', onContextCreationError, false);
-            try {
-              ['experimental-webgl', 'webgl'].some(function(webglId) {
-                return ctx = canvas.getContext(webglId, contextAttributes);
-              });
-            } finally {
-              canvas.removeEventListener('webglcontextcreationerror', onContextCreationError, false);
-            }
-          } else {
-            ctx = canvas.getContext('2d');
-          }
-          if (!ctx) throw ':(';
-        } catch (e) {
-          Module.print('Could not create canvas: ' + [errorInfo, e]);
-          return null;
-        }
+        var contextHandle;
         if (useWebGL) {
-          // possible GL_DEBUG entry point: ctx = wrapDebugGL(ctx);
+          // For GLES2/desktop GL compatibility, adjust a few defaults to be different to WebGL defaults, so that they align better with the desktop defaults.
+          var contextAttributes = {
+            antialias: false,
+            alpha: false
+          };
   
+          if (webGLContextAttributes) {
+            for (var attribute in webGLContextAttributes) {
+              contextAttributes[attribute] = webGLContextAttributes[attribute];
+            }
+          }
+  
+          contextHandle = GL.createContext(canvas, contextAttributes);
+          if (contextHandle) {
+            ctx = GL.getContext(contextHandle).GLctx;
+          }
           // Set the background of the WebGL canvas to black
           canvas.style.backgroundColor = "black";
+        } else {
+          ctx = canvas.getContext('2d');
         }
+  
+        if (!ctx) return null;
+  
         if (setInModule) {
           if (!useWebGL) assert(typeof GLctx === 'undefined', 'cannot set in module if GLctx is used, but we are a non-GL context that would replace it');
+  
           Module.ctx = ctx;
-          if (useWebGL) GLctx = ctx;
+          if (useWebGL) GL.makeContextCurrent(contextHandle);
           Module.useWebGL = useWebGL;
           Browser.moduleContextCreatedCallbacks.forEach(function(callback) { callback() });
           Browser.init();
@@ -7881,15 +7655,15 @@ function copyTempDouble(ptr) {
             delta = event.detail;
             break;
           case 'mousewheel': 
-            delta = -event.wheelDelta;
+            delta = event.wheelDelta;
             break;
           case 'wheel': 
-            delta = event.deltaY;
+            delta = event['deltaY'];
             break;
           default:
             throw 'unrecognized mouse wheel event: ' + event.type;
         }
-        return Math.max(-1, Math.min(1, delta));
+        return delta;
       },mouseX:0,mouseY:0,mouseMovementX:0,mouseMovementY:0,touches:{},lastTouches:{},calculateMouseEvent:function (event) { // event should be mousemove, mousedown or mouseup
         if (Browser.pointerLock) {
           // When the pointer is locked, calculate the coordinates
@@ -8064,6 +7838,10 @@ function copyTempDouble(ptr) {
             }
           }
         }
+      },wgetRequests:{},nextWgetRequestHandle:0,getNextWgetRequestHandle:function () {
+        var handle = Browser.nextWgetRequestHandle;
+        Browser.nextWgetRequestHandle++;
+        return handle;
       }};
 
   function _emscripten_get_now() {
@@ -8104,15 +7882,19 @@ function copyTempDouble(ptr) {
         HEAP32[(((buf)+(36))>>2)]=stat.size;
         HEAP32[(((buf)+(40))>>2)]=4096;
         HEAP32[(((buf)+(44))>>2)]=stat.blocks;
-        HEAP32[(((buf)+(48))>>2)]=Math.floor(stat.atime.getTime() / 1000);
+        HEAP32[(((buf)+(48))>>2)]=(stat.atime.getTime() / 1000)|0;
         HEAP32[(((buf)+(52))>>2)]=0;
-        HEAP32[(((buf)+(56))>>2)]=Math.floor(stat.mtime.getTime() / 1000);
+        HEAP32[(((buf)+(56))>>2)]=(stat.mtime.getTime() / 1000)|0;
         HEAP32[(((buf)+(60))>>2)]=0;
-        HEAP32[(((buf)+(64))>>2)]=Math.floor(stat.ctime.getTime() / 1000);
+        HEAP32[(((buf)+(64))>>2)]=(stat.ctime.getTime() / 1000)|0;
         HEAP32[(((buf)+(68))>>2)]=0;
         HEAP32[(((buf)+(72))>>2)]=stat.ino;
         return 0;
       } catch (e) {
+        if (e.node && PATH.normalize(path) !== PATH.normalize(FS.getPath(e.node))) {
+          // an error occurred while trying to look up the path; we should just report ENOTDIR
+          e.setErrno(ERRNO_CODES.ENOTDIR);
+        }
         FS.handleFSError(e);
         return -1;
       }
@@ -8190,7 +7972,7 @@ function copyTempDouble(ptr) {
       }
       bytesRead += err;
       if (bytesRead < bytesToRead) streamObj.eof = true;
-      return Math.floor(bytesRead / size);
+      return (bytesRead / size)|0;
     }
 
   function _clCreateKernel(program,kernel_name,cl_errcode_ret) {
@@ -8650,7 +8432,7 @@ function copyTempDouble(ptr) {
     }
 
   function _time(ptr) {
-      var ret = Math.floor(Date.now()/1000);
+      var ret = (Date.now()/1000)|0;
       if (ptr) {
         HEAP32[((ptr)>>2)]=ret;
       }
@@ -8678,14 +8460,10 @@ DYNAMIC_BASE = DYNAMICTOP = Runtime.alignMemory(STACK_MAX);
 
 assert(DYNAMIC_BASE < TOTAL_MEMORY, "TOTAL_MEMORY not big enough for stack");
 
+ var ctlz_i8 = allocate([8,7,6,6,5,5,5,5,4,4,4,4,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], "i8", ALLOC_DYNAMIC);
+ var cttz_i8 = allocate([8,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,6,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,7,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,6,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0], "i8", ALLOC_DYNAMIC);
 
   var Math_min = Math.min;
-  function asmPrintInt(x, y) {
-    Module.print('int ' + x + ',' + y);// + ' ' + new Error().stack);
-  }
-  function asmPrintFloat(x, y) {
-    Module.print('float ' + x + ',' + y);// + ' ' + new Error().stack);
-  }
   // EMSCRIPTEN_START_ASM
   var asm = (function(global, env, buffer) {
     'almost asm';
@@ -8702,7 +8480,8 @@ assert(DYNAMIC_BASE < TOTAL_MEMORY, "TOTAL_MEMORY not big enough for stack");
   var STACK_MAX=env.STACK_MAX|0;
   var tempDoublePtr=env.tempDoublePtr|0;
   var ABORT=env.ABORT|0;
-  var ___rand_seed=env.___rand_seed|0;
+  var cttz_i8=env.cttz_i8|0;
+  var ctlz_i8=env.ctlz_i8|0;
 
     var __THREW__ = 0;
     var threwValue = 0;
@@ -8738,8 +8517,6 @@ assert(DYNAMIC_BASE < TOTAL_MEMORY, "TOTAL_MEMORY not big enough for stack");
   var Math_imul=global.Math.imul;
   var abort=env.abort;
   var assert=env.assert;
-  var asmPrintInt=env.asmPrintInt;
-  var asmPrintFloat=env.asmPrintFloat;
   var Math_min=env.min;
   var _fabs=env._fabs;
   var _clReleaseProgram=env._clReleaseProgram;
@@ -8755,7 +8532,7 @@ assert(DYNAMIC_BASE < TOTAL_MEMORY, "TOTAL_MEMORY not big enough for stack");
   var _clCreateProgramWithSource=env._clCreateProgramWithSource;
   var _fmax=env._fmax;
   var _clGetProgramBuildInfo=env._clGetProgramBuildInfo;
-  var _time=env._time;
+  var _clBuildProgram=env._clBuildProgram;
   var _pwrite=env._pwrite;
   var _open=env._open;
   var _sbrk=env._sbrk;
@@ -8763,30 +8540,30 @@ assert(DYNAMIC_BASE < TOTAL_MEMORY, "TOTAL_MEMORY not big enough for stack");
   var _emscripten_memcpy_big=env._emscripten_memcpy_big;
   var _fileno=env._fileno;
   var _sysconf=env._sysconf;
+  var __formatString=env.__formatString;
   var _clFinish=env._clFinish;
-  var _clGetDeviceInfo=env._clGetDeviceInfo;
   var _clCreateCommandQueue=env._clCreateCommandQueue;
-  var _printf=env._printf;
+  var _mkport=env._mkport;
   var _clReleaseCommandQueue=env._clReleaseCommandQueue;
   var __reallyNegative=env.__reallyNegative;
-  var _fflush=env._fflush;
+  var _clGetDeviceInfo=env._clGetDeviceInfo;
   var _write=env._write;
-  var _pread=env._pread;
+  var _fflush=env._fflush;
   var ___errno_location=env.___errno_location;
   var _clCreateBuffer=env._clCreateBuffer;
   var _stat=env._stat;
   var _recv=env._recv;
   var _clGetDeviceIDs=env._clGetDeviceIDs;
-  var _mkport=env._mkport;
   var _read=env._read;
   var _clSetKernelArg=env._clSetKernelArg;
   var _abort=env._abort;
   var _fwrite=env._fwrite;
   var _emscripten_get_now=env._emscripten_get_now;
-  var _clBuildProgram=env._clBuildProgram;
+  var _time=env._time;
   var _fprintf=env._fprintf;
   var _ceil=env._ceil;
-  var __formatString=env.__formatString;
+  var _pread=env._pread;
+  var _printf=env._printf;
   var _fopen=env._fopen;
   var _clEnqueueReadBuffer=env._clEnqueueReadBuffer;
   var _clGetKernelWorkGroupInfo=env._clGetKernelWorkGroupInfo;
@@ -8798,7 +8575,9 @@ assert(DYNAMIC_BASE < TOTAL_MEMORY, "TOTAL_MEMORY not big enough for stack");
     var ret = 0;
     ret = STACKTOP;
     STACKTOP = (STACKTOP + size)|0;
-  STACKTOP = (STACKTOP + 7)&-8;
+  STACKTOP = (STACKTOP + 15)&-16;
+if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
+
     return ret|0;
   }
   function stackSave() {
@@ -8847,7 +8626,7 @@ function _IsPowerOfTwo($n) {
  $n = $n|0;
  var $0 = 0, $1 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0;
+ STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $0 = $n;
  $1 = $0;
  $2 = $0;
@@ -8860,7 +8639,7 @@ function _floorPow2($n) {
  $n = $n|0;
  var $0 = 0, $1 = 0, $2 = 0.0, $3 = 0.0, $4 = 0, $5 = 0, $6 = 0, $exp = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0;
+ STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $exp = sp;
  $0 = $n;
  $1 = $0;
@@ -8879,7 +8658,7 @@ function _CreatePartialSumBuffers($count) {
  var $45 = 0, $46 = 0, $47 = 0, $48 = 0, $49 = 0, $5 = 0.0, $50 = 0, $51 = 0, $52 = 0, $53 = 0, $54 = 0, $55 = 0, $56 = 0, $6 = 0, $7 = 0.0, $8 = 0.0, $9 = 0.0, $buffer_size = 0, $element_count = 0, $group_count = 0;
  var $group_count1 = 0, $group_size = 0, $level = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 32|0;
+ STACKTOP = STACKTOP + 32|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $0 = $count;
  $1 = $0;
  HEAP32[24>>2] = $1;
@@ -8973,7 +8752,7 @@ function _CreatePartialSumBuffers($count) {
 function _ReleasePartialSums() {
  var $0 = 0, $1 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $i = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0;
+ STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $i = 0;
  while(1) {
   $0 = $i;
@@ -9013,7 +8792,7 @@ function _PreScan($global,$local,$shared,$output_data,$input_data,$n,$group_inde
  var $63 = 0, $64 = 0, $65 = 0, $66 = 0, $67 = 0, $68 = 0, $69 = 0, $7 = 0, $70 = 0, $71 = 0, $72 = 0, $73 = 0, $74 = 0, $75 = 0, $76 = 0, $77 = 0, $78 = 0, $79 = 0, $8 = 0, $80 = 0;
  var $81 = 0, $82 = 0, $83 = 0, $84 = 0, $9 = 0, $a = 0, $err = 0, $k = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 64|0;
+ STACKTOP = STACKTOP + 64|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer1 = sp + 8|0;
  $vararg_buffer = sp;
  $4 = sp + 24|0;
@@ -9158,7 +8937,7 @@ function _PreScanStoreSum($global,$local,$shared,$output_data,$input_data,$parti
  var $81 = 0, $82 = 0, $83 = 0, $84 = 0, $85 = 0, $86 = 0, $87 = 0, $88 = 0, $89 = 0, $9 = 0, $90 = 0, $91 = 0, $92 = 0, $93 = 0, $94 = 0, $a = 0, $err = 0, $k = 0, $vararg_buffer = 0, $vararg_buffer1 = 0;
  var label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 64|0;
+ STACKTOP = STACKTOP + 64|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer1 = sp + 8|0;
  $vararg_buffer = sp;
  $4 = sp + 24|0;
@@ -9316,7 +9095,7 @@ function _PreScanStoreSumNonPowerOfTwo($global,$local,$shared,$output_data,$inpu
  var $81 = 0, $82 = 0, $83 = 0, $84 = 0, $85 = 0, $86 = 0, $87 = 0, $88 = 0, $89 = 0, $9 = 0, $90 = 0, $91 = 0, $92 = 0, $93 = 0, $94 = 0, $a = 0, $err = 0, $k = 0, $vararg_buffer = 0, $vararg_buffer1 = 0;
  var label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 64|0;
+ STACKTOP = STACKTOP + 64|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer1 = sp + 8|0;
  $vararg_buffer = sp;
  $4 = sp + 24|0;
@@ -9472,7 +9251,7 @@ function _PreScanNonPowerOfTwo($global,$local,$shared,$output_data,$input_data,$
  var $63 = 0, $64 = 0, $65 = 0, $66 = 0, $67 = 0, $68 = 0, $69 = 0, $7 = 0, $70 = 0, $71 = 0, $72 = 0, $73 = 0, $74 = 0, $75 = 0, $76 = 0, $77 = 0, $78 = 0, $79 = 0, $8 = 0, $80 = 0;
  var $81 = 0, $82 = 0, $83 = 0, $84 = 0, $9 = 0, $a = 0, $err = 0, $k = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 64|0;
+ STACKTOP = STACKTOP + 64|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer1 = sp + 8|0;
  $vararg_buffer = sp;
  $4 = sp + 24|0;
@@ -9614,7 +9393,7 @@ function _UniformAdd($global,$local,$output_data,$partial_sums,$n,$group_offset,
  var $63 = 0, $64 = 0, $65 = 0, $66 = 0, $67 = 0, $68 = 0, $69 = 0, $7 = 0, $70 = 0, $71 = 0, $72 = 0, $73 = 0, $74 = 0, $75 = 0, $76 = 0, $77 = 0, $78 = 0, $79 = 0, $8 = 0, $80 = 0;
  var $81 = 0, $82 = 0, $9 = 0, $a = 0, $err = 0, $k = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 64|0;
+ STACKTOP = STACKTOP + 64|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer1 = sp;
  $vararg_buffer = sp + 8|0;
  $3 = sp + 12|0;
@@ -9759,7 +9538,7 @@ function _PreScanBufferRecursive($output_data,$input_data,$max_group_size,$max_w
  var $87 = 0, $88 = 0, $89 = 0, $9 = 0.0, $90 = 0, $91 = 0, $92 = 0, $93 = 0, $94 = 0, $95 = 0, $96 = 0, $97 = 0, $98 = 0, $99 = 0, $element_count_per_group = 0, $err = 0, $global = 0, $group_count = 0, $group_size = 0, $last_global = 0;
  var $last_global2 = 0, $last_group_element_count = 0, $last_local = 0, $last_local3 = 0, $last_shared = 0, $local = 0, $padding = 0, $padding1 = 0, $partial_sums = 0, $remainder = 0, $remaining_work_item_count = 0, $shared = 0, $work_item_count = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 144|0;
+ STACKTOP = STACKTOP + 144|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $global = sp + 80|0;
  $local = sp + 88|0;
  $last_global = sp + 48|0;
@@ -10093,7 +9872,7 @@ function _PreScanBuffer($output_data,$input_data,$max_group_size,$max_work_item_
  $element_count = $element_count|0;
  var $0 = 0, $1 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 32|0;
+ STACKTOP = STACKTOP + 32|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $0 = $output_data;
  $1 = $input_data;
  $2 = $max_group_size;
@@ -10115,7 +9894,7 @@ function _ScanReference($reference,$input,$count) {
  var $27 = 0, $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0.0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0.0, $37 = 0.0, $38 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $i = 0;
  var $total_sum = 0.0, $vararg_buffer = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 32|0;
+ STACKTOP = STACKTOP + 32|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer = sp + 8|0;
  $0 = $reference;
  $1 = $input;
@@ -10195,7 +9974,7 @@ function _main($argc,$argv) {
  var $vararg_buffer36 = 0, $vararg_buffer39 = 0, $vararg_buffer41 = 0, $vararg_buffer43 = 0, $vararg_buffer45 = 0, $vararg_buffer47 = 0, $vararg_buffer49 = 0, $vararg_buffer5 = 0, $vararg_buffer51 = 0, $vararg_buffer54 = 0, $vararg_buffer57 = 0, $vararg_buffer60 = 0, $vararg_buffer63 = 0, $vararg_buffer65 = 0, $vararg_buffer67 = 0, $vararg_buffer7 = 0, $vararg_buffer70 = 0, $vararg_buffer72 = 0, $vararg_buffer9 = 0, $vararg_ptr12 = 0;
  var $vendor_name = 0, $wgSize = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 4448|0;
+ STACKTOP = STACKTOP + 4448|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer72 = sp + 48|0;
  $vararg_buffer70 = sp + 112|0;
  $vararg_buffer67 = sp + 88|0;
@@ -10783,7 +10562,7 @@ function _LoadProgramSourceFromFile($filename) {
  var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0;
  var $9 = 0, $fh = 0, $source = 0, $statbuf = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 96|0;
+ STACKTOP = STACKTOP + 96|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $statbuf = sp + 8|0;
  $1 = $filename;
  $2 = $1;
@@ -10825,7 +10604,7 @@ function _SubtractTimeInSec($endtime,$starttime) {
  $starttime = +$starttime;
  var $0 = 0.0, $1 = 0.0, $2 = 0.0, $3 = 0.0, $4 = 0.0, $5 = 0.0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0;
+ STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $0 = $endtime;
  $1 = $starttime;
  $2 = $0;
@@ -10984,7 +10763,7 @@ function _strstr($h,$n) {
  var $ip$0$ph81$i = 0, $ip$1$ip$0$$i = 0, $ip$1$ip$0$i = 0, $ip$1$ph58$i = 0, $ip$1$ph61$i = 0, $jp$0$ph22$ph72$i = 0, $jp$0$ph2266$i = 0, $jp$0$ph82$i = 0, $jp$1$ph11$ph52$i = 0, $jp$1$ph1146$i = 0, $jp$1$ph62$i = 0, $k$030$i = 0, $k$117$i = 0, $k$2$us$i = 0, $k$37$i = 0, $k$37$us$i = 0, $k$4$i = 0, $k$4$us$i = 0, $l$039$i = 0, $mem$0$us$i = 0;
  var $notlhs$i = 0, $notrhs$us$i = 0, $or$cond$i = 0, $or$cond$i12 = 0, $or$cond3$us$i = 0, $p$0$ph$ph70$i = 0, $p$0$ph$ph70150$i = 0, $p$0$ph$ph73$i = 0, $p$1$p$0$i = 0, $p$1$ph$ph50$i = 0, $p$1$ph$ph53$i = 0, $p$3155$i = 0, $shift$i = 0, $z$0$i = 0, $z$0$us$i = 0, $z$1$i = 0, $z$1$us$i = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 1056|0;
+ STACKTOP = STACKTOP + 1056|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $byteset$i = sp + 1024|0;
  $shift$i = sp;
  $0 = HEAP8[$n>>0]|0;
@@ -12209,7 +11988,7 @@ function _malloc($bytes) {
      $276 = ((1560 + ($idx$0$i<<2)|0) + 304|0);
      $277 = HEAP32[$276>>2]|0;
      $278 = ($277|0)==(0|0);
-     L9: do {
+     L126: do {
       if ($278) {
        $rsize$2$i = $250;$t$1$i = 0;$v$2$i = 0;
       } else {
@@ -12233,7 +12012,7 @@ function _malloc($bytes) {
          $289 = ($286|0)==($247|0);
          if ($289) {
           $rsize$2$i = $287;$t$1$i = $t$0$i14;$v$2$i = $t$0$i14;
-          break L9;
+          break L126;
          } else {
           $rsize$1$i = $287;$v$1$i = $t$0$i14;
          }
@@ -12518,7 +12297,7 @@ function _malloc($bytes) {
         }
        } while(0);
        $412 = ($rsize$3$lcssa$i>>>0)<(16);
-       L87: do {
+       L204: do {
         if ($412) {
          $413 = (($rsize$3$lcssa$i) + ($247))|0;
          $414 = $413 | 3;
@@ -12657,7 +12436,7 @@ function _malloc($bytes) {
          $482 = HEAP32[$481>>2]|0;
          $483 = $482 & -8;
          $484 = ($483|0)==($rsize$3$lcssa$i|0);
-         L108: do {
+         L225: do {
           if ($484) {
            $T$0$lcssa$i = $477;
           } else {
@@ -12678,7 +12457,7 @@ function _malloc($bytes) {
             $492 = ($491|0)==($rsize$3$lcssa$i|0);
             if ($492) {
              $T$0$lcssa$i = $489;
-             break L108;
+             break L225;
             } else {
              $K12$025$i = $487;$T$024$i = $489;
             }
@@ -12699,7 +12478,7 @@ function _malloc($bytes) {
             $$sum13$i = (($247) + 8)|0;
             $500 = (($v$3$lcssa$i) + ($$sum13$i)|0);
             HEAP32[$500>>2] = $349;
-            break L87;
+            break L204;
            }
           }
          } while(0);
@@ -14904,10 +14683,7 @@ function _frexp($x,$e) {
  $2 = (_bitshift64Lshr(($0|0),($1|0),52)|0);
  $3 = tempRet0;
  $4 = $2 & 2047;
- if ((($4|0) == 2047)) {
-  $$0 = $x;
-  STACKTOP = sp;return (+$$0);
- } else if ((($4|0) == 0)) {
+ if ((($4|0) == 0)) {
   $5 = $x != 0.0;
   if ($5) {
    $6 = $x * 18446744073709551616.0;
@@ -14921,6 +14697,9 @@ function _frexp($x,$e) {
   HEAP32[$e>>2] = $storemerge;
   $$0 = $$01;
   STACKTOP = sp;return (+$$0);
+ } else if ((($4|0) == 2047)) {
+  $$0 = $x;
+  STACKTOP = sp;return (+$$0);
  } else {
   $10 = (($4) + -1022)|0;
   HEAP32[$e>>2] = $10;
@@ -14931,6 +14710,29 @@ function _frexp($x,$e) {
   STACKTOP = sp;return (+$$0);
  }
  return +0;
+}
+function _rand() {
+ var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ $0 = 2056;
+ $1 = $0;
+ $2 = HEAP32[$1>>2]|0;
+ $3 = (($0) + 4)|0;
+ $4 = $3;
+ $5 = HEAP32[$4>>2]|0;
+ $6 = (___muldi3(($2|0),($5|0),1284865837,1481765933)|0);
+ $7 = tempRet0;
+ $8 = (_i64Add(($6|0),($7|0),1,0)|0);
+ $9 = tempRet0;
+ $10 = 2056;
+ $11 = $10;
+ HEAP32[$11>>2] = $8;
+ $12 = (($10) + 4)|0;
+ $13 = $12;
+ HEAP32[$13>>2] = $9;
+ $14 = (_bitshift64Lshr(($8|0),($9|0),33)|0);
+ $15 = tempRet0;
+ STACKTOP = sp;return ($14|0);
 }
 function _memchr($src,$c,$n) {
  $src = $src|0;
@@ -15096,16 +14898,6 @@ function _memcmp($vl,$vr,$n) {
 function runPostSets() {
  
 }
-function _rand_r(seedp) {
-    seedp = seedp|0; 
-    var val = 0;
-    val = ((Math_imul(((HEAP32[((seedp)>>2)])|0), 31010991)|0) + 0x676e6177 ) & 2147483647; // assumes RAND_MAX is in bit mask form (power of 2 minus 1)
-    HEAP32[((seedp)>>2)]=val;
-    return val|0;
-}
-function _rand() {
-    return _rand_r(___rand_seed)|0;
-}
 function _memset(ptr, value, num) {
     ptr = ptr|0; value = value|0; num = num|0;
     var stop = 0, value4 = 0, stop4 = 0, unaligned = 0;
@@ -15142,6 +14934,18 @@ function _strlen(ptr) {
       curr = (curr + 1)|0;
     }
     return (curr - ptr)|0;
+}
+function _i64Add(a, b, c, d) {
+    /*
+      x = a + b*2^32
+      y = c + d*2^32
+      result = l + h*2^32
+    */
+    a = a|0; b = b|0; c = c|0; d = d|0;
+    var l = 0, h = 0;
+    l = (a + c)>>>0;
+    h = (b + d + (((l>>>0) < (a>>>0))|0))>>>0; // Add carry from low word to high word on overflow.
+    return ((tempRet0 = h,l|0)|0);
 }
 function _bitshift64Lshr(low, high, bits) {
     low = low|0; high = high|0; bits = bits|0;
@@ -15183,6 +14987,360 @@ function _memcpy(dest, src, num) {
     }
     return ret|0;
 }
+function _i64Subtract(a, b, c, d) {
+    a = a|0; b = b|0; c = c|0; d = d|0;
+    var l = 0, h = 0;
+    l = (a - c)>>>0;
+    h = (b - d)>>>0;
+    h = (b - d - (((c>>>0) > (a>>>0))|0))>>>0; // Borrow one from high word to low word on underflow.
+    return ((tempRet0 = h,l|0)|0);
+  }
+function _bitshift64Shl(low, high, bits) {
+    low = low|0; high = high|0; bits = bits|0;
+    var ander = 0;
+    if ((bits|0) < 32) {
+      ander = ((1 << bits) - 1)|0;
+      tempRet0 = (high << bits) | ((low&(ander << (32 - bits))) >>> (32 - bits));
+      return low << bits;
+    }
+    tempRet0 = low << (bits - 32);
+    return 0;
+  }
+function _bitshift64Ashr(low, high, bits) {
+    low = low|0; high = high|0; bits = bits|0;
+    var ander = 0;
+    if ((bits|0) < 32) {
+      ander = ((1 << bits) - 1)|0;
+      tempRet0 = high >> bits;
+      return (low >>> bits) | ((high&ander) << (32 - bits));
+    }
+    tempRet0 = (high|0) < 0 ? -1 : 0;
+    return (high >> (bits - 32))|0;
+  }
+function _llvm_ctlz_i32(x) {
+    x = x|0;
+    var ret = 0;
+    ret = ((HEAP8[(((ctlz_i8)+(x >>> 24))>>0)])|0);
+    if ((ret|0) < 8) return ret|0;
+    ret = ((HEAP8[(((ctlz_i8)+((x >> 16)&0xff))>>0)])|0);
+    if ((ret|0) < 8) return (ret + 8)|0;
+    ret = ((HEAP8[(((ctlz_i8)+((x >> 8)&0xff))>>0)])|0);
+    if ((ret|0) < 8) return (ret + 16)|0;
+    return (((HEAP8[(((ctlz_i8)+(x&0xff))>>0)])|0) + 24)|0;
+  }
+
+function _llvm_cttz_i32(x) {
+    x = x|0;
+    var ret = 0;
+    ret = ((HEAP8[(((cttz_i8)+(x & 0xff))>>0)])|0);
+    if ((ret|0) < 8) return ret|0;
+    ret = ((HEAP8[(((cttz_i8)+((x >> 8)&0xff))>>0)])|0);
+    if ((ret|0) < 8) return (ret + 8)|0;
+    ret = ((HEAP8[(((cttz_i8)+((x >> 16)&0xff))>>0)])|0);
+    if ((ret|0) < 8) return (ret + 16)|0;
+    return (((HEAP8[(((cttz_i8)+(x >>> 24))>>0)])|0) + 24)|0;
+  }
+
+// ======== compiled code from system/lib/compiler-rt , see readme therein
+function ___muldsi3($a, $b) {
+  $a = $a | 0;
+  $b = $b | 0;
+  var $1 = 0, $2 = 0, $3 = 0, $6 = 0, $8 = 0, $11 = 0, $12 = 0;
+  $1 = $a & 65535;
+  $2 = $b & 65535;
+  $3 = Math_imul($2, $1) | 0;
+  $6 = $a >>> 16;
+  $8 = ($3 >>> 16) + (Math_imul($2, $6) | 0) | 0;
+  $11 = $b >>> 16;
+  $12 = Math_imul($11, $1) | 0;
+  return (tempRet0 = (($8 >>> 16) + (Math_imul($11, $6) | 0) | 0) + ((($8 & 65535) + $12 | 0) >>> 16) | 0, 0 | ($8 + $12 << 16 | $3 & 65535)) | 0;
+}
+function ___divdi3($a$0, $a$1, $b$0, $b$1) {
+  $a$0 = $a$0 | 0;
+  $a$1 = $a$1 | 0;
+  $b$0 = $b$0 | 0;
+  $b$1 = $b$1 | 0;
+  var $1$0 = 0, $1$1 = 0, $2$0 = 0, $2$1 = 0, $4$0 = 0, $4$1 = 0, $6$0 = 0, $7$0 = 0, $7$1 = 0, $8$0 = 0, $10$0 = 0;
+  $1$0 = $a$1 >> 31 | (($a$1 | 0) < 0 ? -1 : 0) << 1;
+  $1$1 = (($a$1 | 0) < 0 ? -1 : 0) >> 31 | (($a$1 | 0) < 0 ? -1 : 0) << 1;
+  $2$0 = $b$1 >> 31 | (($b$1 | 0) < 0 ? -1 : 0) << 1;
+  $2$1 = (($b$1 | 0) < 0 ? -1 : 0) >> 31 | (($b$1 | 0) < 0 ? -1 : 0) << 1;
+  $4$0 = _i64Subtract($1$0 ^ $a$0, $1$1 ^ $a$1, $1$0, $1$1) | 0;
+  $4$1 = tempRet0;
+  $6$0 = _i64Subtract($2$0 ^ $b$0, $2$1 ^ $b$1, $2$0, $2$1) | 0;
+  $7$0 = $2$0 ^ $1$0;
+  $7$1 = $2$1 ^ $1$1;
+  $8$0 = ___udivmoddi4($4$0, $4$1, $6$0, tempRet0, 0) | 0;
+  $10$0 = _i64Subtract($8$0 ^ $7$0, tempRet0 ^ $7$1, $7$0, $7$1) | 0;
+  return (tempRet0 = tempRet0, $10$0) | 0;
+}
+function ___remdi3($a$0, $a$1, $b$0, $b$1) {
+  $a$0 = $a$0 | 0;
+  $a$1 = $a$1 | 0;
+  $b$0 = $b$0 | 0;
+  $b$1 = $b$1 | 0;
+  var $rem = 0, $1$0 = 0, $1$1 = 0, $2$0 = 0, $2$1 = 0, $4$0 = 0, $4$1 = 0, $6$0 = 0, $10$0 = 0, $10$1 = 0, __stackBase__ = 0;
+  __stackBase__ = STACKTOP;
+  STACKTOP = STACKTOP + 8 | 0;
+  $rem = __stackBase__ | 0;
+  $1$0 = $a$1 >> 31 | (($a$1 | 0) < 0 ? -1 : 0) << 1;
+  $1$1 = (($a$1 | 0) < 0 ? -1 : 0) >> 31 | (($a$1 | 0) < 0 ? -1 : 0) << 1;
+  $2$0 = $b$1 >> 31 | (($b$1 | 0) < 0 ? -1 : 0) << 1;
+  $2$1 = (($b$1 | 0) < 0 ? -1 : 0) >> 31 | (($b$1 | 0) < 0 ? -1 : 0) << 1;
+  $4$0 = _i64Subtract($1$0 ^ $a$0, $1$1 ^ $a$1, $1$0, $1$1) | 0;
+  $4$1 = tempRet0;
+  $6$0 = _i64Subtract($2$0 ^ $b$0, $2$1 ^ $b$1, $2$0, $2$1) | 0;
+  ___udivmoddi4($4$0, $4$1, $6$0, tempRet0, $rem) | 0;
+  $10$0 = _i64Subtract(HEAP32[$rem >> 2] ^ $1$0, HEAP32[$rem + 4 >> 2] ^ $1$1, $1$0, $1$1) | 0;
+  $10$1 = tempRet0;
+  STACKTOP = __stackBase__;
+  return (tempRet0 = $10$1, $10$0) | 0;
+}
+function ___muldi3($a$0, $a$1, $b$0, $b$1) {
+  $a$0 = $a$0 | 0;
+  $a$1 = $a$1 | 0;
+  $b$0 = $b$0 | 0;
+  $b$1 = $b$1 | 0;
+  var $x_sroa_0_0_extract_trunc = 0, $y_sroa_0_0_extract_trunc = 0, $1$0 = 0, $1$1 = 0, $2 = 0;
+  $x_sroa_0_0_extract_trunc = $a$0;
+  $y_sroa_0_0_extract_trunc = $b$0;
+  $1$0 = ___muldsi3($x_sroa_0_0_extract_trunc, $y_sroa_0_0_extract_trunc) | 0;
+  $1$1 = tempRet0;
+  $2 = Math_imul($a$1, $y_sroa_0_0_extract_trunc) | 0;
+  return (tempRet0 = ((Math_imul($b$1, $x_sroa_0_0_extract_trunc) | 0) + $2 | 0) + $1$1 | $1$1 & 0, 0 | $1$0 & -1) | 0;
+}
+function ___udivdi3($a$0, $a$1, $b$0, $b$1) {
+  $a$0 = $a$0 | 0;
+  $a$1 = $a$1 | 0;
+  $b$0 = $b$0 | 0;
+  $b$1 = $b$1 | 0;
+  var $1$0 = 0;
+  $1$0 = ___udivmoddi4($a$0, $a$1, $b$0, $b$1, 0) | 0;
+  return (tempRet0 = tempRet0, $1$0) | 0;
+}
+function ___uremdi3($a$0, $a$1, $b$0, $b$1) {
+  $a$0 = $a$0 | 0;
+  $a$1 = $a$1 | 0;
+  $b$0 = $b$0 | 0;
+  $b$1 = $b$1 | 0;
+  var $rem = 0, __stackBase__ = 0;
+  __stackBase__ = STACKTOP;
+  STACKTOP = STACKTOP + 8 | 0;
+  $rem = __stackBase__ | 0;
+  ___udivmoddi4($a$0, $a$1, $b$0, $b$1, $rem) | 0;
+  STACKTOP = __stackBase__;
+  return (tempRet0 = HEAP32[$rem + 4 >> 2] | 0, HEAP32[$rem >> 2] | 0) | 0;
+}
+function ___udivmoddi4($a$0, $a$1, $b$0, $b$1, $rem) {
+  $a$0 = $a$0 | 0;
+  $a$1 = $a$1 | 0;
+  $b$0 = $b$0 | 0;
+  $b$1 = $b$1 | 0;
+  $rem = $rem | 0;
+  var $n_sroa_0_0_extract_trunc = 0, $n_sroa_1_4_extract_shift$0 = 0, $n_sroa_1_4_extract_trunc = 0, $d_sroa_0_0_extract_trunc = 0, $d_sroa_1_4_extract_shift$0 = 0, $d_sroa_1_4_extract_trunc = 0, $4 = 0, $17 = 0, $37 = 0, $49 = 0, $51 = 0, $57 = 0, $58 = 0, $66 = 0, $78 = 0, $86 = 0, $88 = 0, $89 = 0, $91 = 0, $92 = 0, $95 = 0, $105 = 0, $117 = 0, $119 = 0, $125 = 0, $126 = 0, $130 = 0, $q_sroa_1_1_ph = 0, $q_sroa_0_1_ph = 0, $r_sroa_1_1_ph = 0, $r_sroa_0_1_ph = 0, $sr_1_ph = 0, $d_sroa_0_0_insert_insert99$0 = 0, $d_sroa_0_0_insert_insert99$1 = 0, $137$0 = 0, $137$1 = 0, $carry_0203 = 0, $sr_1202 = 0, $r_sroa_0_1201 = 0, $r_sroa_1_1200 = 0, $q_sroa_0_1199 = 0, $q_sroa_1_1198 = 0, $147 = 0, $149 = 0, $r_sroa_0_0_insert_insert42$0 = 0, $r_sroa_0_0_insert_insert42$1 = 0, $150$1 = 0, $151$0 = 0, $152 = 0, $154$0 = 0, $r_sroa_0_0_extract_trunc = 0, $r_sroa_1_4_extract_trunc = 0, $155 = 0, $carry_0_lcssa$0 = 0, $carry_0_lcssa$1 = 0, $r_sroa_0_1_lcssa = 0, $r_sroa_1_1_lcssa = 0, $q_sroa_0_1_lcssa = 0, $q_sroa_1_1_lcssa = 0, $q_sroa_0_0_insert_ext75$0 = 0, $q_sroa_0_0_insert_ext75$1 = 0, $q_sroa_0_0_insert_insert77$1 = 0, $_0$0 = 0, $_0$1 = 0;
+  $n_sroa_0_0_extract_trunc = $a$0;
+  $n_sroa_1_4_extract_shift$0 = $a$1;
+  $n_sroa_1_4_extract_trunc = $n_sroa_1_4_extract_shift$0;
+  $d_sroa_0_0_extract_trunc = $b$0;
+  $d_sroa_1_4_extract_shift$0 = $b$1;
+  $d_sroa_1_4_extract_trunc = $d_sroa_1_4_extract_shift$0;
+  if (($n_sroa_1_4_extract_trunc | 0) == 0) {
+    $4 = ($rem | 0) != 0;
+    if (($d_sroa_1_4_extract_trunc | 0) == 0) {
+      if ($4) {
+        HEAP32[$rem >> 2] = ($n_sroa_0_0_extract_trunc >>> 0) % ($d_sroa_0_0_extract_trunc >>> 0);
+        HEAP32[$rem + 4 >> 2] = 0;
+      }
+      $_0$1 = 0;
+      $_0$0 = ($n_sroa_0_0_extract_trunc >>> 0) / ($d_sroa_0_0_extract_trunc >>> 0) >>> 0;
+      return (tempRet0 = $_0$1, $_0$0) | 0;
+    } else {
+      if (!$4) {
+        $_0$1 = 0;
+        $_0$0 = 0;
+        return (tempRet0 = $_0$1, $_0$0) | 0;
+      }
+      HEAP32[$rem >> 2] = $a$0 & -1;
+      HEAP32[$rem + 4 >> 2] = $a$1 & 0;
+      $_0$1 = 0;
+      $_0$0 = 0;
+      return (tempRet0 = $_0$1, $_0$0) | 0;
+    }
+  }
+  $17 = ($d_sroa_1_4_extract_trunc | 0) == 0;
+  do {
+    if (($d_sroa_0_0_extract_trunc | 0) == 0) {
+      if ($17) {
+        if (($rem | 0) != 0) {
+          HEAP32[$rem >> 2] = ($n_sroa_1_4_extract_trunc >>> 0) % ($d_sroa_0_0_extract_trunc >>> 0);
+          HEAP32[$rem + 4 >> 2] = 0;
+        }
+        $_0$1 = 0;
+        $_0$0 = ($n_sroa_1_4_extract_trunc >>> 0) / ($d_sroa_0_0_extract_trunc >>> 0) >>> 0;
+        return (tempRet0 = $_0$1, $_0$0) | 0;
+      }
+      if (($n_sroa_0_0_extract_trunc | 0) == 0) {
+        if (($rem | 0) != 0) {
+          HEAP32[$rem >> 2] = 0;
+          HEAP32[$rem + 4 >> 2] = ($n_sroa_1_4_extract_trunc >>> 0) % ($d_sroa_1_4_extract_trunc >>> 0);
+        }
+        $_0$1 = 0;
+        $_0$0 = ($n_sroa_1_4_extract_trunc >>> 0) / ($d_sroa_1_4_extract_trunc >>> 0) >>> 0;
+        return (tempRet0 = $_0$1, $_0$0) | 0;
+      }
+      $37 = $d_sroa_1_4_extract_trunc - 1 | 0;
+      if (($37 & $d_sroa_1_4_extract_trunc | 0) == 0) {
+        if (($rem | 0) != 0) {
+          HEAP32[$rem >> 2] = 0 | $a$0 & -1;
+          HEAP32[$rem + 4 >> 2] = $37 & $n_sroa_1_4_extract_trunc | $a$1 & 0;
+        }
+        $_0$1 = 0;
+        $_0$0 = $n_sroa_1_4_extract_trunc >>> ((_llvm_cttz_i32($d_sroa_1_4_extract_trunc | 0) | 0) >>> 0);
+        return (tempRet0 = $_0$1, $_0$0) | 0;
+      }
+      $49 = _llvm_ctlz_i32($d_sroa_1_4_extract_trunc | 0) | 0;
+      $51 = $49 - (_llvm_ctlz_i32($n_sroa_1_4_extract_trunc | 0) | 0) | 0;
+      if ($51 >>> 0 <= 30) {
+        $57 = $51 + 1 | 0;
+        $58 = 31 - $51 | 0;
+        $sr_1_ph = $57;
+        $r_sroa_0_1_ph = $n_sroa_1_4_extract_trunc << $58 | $n_sroa_0_0_extract_trunc >>> ($57 >>> 0);
+        $r_sroa_1_1_ph = $n_sroa_1_4_extract_trunc >>> ($57 >>> 0);
+        $q_sroa_0_1_ph = 0;
+        $q_sroa_1_1_ph = $n_sroa_0_0_extract_trunc << $58;
+        break;
+      }
+      if (($rem | 0) == 0) {
+        $_0$1 = 0;
+        $_0$0 = 0;
+        return (tempRet0 = $_0$1, $_0$0) | 0;
+      }
+      HEAP32[$rem >> 2] = 0 | $a$0 & -1;
+      HEAP32[$rem + 4 >> 2] = $n_sroa_1_4_extract_shift$0 | $a$1 & 0;
+      $_0$1 = 0;
+      $_0$0 = 0;
+      return (tempRet0 = $_0$1, $_0$0) | 0;
+    } else {
+      if (!$17) {
+        $117 = _llvm_ctlz_i32($d_sroa_1_4_extract_trunc | 0) | 0;
+        $119 = $117 - (_llvm_ctlz_i32($n_sroa_1_4_extract_trunc | 0) | 0) | 0;
+        if ($119 >>> 0 <= 31) {
+          $125 = $119 + 1 | 0;
+          $126 = 31 - $119 | 0;
+          $130 = $119 - 31 >> 31;
+          $sr_1_ph = $125;
+          $r_sroa_0_1_ph = $n_sroa_0_0_extract_trunc >>> ($125 >>> 0) & $130 | $n_sroa_1_4_extract_trunc << $126;
+          $r_sroa_1_1_ph = $n_sroa_1_4_extract_trunc >>> ($125 >>> 0) & $130;
+          $q_sroa_0_1_ph = 0;
+          $q_sroa_1_1_ph = $n_sroa_0_0_extract_trunc << $126;
+          break;
+        }
+        if (($rem | 0) == 0) {
+          $_0$1 = 0;
+          $_0$0 = 0;
+          return (tempRet0 = $_0$1, $_0$0) | 0;
+        }
+        HEAP32[$rem >> 2] = 0 | $a$0 & -1;
+        HEAP32[$rem + 4 >> 2] = $n_sroa_1_4_extract_shift$0 | $a$1 & 0;
+        $_0$1 = 0;
+        $_0$0 = 0;
+        return (tempRet0 = $_0$1, $_0$0) | 0;
+      }
+      $66 = $d_sroa_0_0_extract_trunc - 1 | 0;
+      if (($66 & $d_sroa_0_0_extract_trunc | 0) != 0) {
+        $86 = (_llvm_ctlz_i32($d_sroa_0_0_extract_trunc | 0) | 0) + 33 | 0;
+        $88 = $86 - (_llvm_ctlz_i32($n_sroa_1_4_extract_trunc | 0) | 0) | 0;
+        $89 = 64 - $88 | 0;
+        $91 = 32 - $88 | 0;
+        $92 = $91 >> 31;
+        $95 = $88 - 32 | 0;
+        $105 = $95 >> 31;
+        $sr_1_ph = $88;
+        $r_sroa_0_1_ph = $91 - 1 >> 31 & $n_sroa_1_4_extract_trunc >>> ($95 >>> 0) | ($n_sroa_1_4_extract_trunc << $91 | $n_sroa_0_0_extract_trunc >>> ($88 >>> 0)) & $105;
+        $r_sroa_1_1_ph = $105 & $n_sroa_1_4_extract_trunc >>> ($88 >>> 0);
+        $q_sroa_0_1_ph = $n_sroa_0_0_extract_trunc << $89 & $92;
+        $q_sroa_1_1_ph = ($n_sroa_1_4_extract_trunc << $89 | $n_sroa_0_0_extract_trunc >>> ($95 >>> 0)) & $92 | $n_sroa_0_0_extract_trunc << $91 & $88 - 33 >> 31;
+        break;
+      }
+      if (($rem | 0) != 0) {
+        HEAP32[$rem >> 2] = $66 & $n_sroa_0_0_extract_trunc;
+        HEAP32[$rem + 4 >> 2] = 0;
+      }
+      if (($d_sroa_0_0_extract_trunc | 0) == 1) {
+        $_0$1 = $n_sroa_1_4_extract_shift$0 | $a$1 & 0;
+        $_0$0 = 0 | $a$0 & -1;
+        return (tempRet0 = $_0$1, $_0$0) | 0;
+      } else {
+        $78 = _llvm_cttz_i32($d_sroa_0_0_extract_trunc | 0) | 0;
+        $_0$1 = 0 | $n_sroa_1_4_extract_trunc >>> ($78 >>> 0);
+        $_0$0 = $n_sroa_1_4_extract_trunc << 32 - $78 | $n_sroa_0_0_extract_trunc >>> ($78 >>> 0) | 0;
+        return (tempRet0 = $_0$1, $_0$0) | 0;
+      }
+    }
+  } while (0);
+  if (($sr_1_ph | 0) == 0) {
+    $q_sroa_1_1_lcssa = $q_sroa_1_1_ph;
+    $q_sroa_0_1_lcssa = $q_sroa_0_1_ph;
+    $r_sroa_1_1_lcssa = $r_sroa_1_1_ph;
+    $r_sroa_0_1_lcssa = $r_sroa_0_1_ph;
+    $carry_0_lcssa$1 = 0;
+    $carry_0_lcssa$0 = 0;
+  } else {
+    $d_sroa_0_0_insert_insert99$0 = 0 | $b$0 & -1;
+    $d_sroa_0_0_insert_insert99$1 = $d_sroa_1_4_extract_shift$0 | $b$1 & 0;
+    $137$0 = _i64Add($d_sroa_0_0_insert_insert99$0, $d_sroa_0_0_insert_insert99$1, -1, -1) | 0;
+    $137$1 = tempRet0;
+    $q_sroa_1_1198 = $q_sroa_1_1_ph;
+    $q_sroa_0_1199 = $q_sroa_0_1_ph;
+    $r_sroa_1_1200 = $r_sroa_1_1_ph;
+    $r_sroa_0_1201 = $r_sroa_0_1_ph;
+    $sr_1202 = $sr_1_ph;
+    $carry_0203 = 0;
+    while (1) {
+      $147 = $q_sroa_0_1199 >>> 31 | $q_sroa_1_1198 << 1;
+      $149 = $carry_0203 | $q_sroa_0_1199 << 1;
+      $r_sroa_0_0_insert_insert42$0 = 0 | ($r_sroa_0_1201 << 1 | $q_sroa_1_1198 >>> 31);
+      $r_sroa_0_0_insert_insert42$1 = $r_sroa_0_1201 >>> 31 | $r_sroa_1_1200 << 1 | 0;
+      _i64Subtract($137$0, $137$1, $r_sroa_0_0_insert_insert42$0, $r_sroa_0_0_insert_insert42$1) | 0;
+      $150$1 = tempRet0;
+      $151$0 = $150$1 >> 31 | (($150$1 | 0) < 0 ? -1 : 0) << 1;
+      $152 = $151$0 & 1;
+      $154$0 = _i64Subtract($r_sroa_0_0_insert_insert42$0, $r_sroa_0_0_insert_insert42$1, $151$0 & $d_sroa_0_0_insert_insert99$0, ((($150$1 | 0) < 0 ? -1 : 0) >> 31 | (($150$1 | 0) < 0 ? -1 : 0) << 1) & $d_sroa_0_0_insert_insert99$1) | 0;
+      $r_sroa_0_0_extract_trunc = $154$0;
+      $r_sroa_1_4_extract_trunc = tempRet0;
+      $155 = $sr_1202 - 1 | 0;
+      if (($155 | 0) == 0) {
+        break;
+      } else {
+        $q_sroa_1_1198 = $147;
+        $q_sroa_0_1199 = $149;
+        $r_sroa_1_1200 = $r_sroa_1_4_extract_trunc;
+        $r_sroa_0_1201 = $r_sroa_0_0_extract_trunc;
+        $sr_1202 = $155;
+        $carry_0203 = $152;
+      }
+    }
+    $q_sroa_1_1_lcssa = $147;
+    $q_sroa_0_1_lcssa = $149;
+    $r_sroa_1_1_lcssa = $r_sroa_1_4_extract_trunc;
+    $r_sroa_0_1_lcssa = $r_sroa_0_0_extract_trunc;
+    $carry_0_lcssa$1 = 0;
+    $carry_0_lcssa$0 = $152;
+  }
+  $q_sroa_0_0_insert_ext75$0 = $q_sroa_0_1_lcssa;
+  $q_sroa_0_0_insert_ext75$1 = 0;
+  $q_sroa_0_0_insert_insert77$1 = $q_sroa_1_1_lcssa | $q_sroa_0_0_insert_ext75$1;
+  if (($rem | 0) != 0) {
+    HEAP32[$rem >> 2] = 0 | $r_sroa_0_1_lcssa;
+    HEAP32[$rem + 4 >> 2] = $r_sroa_1_1_lcssa | 0;
+  }
+  $_0$1 = (0 | $q_sroa_0_0_insert_ext75$0) >>> 31 | $q_sroa_0_0_insert_insert77$1 << 1 | ($q_sroa_0_0_insert_ext75$1 << 1 | $q_sroa_0_0_insert_ext75$0 >>> 31) & 0 | $carry_0_lcssa$1;
+  $_0$0 = ($q_sroa_0_0_insert_ext75$0 << 1 | 0 >>> 31) & -2 | $carry_0_lcssa$0;
+  return (tempRet0 = $_0$1, $_0$0) | 0;
+}
+// =======================================================================
+
+
 
 // EMSCRIPTEN_END_FUNCS
 
@@ -15191,10 +15349,10 @@ function _memcpy(dest, src, num) {
   // EMSCRIPTEN_END_FUNCS
   
 
-    return { _strlen: _strlen, _free: _free, _main: _main, _rand_r: _rand_r, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, _bitshift64Lshr: _bitshift64Lshr, _rand: _rand, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, setThrew: setThrew, setTempRet0: setTempRet0, getTempRet0: getTempRet0 };
+    return { _strlen: _strlen, _free: _free, _main: _main, _i64Add: _i64Add, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, _bitshift64Lshr: _bitshift64Lshr, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, setThrew: setThrew, setTempRet0: setTempRet0, getTempRet0: getTempRet0 };
   })
   // EMSCRIPTEN_END_ASM
-  ({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "_fabs": _fabs, "_clReleaseProgram": _clReleaseProgram, "_clCreateKernel": _clCreateKernel, "_send": _send, "_fread": _fread, "_clReleaseKernel": _clReleaseKernel, "_clReleaseContext": _clReleaseContext, "___setErrNo": ___setErrNo, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_clCreateContext": _clCreateContext, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_clCreateProgramWithSource": _clCreateProgramWithSource, "_fmax": _fmax, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "_time": _time, "_pwrite": _pwrite, "_open": _open, "_sbrk": _sbrk, "_clReleaseMemObject": _clReleaseMemObject, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_fileno": _fileno, "_sysconf": _sysconf, "_clFinish": _clFinish, "_clGetDeviceInfo": _clGetDeviceInfo, "_clCreateCommandQueue": _clCreateCommandQueue, "_printf": _printf, "_clReleaseCommandQueue": _clReleaseCommandQueue, "__reallyNegative": __reallyNegative, "_fflush": _fflush, "_write": _write, "_pread": _pread, "___errno_location": ___errno_location, "_clCreateBuffer": _clCreateBuffer, "_stat": _stat, "_recv": _recv, "_clGetDeviceIDs": _clGetDeviceIDs, "_mkport": _mkport, "_read": _read, "_clSetKernelArg": _clSetKernelArg, "_abort": _abort, "_fwrite": _fwrite, "_emscripten_get_now": _emscripten_get_now, "_clBuildProgram": _clBuildProgram, "_fprintf": _fprintf, "_ceil": _ceil, "__formatString": __formatString, "_fopen": _fopen, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_clGetKernelWorkGroupInfo": _clGetKernelWorkGroupInfo, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "___rand_seed": ___rand_seed, "NaN": NaN, "Infinity": Infinity }, buffer);
+  ({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "min": Math_min, "_fabs": _fabs, "_clReleaseProgram": _clReleaseProgram, "_clCreateKernel": _clCreateKernel, "_send": _send, "_fread": _fread, "_clReleaseKernel": _clReleaseKernel, "_clReleaseContext": _clReleaseContext, "___setErrNo": ___setErrNo, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_clCreateContext": _clCreateContext, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_clCreateProgramWithSource": _clCreateProgramWithSource, "_fmax": _fmax, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "_clBuildProgram": _clBuildProgram, "_pwrite": _pwrite, "_open": _open, "_sbrk": _sbrk, "_clReleaseMemObject": _clReleaseMemObject, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_fileno": _fileno, "_sysconf": _sysconf, "__formatString": __formatString, "_clFinish": _clFinish, "_clCreateCommandQueue": _clCreateCommandQueue, "_mkport": _mkport, "_clReleaseCommandQueue": _clReleaseCommandQueue, "__reallyNegative": __reallyNegative, "_clGetDeviceInfo": _clGetDeviceInfo, "_write": _write, "_fflush": _fflush, "___errno_location": ___errno_location, "_clCreateBuffer": _clCreateBuffer, "_stat": _stat, "_recv": _recv, "_clGetDeviceIDs": _clGetDeviceIDs, "_read": _read, "_clSetKernelArg": _clSetKernelArg, "_abort": _abort, "_fwrite": _fwrite, "_emscripten_get_now": _emscripten_get_now, "_time": _time, "_fprintf": _fprintf, "_ceil": _ceil, "_pread": _pread, "_printf": _printf, "_fopen": _fopen, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_clGetKernelWorkGroupInfo": _clGetKernelWorkGroupInfo, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "cttz_i8": cttz_i8, "ctlz_i8": ctlz_i8, "NaN": NaN, "Infinity": Infinity }, buffer);
   var real__strlen = asm["_strlen"]; asm["_strlen"] = function() {
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
@@ -15207,22 +15365,16 @@ var real__main = asm["_main"]; asm["_main"] = function() {
   return real__main.apply(null, arguments);
 };
 
-var real__rand_r = asm["_rand_r"]; asm["_rand_r"] = function() {
+var real__i64Add = asm["_i64Add"]; asm["_i64Add"] = function() {
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
-  return real__rand_r.apply(null, arguments);
+  return real__i64Add.apply(null, arguments);
 };
 
 var real__bitshift64Lshr = asm["_bitshift64Lshr"]; asm["_bitshift64Lshr"] = function() {
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
   return real__bitshift64Lshr.apply(null, arguments);
-};
-
-var real__rand = asm["_rand"]; asm["_rand"] = function() {
-  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
-  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
-  return real__rand.apply(null, arguments);
 };
 
 var real_runPostSets = asm["runPostSets"]; asm["runPostSets"] = function() {
@@ -15233,12 +15385,11 @@ var real_runPostSets = asm["runPostSets"]; asm["runPostSets"] = function() {
 var _strlen = Module["_strlen"] = asm["_strlen"];
 var _free = Module["_free"] = asm["_free"];
 var _main = Module["_main"] = asm["_main"];
-var _rand_r = Module["_rand_r"] = asm["_rand_r"];
+var _i64Add = Module["_i64Add"] = asm["_i64Add"];
 var _memset = Module["_memset"] = asm["_memset"];
 var _malloc = Module["_malloc"] = asm["_malloc"];
 var _memcpy = Module["_memcpy"] = asm["_memcpy"];
 var _bitshift64Lshr = Module["_bitshift64Lshr"] = asm["_bitshift64Lshr"];
-var _rand = Module["_rand"] = asm["_rand"];
 var runPostSets = Module["runPostSets"] = asm["runPostSets"];
   
   Runtime.stackAlloc = asm['stackAlloc'];
@@ -15248,13 +15399,1623 @@ var runPostSets = Module["runPostSets"] = asm["runPostSets"];
   Runtime.getTempRet0 = asm['getTempRet0'];
   
 
-// Warning: printing of i64 values may be slightly rounded! No deep i64 math used, so precise i64 code not included
-var i64Math = null;
+// TODO: strip out parts of this we do not need
+
+//======= begin closure i64 code =======
+
+// Copyright 2009 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Defines a Long class for representing a 64-bit two's-complement
+ * integer value, which faithfully simulates the behavior of a Java "long". This
+ * implementation is derived from LongLib in GWT.
+ *
+ */
+
+var i64Math = (function() { // Emscripten wrapper
+  var goog = { math: {} };
+
+
+  /**
+   * Constructs a 64-bit two's-complement integer, given its low and high 32-bit
+   * values as *signed* integers.  See the from* functions below for more
+   * convenient ways of constructing Longs.
+   *
+   * The internal representation of a long is the two given signed, 32-bit values.
+   * We use 32-bit pieces because these are the size of integers on which
+   * Javascript performs bit-operations.  For operations like addition and
+   * multiplication, we split each number into 16-bit pieces, which can easily be
+   * multiplied within Javascript's floating-point representation without overflow
+   * or change in sign.
+   *
+   * In the algorithms below, we frequently reduce the negative case to the
+   * positive case by negating the input(s) and then post-processing the result.
+   * Note that we must ALWAYS check specially whether those values are MIN_VALUE
+   * (-2^63) because -MIN_VALUE == MIN_VALUE (since 2^63 cannot be represented as
+   * a positive number, it overflows back into a negative).  Not handling this
+   * case would often result in infinite recursion.
+   *
+   * @param {number} low  The low (signed) 32 bits of the long.
+   * @param {number} high  The high (signed) 32 bits of the long.
+   * @constructor
+   */
+  goog.math.Long = function(low, high) {
+    /**
+     * @type {number}
+     * @private
+     */
+    this.low_ = low | 0;  // force into 32 signed bits.
+
+    /**
+     * @type {number}
+     * @private
+     */
+    this.high_ = high | 0;  // force into 32 signed bits.
+  };
+
+
+  // NOTE: Common constant values ZERO, ONE, NEG_ONE, etc. are defined below the
+  // from* methods on which they depend.
+
+
+  /**
+   * A cache of the Long representations of small integer values.
+   * @type {!Object}
+   * @private
+   */
+  goog.math.Long.IntCache_ = {};
+
+
+  /**
+   * Returns a Long representing the given (32-bit) integer value.
+   * @param {number} value The 32-bit integer in question.
+   * @return {!goog.math.Long} The corresponding Long value.
+   */
+  goog.math.Long.fromInt = function(value) {
+    if (-128 <= value && value < 128) {
+      var cachedObj = goog.math.Long.IntCache_[value];
+      if (cachedObj) {
+        return cachedObj;
+      }
+    }
+
+    var obj = new goog.math.Long(value | 0, value < 0 ? -1 : 0);
+    if (-128 <= value && value < 128) {
+      goog.math.Long.IntCache_[value] = obj;
+    }
+    return obj;
+  };
+
+
+  /**
+   * Returns a Long representing the given value, provided that it is a finite
+   * number.  Otherwise, zero is returned.
+   * @param {number} value The number in question.
+   * @return {!goog.math.Long} The corresponding Long value.
+   */
+  goog.math.Long.fromNumber = function(value) {
+    if (isNaN(value) || !isFinite(value)) {
+      return goog.math.Long.ZERO;
+    } else if (value <= -goog.math.Long.TWO_PWR_63_DBL_) {
+      return goog.math.Long.MIN_VALUE;
+    } else if (value + 1 >= goog.math.Long.TWO_PWR_63_DBL_) {
+      return goog.math.Long.MAX_VALUE;
+    } else if (value < 0) {
+      return goog.math.Long.fromNumber(-value).negate();
+    } else {
+      return new goog.math.Long(
+          (value % goog.math.Long.TWO_PWR_32_DBL_) | 0,
+          (value / goog.math.Long.TWO_PWR_32_DBL_) | 0);
+    }
+  };
+
+
+  /**
+   * Returns a Long representing the 64-bit integer that comes by concatenating
+   * the given high and low bits.  Each is assumed to use 32 bits.
+   * @param {number} lowBits The low 32-bits.
+   * @param {number} highBits The high 32-bits.
+   * @return {!goog.math.Long} The corresponding Long value.
+   */
+  goog.math.Long.fromBits = function(lowBits, highBits) {
+    return new goog.math.Long(lowBits, highBits);
+  };
+
+
+  /**
+   * Returns a Long representation of the given string, written using the given
+   * radix.
+   * @param {string} str The textual representation of the Long.
+   * @param {number=} opt_radix The radix in which the text is written.
+   * @return {!goog.math.Long} The corresponding Long value.
+   */
+  goog.math.Long.fromString = function(str, opt_radix) {
+    if (str.length == 0) {
+      throw Error('number format error: empty string');
+    }
+
+    var radix = opt_radix || 10;
+    if (radix < 2 || 36 < radix) {
+      throw Error('radix out of range: ' + radix);
+    }
+
+    if (str.charAt(0) == '-') {
+      return goog.math.Long.fromString(str.substring(1), radix).negate();
+    } else if (str.indexOf('-') >= 0) {
+      throw Error('number format error: interior "-" character: ' + str);
+    }
+
+    // Do several (8) digits each time through the loop, so as to
+    // minimize the calls to the very expensive emulated div.
+    var radixToPower = goog.math.Long.fromNumber(Math.pow(radix, 8));
+
+    var result = goog.math.Long.ZERO;
+    for (var i = 0; i < str.length; i += 8) {
+      var size = Math.min(8, str.length - i);
+      var value = parseInt(str.substring(i, i + size), radix);
+      if (size < 8) {
+        var power = goog.math.Long.fromNumber(Math.pow(radix, size));
+        result = result.multiply(power).add(goog.math.Long.fromNumber(value));
+      } else {
+        result = result.multiply(radixToPower);
+        result = result.add(goog.math.Long.fromNumber(value));
+      }
+    }
+    return result;
+  };
+
+
+  // NOTE: the compiler should inline these constant values below and then remove
+  // these variables, so there should be no runtime penalty for these.
+
+
+  /**
+   * Number used repeated below in calculations.  This must appear before the
+   * first call to any from* function below.
+   * @type {number}
+   * @private
+   */
+  goog.math.Long.TWO_PWR_16_DBL_ = 1 << 16;
+
+
+  /**
+   * @type {number}
+   * @private
+   */
+  goog.math.Long.TWO_PWR_24_DBL_ = 1 << 24;
+
+
+  /**
+   * @type {number}
+   * @private
+   */
+  goog.math.Long.TWO_PWR_32_DBL_ =
+      goog.math.Long.TWO_PWR_16_DBL_ * goog.math.Long.TWO_PWR_16_DBL_;
+
+
+  /**
+   * @type {number}
+   * @private
+   */
+  goog.math.Long.TWO_PWR_31_DBL_ =
+      goog.math.Long.TWO_PWR_32_DBL_ / 2;
+
+
+  /**
+   * @type {number}
+   * @private
+   */
+  goog.math.Long.TWO_PWR_48_DBL_ =
+      goog.math.Long.TWO_PWR_32_DBL_ * goog.math.Long.TWO_PWR_16_DBL_;
+
+
+  /**
+   * @type {number}
+   * @private
+   */
+  goog.math.Long.TWO_PWR_64_DBL_ =
+      goog.math.Long.TWO_PWR_32_DBL_ * goog.math.Long.TWO_PWR_32_DBL_;
+
+
+  /**
+   * @type {number}
+   * @private
+   */
+  goog.math.Long.TWO_PWR_63_DBL_ =
+      goog.math.Long.TWO_PWR_64_DBL_ / 2;
+
+
+  /** @type {!goog.math.Long} */
+  goog.math.Long.ZERO = goog.math.Long.fromInt(0);
+
+
+  /** @type {!goog.math.Long} */
+  goog.math.Long.ONE = goog.math.Long.fromInt(1);
+
+
+  /** @type {!goog.math.Long} */
+  goog.math.Long.NEG_ONE = goog.math.Long.fromInt(-1);
+
+
+  /** @type {!goog.math.Long} */
+  goog.math.Long.MAX_VALUE =
+      goog.math.Long.fromBits(0xFFFFFFFF | 0, 0x7FFFFFFF | 0);
+
+
+  /** @type {!goog.math.Long} */
+  goog.math.Long.MIN_VALUE = goog.math.Long.fromBits(0, 0x80000000 | 0);
+
+
+  /**
+   * @type {!goog.math.Long}
+   * @private
+   */
+  goog.math.Long.TWO_PWR_24_ = goog.math.Long.fromInt(1 << 24);
+
+
+  /** @return {number} The value, assuming it is a 32-bit integer. */
+  goog.math.Long.prototype.toInt = function() {
+    return this.low_;
+  };
+
+
+  /** @return {number} The closest floating-point representation to this value. */
+  goog.math.Long.prototype.toNumber = function() {
+    return this.high_ * goog.math.Long.TWO_PWR_32_DBL_ +
+           this.getLowBitsUnsigned();
+  };
+
+
+  /**
+   * @param {number=} opt_radix The radix in which the text should be written.
+   * @return {string} The textual representation of this value.
+   */
+  goog.math.Long.prototype.toString = function(opt_radix) {
+    var radix = opt_radix || 10;
+    if (radix < 2 || 36 < radix) {
+      throw Error('radix out of range: ' + radix);
+    }
+
+    if (this.isZero()) {
+      return '0';
+    }
+
+    if (this.isNegative()) {
+      if (this.equals(goog.math.Long.MIN_VALUE)) {
+        // We need to change the Long value before it can be negated, so we remove
+        // the bottom-most digit in this base and then recurse to do the rest.
+        var radixLong = goog.math.Long.fromNumber(radix);
+        var div = this.div(radixLong);
+        var rem = div.multiply(radixLong).subtract(this);
+        return div.toString(radix) + rem.toInt().toString(radix);
+      } else {
+        return '-' + this.negate().toString(radix);
+      }
+    }
+
+    // Do several (6) digits each time through the loop, so as to
+    // minimize the calls to the very expensive emulated div.
+    var radixToPower = goog.math.Long.fromNumber(Math.pow(radix, 6));
+
+    var rem = this;
+    var result = '';
+    while (true) {
+      var remDiv = rem.div(radixToPower);
+      var intval = rem.subtract(remDiv.multiply(radixToPower)).toInt();
+      var digits = intval.toString(radix);
+
+      rem = remDiv;
+      if (rem.isZero()) {
+        return digits + result;
+      } else {
+        while (digits.length < 6) {
+          digits = '0' + digits;
+        }
+        result = '' + digits + result;
+      }
+    }
+  };
+
+
+  /** @return {number} The high 32-bits as a signed value. */
+  goog.math.Long.prototype.getHighBits = function() {
+    return this.high_;
+  };
+
+
+  /** @return {number} The low 32-bits as a signed value. */
+  goog.math.Long.prototype.getLowBits = function() {
+    return this.low_;
+  };
+
+
+  /** @return {number} The low 32-bits as an unsigned value. */
+  goog.math.Long.prototype.getLowBitsUnsigned = function() {
+    return (this.low_ >= 0) ?
+        this.low_ : goog.math.Long.TWO_PWR_32_DBL_ + this.low_;
+  };
+
+
+  /**
+   * @return {number} Returns the number of bits needed to represent the absolute
+   *     value of this Long.
+   */
+  goog.math.Long.prototype.getNumBitsAbs = function() {
+    if (this.isNegative()) {
+      if (this.equals(goog.math.Long.MIN_VALUE)) {
+        return 64;
+      } else {
+        return this.negate().getNumBitsAbs();
+      }
+    } else {
+      var val = this.high_ != 0 ? this.high_ : this.low_;
+      for (var bit = 31; bit > 0; bit--) {
+        if ((val & (1 << bit)) != 0) {
+          break;
+        }
+      }
+      return this.high_ != 0 ? bit + 33 : bit + 1;
+    }
+  };
+
+
+  /** @return {boolean} Whether this value is zero. */
+  goog.math.Long.prototype.isZero = function() {
+    return this.high_ == 0 && this.low_ == 0;
+  };
+
+
+  /** @return {boolean} Whether this value is negative. */
+  goog.math.Long.prototype.isNegative = function() {
+    return this.high_ < 0;
+  };
+
+
+  /** @return {boolean} Whether this value is odd. */
+  goog.math.Long.prototype.isOdd = function() {
+    return (this.low_ & 1) == 1;
+  };
+
+
+  /**
+   * @param {goog.math.Long} other Long to compare against.
+   * @return {boolean} Whether this Long equals the other.
+   */
+  goog.math.Long.prototype.equals = function(other) {
+    return (this.high_ == other.high_) && (this.low_ == other.low_);
+  };
+
+
+  /**
+   * @param {goog.math.Long} other Long to compare against.
+   * @return {boolean} Whether this Long does not equal the other.
+   */
+  goog.math.Long.prototype.notEquals = function(other) {
+    return (this.high_ != other.high_) || (this.low_ != other.low_);
+  };
+
+
+  /**
+   * @param {goog.math.Long} other Long to compare against.
+   * @return {boolean} Whether this Long is less than the other.
+   */
+  goog.math.Long.prototype.lessThan = function(other) {
+    return this.compare(other) < 0;
+  };
+
+
+  /**
+   * @param {goog.math.Long} other Long to compare against.
+   * @return {boolean} Whether this Long is less than or equal to the other.
+   */
+  goog.math.Long.prototype.lessThanOrEqual = function(other) {
+    return this.compare(other) <= 0;
+  };
+
+
+  /**
+   * @param {goog.math.Long} other Long to compare against.
+   * @return {boolean} Whether this Long is greater than the other.
+   */
+  goog.math.Long.prototype.greaterThan = function(other) {
+    return this.compare(other) > 0;
+  };
+
+
+  /**
+   * @param {goog.math.Long} other Long to compare against.
+   * @return {boolean} Whether this Long is greater than or equal to the other.
+   */
+  goog.math.Long.prototype.greaterThanOrEqual = function(other) {
+    return this.compare(other) >= 0;
+  };
+
+
+  /**
+   * Compares this Long with the given one.
+   * @param {goog.math.Long} other Long to compare against.
+   * @return {number} 0 if they are the same, 1 if the this is greater, and -1
+   *     if the given one is greater.
+   */
+  goog.math.Long.prototype.compare = function(other) {
+    if (this.equals(other)) {
+      return 0;
+    }
+
+    var thisNeg = this.isNegative();
+    var otherNeg = other.isNegative();
+    if (thisNeg && !otherNeg) {
+      return -1;
+    }
+    if (!thisNeg && otherNeg) {
+      return 1;
+    }
+
+    // at this point, the signs are the same, so subtraction will not overflow
+    if (this.subtract(other).isNegative()) {
+      return -1;
+    } else {
+      return 1;
+    }
+  };
+
+
+  /** @return {!goog.math.Long} The negation of this value. */
+  goog.math.Long.prototype.negate = function() {
+    if (this.equals(goog.math.Long.MIN_VALUE)) {
+      return goog.math.Long.MIN_VALUE;
+    } else {
+      return this.not().add(goog.math.Long.ONE);
+    }
+  };
+
+
+  /**
+   * Returns the sum of this and the given Long.
+   * @param {goog.math.Long} other Long to add to this one.
+   * @return {!goog.math.Long} The sum of this and the given Long.
+   */
+  goog.math.Long.prototype.add = function(other) {
+    // Divide each number into 4 chunks of 16 bits, and then sum the chunks.
+
+    var a48 = this.high_ >>> 16;
+    var a32 = this.high_ & 0xFFFF;
+    var a16 = this.low_ >>> 16;
+    var a00 = this.low_ & 0xFFFF;
+
+    var b48 = other.high_ >>> 16;
+    var b32 = other.high_ & 0xFFFF;
+    var b16 = other.low_ >>> 16;
+    var b00 = other.low_ & 0xFFFF;
+
+    var c48 = 0, c32 = 0, c16 = 0, c00 = 0;
+    c00 += a00 + b00;
+    c16 += c00 >>> 16;
+    c00 &= 0xFFFF;
+    c16 += a16 + b16;
+    c32 += c16 >>> 16;
+    c16 &= 0xFFFF;
+    c32 += a32 + b32;
+    c48 += c32 >>> 16;
+    c32 &= 0xFFFF;
+    c48 += a48 + b48;
+    c48 &= 0xFFFF;
+    return goog.math.Long.fromBits((c16 << 16) | c00, (c48 << 16) | c32);
+  };
+
+
+  /**
+   * Returns the difference of this and the given Long.
+   * @param {goog.math.Long} other Long to subtract from this.
+   * @return {!goog.math.Long} The difference of this and the given Long.
+   */
+  goog.math.Long.prototype.subtract = function(other) {
+    return this.add(other.negate());
+  };
+
+
+  /**
+   * Returns the product of this and the given long.
+   * @param {goog.math.Long} other Long to multiply with this.
+   * @return {!goog.math.Long} The product of this and the other.
+   */
+  goog.math.Long.prototype.multiply = function(other) {
+    if (this.isZero()) {
+      return goog.math.Long.ZERO;
+    } else if (other.isZero()) {
+      return goog.math.Long.ZERO;
+    }
+
+    if (this.equals(goog.math.Long.MIN_VALUE)) {
+      return other.isOdd() ? goog.math.Long.MIN_VALUE : goog.math.Long.ZERO;
+    } else if (other.equals(goog.math.Long.MIN_VALUE)) {
+      return this.isOdd() ? goog.math.Long.MIN_VALUE : goog.math.Long.ZERO;
+    }
+
+    if (this.isNegative()) {
+      if (other.isNegative()) {
+        return this.negate().multiply(other.negate());
+      } else {
+        return this.negate().multiply(other).negate();
+      }
+    } else if (other.isNegative()) {
+      return this.multiply(other.negate()).negate();
+    }
+
+    // If both longs are small, use float multiplication
+    if (this.lessThan(goog.math.Long.TWO_PWR_24_) &&
+        other.lessThan(goog.math.Long.TWO_PWR_24_)) {
+      return goog.math.Long.fromNumber(this.toNumber() * other.toNumber());
+    }
+
+    // Divide each long into 4 chunks of 16 bits, and then add up 4x4 products.
+    // We can skip products that would overflow.
+
+    var a48 = this.high_ >>> 16;
+    var a32 = this.high_ & 0xFFFF;
+    var a16 = this.low_ >>> 16;
+    var a00 = this.low_ & 0xFFFF;
+
+    var b48 = other.high_ >>> 16;
+    var b32 = other.high_ & 0xFFFF;
+    var b16 = other.low_ >>> 16;
+    var b00 = other.low_ & 0xFFFF;
+
+    var c48 = 0, c32 = 0, c16 = 0, c00 = 0;
+    c00 += a00 * b00;
+    c16 += c00 >>> 16;
+    c00 &= 0xFFFF;
+    c16 += a16 * b00;
+    c32 += c16 >>> 16;
+    c16 &= 0xFFFF;
+    c16 += a00 * b16;
+    c32 += c16 >>> 16;
+    c16 &= 0xFFFF;
+    c32 += a32 * b00;
+    c48 += c32 >>> 16;
+    c32 &= 0xFFFF;
+    c32 += a16 * b16;
+    c48 += c32 >>> 16;
+    c32 &= 0xFFFF;
+    c32 += a00 * b32;
+    c48 += c32 >>> 16;
+    c32 &= 0xFFFF;
+    c48 += a48 * b00 + a32 * b16 + a16 * b32 + a00 * b48;
+    c48 &= 0xFFFF;
+    return goog.math.Long.fromBits((c16 << 16) | c00, (c48 << 16) | c32);
+  };
+
+
+  /**
+   * Returns this Long divided by the given one.
+   * @param {goog.math.Long} other Long by which to divide.
+   * @return {!goog.math.Long} This Long divided by the given one.
+   */
+  goog.math.Long.prototype.div = function(other) {
+    if (other.isZero()) {
+      throw Error('division by zero');
+    } else if (this.isZero()) {
+      return goog.math.Long.ZERO;
+    }
+
+    if (this.equals(goog.math.Long.MIN_VALUE)) {
+      if (other.equals(goog.math.Long.ONE) ||
+          other.equals(goog.math.Long.NEG_ONE)) {
+        return goog.math.Long.MIN_VALUE;  // recall that -MIN_VALUE == MIN_VALUE
+      } else if (other.equals(goog.math.Long.MIN_VALUE)) {
+        return goog.math.Long.ONE;
+      } else {
+        // At this point, we have |other| >= 2, so |this/other| < |MIN_VALUE|.
+        var halfThis = this.shiftRight(1);
+        var approx = halfThis.div(other).shiftLeft(1);
+        if (approx.equals(goog.math.Long.ZERO)) {
+          return other.isNegative() ? goog.math.Long.ONE : goog.math.Long.NEG_ONE;
+        } else {
+          var rem = this.subtract(other.multiply(approx));
+          var result = approx.add(rem.div(other));
+          return result;
+        }
+      }
+    } else if (other.equals(goog.math.Long.MIN_VALUE)) {
+      return goog.math.Long.ZERO;
+    }
+
+    if (this.isNegative()) {
+      if (other.isNegative()) {
+        return this.negate().div(other.negate());
+      } else {
+        return this.negate().div(other).negate();
+      }
+    } else if (other.isNegative()) {
+      return this.div(other.negate()).negate();
+    }
+
+    // Repeat the following until the remainder is less than other:  find a
+    // floating-point that approximates remainder / other *from below*, add this
+    // into the result, and subtract it from the remainder.  It is critical that
+    // the approximate value is less than or equal to the real value so that the
+    // remainder never becomes negative.
+    var res = goog.math.Long.ZERO;
+    var rem = this;
+    while (rem.greaterThanOrEqual(other)) {
+      // Approximate the result of division. This may be a little greater or
+      // smaller than the actual value.
+      var approx = Math.max(1, Math.floor(rem.toNumber() / other.toNumber()));
+
+      // We will tweak the approximate result by changing it in the 48-th digit or
+      // the smallest non-fractional digit, whichever is larger.
+      var log2 = Math.ceil(Math.log(approx) / Math.LN2);
+      var delta = (log2 <= 48) ? 1 : Math.pow(2, log2 - 48);
+
+      // Decrease the approximation until it is smaller than the remainder.  Note
+      // that if it is too large, the product overflows and is negative.
+      var approxRes = goog.math.Long.fromNumber(approx);
+      var approxRem = approxRes.multiply(other);
+      while (approxRem.isNegative() || approxRem.greaterThan(rem)) {
+        approx -= delta;
+        approxRes = goog.math.Long.fromNumber(approx);
+        approxRem = approxRes.multiply(other);
+      }
+
+      // We know the answer can't be zero... and actually, zero would cause
+      // infinite recursion since we would make no progress.
+      if (approxRes.isZero()) {
+        approxRes = goog.math.Long.ONE;
+      }
+
+      res = res.add(approxRes);
+      rem = rem.subtract(approxRem);
+    }
+    return res;
+  };
+
+
+  /**
+   * Returns this Long modulo the given one.
+   * @param {goog.math.Long} other Long by which to mod.
+   * @return {!goog.math.Long} This Long modulo the given one.
+   */
+  goog.math.Long.prototype.modulo = function(other) {
+    return this.subtract(this.div(other).multiply(other));
+  };
+
+
+  /** @return {!goog.math.Long} The bitwise-NOT of this value. */
+  goog.math.Long.prototype.not = function() {
+    return goog.math.Long.fromBits(~this.low_, ~this.high_);
+  };
+
+
+  /**
+   * Returns the bitwise-AND of this Long and the given one.
+   * @param {goog.math.Long} other The Long with which to AND.
+   * @return {!goog.math.Long} The bitwise-AND of this and the other.
+   */
+  goog.math.Long.prototype.and = function(other) {
+    return goog.math.Long.fromBits(this.low_ & other.low_,
+                                   this.high_ & other.high_);
+  };
+
+
+  /**
+   * Returns the bitwise-OR of this Long and the given one.
+   * @param {goog.math.Long} other The Long with which to OR.
+   * @return {!goog.math.Long} The bitwise-OR of this and the other.
+   */
+  goog.math.Long.prototype.or = function(other) {
+    return goog.math.Long.fromBits(this.low_ | other.low_,
+                                   this.high_ | other.high_);
+  };
+
+
+  /**
+   * Returns the bitwise-XOR of this Long and the given one.
+   * @param {goog.math.Long} other The Long with which to XOR.
+   * @return {!goog.math.Long} The bitwise-XOR of this and the other.
+   */
+  goog.math.Long.prototype.xor = function(other) {
+    return goog.math.Long.fromBits(this.low_ ^ other.low_,
+                                   this.high_ ^ other.high_);
+  };
+
+
+  /**
+   * Returns this Long with bits shifted to the left by the given amount.
+   * @param {number} numBits The number of bits by which to shift.
+   * @return {!goog.math.Long} This shifted to the left by the given amount.
+   */
+  goog.math.Long.prototype.shiftLeft = function(numBits) {
+    numBits &= 63;
+    if (numBits == 0) {
+      return this;
+    } else {
+      var low = this.low_;
+      if (numBits < 32) {
+        var high = this.high_;
+        return goog.math.Long.fromBits(
+            low << numBits,
+            (high << numBits) | (low >>> (32 - numBits)));
+      } else {
+        return goog.math.Long.fromBits(0, low << (numBits - 32));
+      }
+    }
+  };
+
+
+  /**
+   * Returns this Long with bits shifted to the right by the given amount.
+   * @param {number} numBits The number of bits by which to shift.
+   * @return {!goog.math.Long} This shifted to the right by the given amount.
+   */
+  goog.math.Long.prototype.shiftRight = function(numBits) {
+    numBits &= 63;
+    if (numBits == 0) {
+      return this;
+    } else {
+      var high = this.high_;
+      if (numBits < 32) {
+        var low = this.low_;
+        return goog.math.Long.fromBits(
+            (low >>> numBits) | (high << (32 - numBits)),
+            high >> numBits);
+      } else {
+        return goog.math.Long.fromBits(
+            high >> (numBits - 32),
+            high >= 0 ? 0 : -1);
+      }
+    }
+  };
+
+
+  /**
+   * Returns this Long with bits shifted to the right by the given amount, with
+   * the new top bits matching the current sign bit.
+   * @param {number} numBits The number of bits by which to shift.
+   * @return {!goog.math.Long} This shifted to the right by the given amount, with
+   *     zeros placed into the new leading bits.
+   */
+  goog.math.Long.prototype.shiftRightUnsigned = function(numBits) {
+    numBits &= 63;
+    if (numBits == 0) {
+      return this;
+    } else {
+      var high = this.high_;
+      if (numBits < 32) {
+        var low = this.low_;
+        return goog.math.Long.fromBits(
+            (low >>> numBits) | (high << (32 - numBits)),
+            high >>> numBits);
+      } else if (numBits == 32) {
+        return goog.math.Long.fromBits(high, 0);
+      } else {
+        return goog.math.Long.fromBits(high >>> (numBits - 32), 0);
+      }
+    }
+  };
+
+  //======= begin jsbn =======
+
+  var navigator = { appName: 'Modern Browser' }; // polyfill a little
+
+  // Copyright (c) 2005  Tom Wu
+  // All Rights Reserved.
+  // http://www-cs-students.stanford.edu/~tjw/jsbn/
+
+  /*
+   * Copyright (c) 2003-2005  Tom Wu
+   * All Rights Reserved.
+   *
+   * Permission is hereby granted, free of charge, to any person obtaining
+   * a copy of this software and associated documentation files (the
+   * "Software"), to deal in the Software without restriction, including
+   * without limitation the rights to use, copy, modify, merge, publish,
+   * distribute, sublicense, and/or sell copies of the Software, and to
+   * permit persons to whom the Software is furnished to do so, subject to
+   * the following conditions:
+   *
+   * The above copyright notice and this permission notice shall be
+   * included in all copies or substantial portions of the Software.
+   *
+   * THE SOFTWARE IS PROVIDED "AS-IS" AND WITHOUT WARRANTY OF ANY KIND, 
+   * EXPRESS, IMPLIED OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY 
+   * WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.  
+   *
+   * IN NO EVENT SHALL TOM WU BE LIABLE FOR ANY SPECIAL, INCIDENTAL,
+   * INDIRECT OR CONSEQUENTIAL DAMAGES OF ANY KIND, OR ANY DAMAGES WHATSOEVER
+   * RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER OR NOT ADVISED OF
+   * THE POSSIBILITY OF DAMAGE, AND ON ANY THEORY OF LIABILITY, ARISING OUT
+   * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+   *
+   * In addition, the following condition applies:
+   *
+   * All redistributions must retain an intact copy of this copyright notice
+   * and disclaimer.
+   */
+
+  // Basic JavaScript BN library - subset useful for RSA encryption.
+
+  // Bits per digit
+  var dbits;
+
+  // JavaScript engine analysis
+  var canary = 0xdeadbeefcafe;
+  var j_lm = ((canary&0xffffff)==0xefcafe);
+
+  // (public) Constructor
+  function BigInteger(a,b,c) {
+    if(a != null)
+      if("number" == typeof a) this.fromNumber(a,b,c);
+      else if(b == null && "string" != typeof a) this.fromString(a,256);
+      else this.fromString(a,b);
+  }
+
+  // return new, unset BigInteger
+  function nbi() { return new BigInteger(null); }
+
+  // am: Compute w_j += (x*this_i), propagate carries,
+  // c is initial carry, returns final carry.
+  // c < 3*dvalue, x < 2*dvalue, this_i < dvalue
+  // We need to select the fastest one that works in this environment.
+
+  // am1: use a single mult and divide to get the high bits,
+  // max digit bits should be 26 because
+  // max internal value = 2*dvalue^2-2*dvalue (< 2^53)
+  function am1(i,x,w,j,c,n) {
+    while(--n >= 0) {
+      var v = x*this[i++]+w[j]+c;
+      c = Math.floor(v/0x4000000);
+      w[j++] = v&0x3ffffff;
+    }
+    return c;
+  }
+  // am2 avoids a big mult-and-extract completely.
+  // Max digit bits should be <= 30 because we do bitwise ops
+  // on values up to 2*hdvalue^2-hdvalue-1 (< 2^31)
+  function am2(i,x,w,j,c,n) {
+    var xl = x&0x7fff, xh = x>>15;
+    while(--n >= 0) {
+      var l = this[i]&0x7fff;
+      var h = this[i++]>>15;
+      var m = xh*l+h*xl;
+      l = xl*l+((m&0x7fff)<<15)+w[j]+(c&0x3fffffff);
+      c = (l>>>30)+(m>>>15)+xh*h+(c>>>30);
+      w[j++] = l&0x3fffffff;
+    }
+    return c;
+  }
+  // Alternately, set max digit bits to 28 since some
+  // browsers slow down when dealing with 32-bit numbers.
+  function am3(i,x,w,j,c,n) {
+    var xl = x&0x3fff, xh = x>>14;
+    while(--n >= 0) {
+      var l = this[i]&0x3fff;
+      var h = this[i++]>>14;
+      var m = xh*l+h*xl;
+      l = xl*l+((m&0x3fff)<<14)+w[j]+c;
+      c = (l>>28)+(m>>14)+xh*h;
+      w[j++] = l&0xfffffff;
+    }
+    return c;
+  }
+  if(j_lm && (navigator.appName == "Microsoft Internet Explorer")) {
+    BigInteger.prototype.am = am2;
+    dbits = 30;
+  }
+  else if(j_lm && (navigator.appName != "Netscape")) {
+    BigInteger.prototype.am = am1;
+    dbits = 26;
+  }
+  else { // Mozilla/Netscape seems to prefer am3
+    BigInteger.prototype.am = am3;
+    dbits = 28;
+  }
+
+  BigInteger.prototype.DB = dbits;
+  BigInteger.prototype.DM = ((1<<dbits)-1);
+  BigInteger.prototype.DV = (1<<dbits);
+
+  var BI_FP = 52;
+  BigInteger.prototype.FV = Math.pow(2,BI_FP);
+  BigInteger.prototype.F1 = BI_FP-dbits;
+  BigInteger.prototype.F2 = 2*dbits-BI_FP;
+
+  // Digit conversions
+  var BI_RM = "0123456789abcdefghijklmnopqrstuvwxyz";
+  var BI_RC = new Array();
+  var rr,vv;
+  rr = "0".charCodeAt(0);
+  for(vv = 0; vv <= 9; ++vv) BI_RC[rr++] = vv;
+  rr = "a".charCodeAt(0);
+  for(vv = 10; vv < 36; ++vv) BI_RC[rr++] = vv;
+  rr = "A".charCodeAt(0);
+  for(vv = 10; vv < 36; ++vv) BI_RC[rr++] = vv;
+
+  function int2char(n) { return BI_RM.charAt(n); }
+  function intAt(s,i) {
+    var c = BI_RC[s.charCodeAt(i)];
+    return (c==null)?-1:c;
+  }
+
+  // (protected) copy this to r
+  function bnpCopyTo(r) {
+    for(var i = this.t-1; i >= 0; --i) r[i] = this[i];
+    r.t = this.t;
+    r.s = this.s;
+  }
+
+  // (protected) set from integer value x, -DV <= x < DV
+  function bnpFromInt(x) {
+    this.t = 1;
+    this.s = (x<0)?-1:0;
+    if(x > 0) this[0] = x;
+    else if(x < -1) this[0] = x+DV;
+    else this.t = 0;
+  }
+
+  // return bigint initialized to value
+  function nbv(i) { var r = nbi(); r.fromInt(i); return r; }
+
+  // (protected) set from string and radix
+  function bnpFromString(s,b) {
+    var k;
+    if(b == 16) k = 4;
+    else if(b == 8) k = 3;
+    else if(b == 256) k = 8; // byte array
+    else if(b == 2) k = 1;
+    else if(b == 32) k = 5;
+    else if(b == 4) k = 2;
+    else { this.fromRadix(s,b); return; }
+    this.t = 0;
+    this.s = 0;
+    var i = s.length, mi = false, sh = 0;
+    while(--i >= 0) {
+      var x = (k==8)?s[i]&0xff:intAt(s,i);
+      if(x < 0) {
+        if(s.charAt(i) == "-") mi = true;
+        continue;
+      }
+      mi = false;
+      if(sh == 0)
+        this[this.t++] = x;
+      else if(sh+k > this.DB) {
+        this[this.t-1] |= (x&((1<<(this.DB-sh))-1))<<sh;
+        this[this.t++] = (x>>(this.DB-sh));
+      }
+      else
+        this[this.t-1] |= x<<sh;
+      sh += k;
+      if(sh >= this.DB) sh -= this.DB;
+    }
+    if(k == 8 && (s[0]&0x80) != 0) {
+      this.s = -1;
+      if(sh > 0) this[this.t-1] |= ((1<<(this.DB-sh))-1)<<sh;
+    }
+    this.clamp();
+    if(mi) BigInteger.ZERO.subTo(this,this);
+  }
+
+  // (protected) clamp off excess high words
+  function bnpClamp() {
+    var c = this.s&this.DM;
+    while(this.t > 0 && this[this.t-1] == c) --this.t;
+  }
+
+  // (public) return string representation in given radix
+  function bnToString(b) {
+    if(this.s < 0) return "-"+this.negate().toString(b);
+    var k;
+    if(b == 16) k = 4;
+    else if(b == 8) k = 3;
+    else if(b == 2) k = 1;
+    else if(b == 32) k = 5;
+    else if(b == 4) k = 2;
+    else return this.toRadix(b);
+    var km = (1<<k)-1, d, m = false, r = "", i = this.t;
+    var p = this.DB-(i*this.DB)%k;
+    if(i-- > 0) {
+      if(p < this.DB && (d = this[i]>>p) > 0) { m = true; r = int2char(d); }
+      while(i >= 0) {
+        if(p < k) {
+          d = (this[i]&((1<<p)-1))<<(k-p);
+          d |= this[--i]>>(p+=this.DB-k);
+        }
+        else {
+          d = (this[i]>>(p-=k))&km;
+          if(p <= 0) { p += this.DB; --i; }
+        }
+        if(d > 0) m = true;
+        if(m) r += int2char(d);
+      }
+    }
+    return m?r:"0";
+  }
+
+  // (public) -this
+  function bnNegate() { var r = nbi(); BigInteger.ZERO.subTo(this,r); return r; }
+
+  // (public) |this|
+  function bnAbs() { return (this.s<0)?this.negate():this; }
+
+  // (public) return + if this > a, - if this < a, 0 if equal
+  function bnCompareTo(a) {
+    var r = this.s-a.s;
+    if(r != 0) return r;
+    var i = this.t;
+    r = i-a.t;
+    if(r != 0) return (this.s<0)?-r:r;
+    while(--i >= 0) if((r=this[i]-a[i]) != 0) return r;
+    return 0;
+  }
+
+  // returns bit length of the integer x
+  function nbits(x) {
+    var r = 1, t;
+    if((t=x>>>16) != 0) { x = t; r += 16; }
+    if((t=x>>8) != 0) { x = t; r += 8; }
+    if((t=x>>4) != 0) { x = t; r += 4; }
+    if((t=x>>2) != 0) { x = t; r += 2; }
+    if((t=x>>1) != 0) { x = t; r += 1; }
+    return r;
+  }
+
+  // (public) return the number of bits in "this"
+  function bnBitLength() {
+    if(this.t <= 0) return 0;
+    return this.DB*(this.t-1)+nbits(this[this.t-1]^(this.s&this.DM));
+  }
+
+  // (protected) r = this << n*DB
+  function bnpDLShiftTo(n,r) {
+    var i;
+    for(i = this.t-1; i >= 0; --i) r[i+n] = this[i];
+    for(i = n-1; i >= 0; --i) r[i] = 0;
+    r.t = this.t+n;
+    r.s = this.s;
+  }
+
+  // (protected) r = this >> n*DB
+  function bnpDRShiftTo(n,r) {
+    for(var i = n; i < this.t; ++i) r[i-n] = this[i];
+    r.t = Math.max(this.t-n,0);
+    r.s = this.s;
+  }
+
+  // (protected) r = this << n
+  function bnpLShiftTo(n,r) {
+    var bs = n%this.DB;
+    var cbs = this.DB-bs;
+    var bm = (1<<cbs)-1;
+    var ds = Math.floor(n/this.DB), c = (this.s<<bs)&this.DM, i;
+    for(i = this.t-1; i >= 0; --i) {
+      r[i+ds+1] = (this[i]>>cbs)|c;
+      c = (this[i]&bm)<<bs;
+    }
+    for(i = ds-1; i >= 0; --i) r[i] = 0;
+    r[ds] = c;
+    r.t = this.t+ds+1;
+    r.s = this.s;
+    r.clamp();
+  }
+
+  // (protected) r = this >> n
+  function bnpRShiftTo(n,r) {
+    r.s = this.s;
+    var ds = Math.floor(n/this.DB);
+    if(ds >= this.t) { r.t = 0; return; }
+    var bs = n%this.DB;
+    var cbs = this.DB-bs;
+    var bm = (1<<bs)-1;
+    r[0] = this[ds]>>bs;
+    for(var i = ds+1; i < this.t; ++i) {
+      r[i-ds-1] |= (this[i]&bm)<<cbs;
+      r[i-ds] = this[i]>>bs;
+    }
+    if(bs > 0) r[this.t-ds-1] |= (this.s&bm)<<cbs;
+    r.t = this.t-ds;
+    r.clamp();
+  }
+
+  // (protected) r = this - a
+  function bnpSubTo(a,r) {
+    var i = 0, c = 0, m = Math.min(a.t,this.t);
+    while(i < m) {
+      c += this[i]-a[i];
+      r[i++] = c&this.DM;
+      c >>= this.DB;
+    }
+    if(a.t < this.t) {
+      c -= a.s;
+      while(i < this.t) {
+        c += this[i];
+        r[i++] = c&this.DM;
+        c >>= this.DB;
+      }
+      c += this.s;
+    }
+    else {
+      c += this.s;
+      while(i < a.t) {
+        c -= a[i];
+        r[i++] = c&this.DM;
+        c >>= this.DB;
+      }
+      c -= a.s;
+    }
+    r.s = (c<0)?-1:0;
+    if(c < -1) r[i++] = this.DV+c;
+    else if(c > 0) r[i++] = c;
+    r.t = i;
+    r.clamp();
+  }
+
+  // (protected) r = this * a, r != this,a (HAC 14.12)
+  // "this" should be the larger one if appropriate.
+  function bnpMultiplyTo(a,r) {
+    var x = this.abs(), y = a.abs();
+    var i = x.t;
+    r.t = i+y.t;
+    while(--i >= 0) r[i] = 0;
+    for(i = 0; i < y.t; ++i) r[i+x.t] = x.am(0,y[i],r,i,0,x.t);
+    r.s = 0;
+    r.clamp();
+    if(this.s != a.s) BigInteger.ZERO.subTo(r,r);
+  }
+
+  // (protected) r = this^2, r != this (HAC 14.16)
+  function bnpSquareTo(r) {
+    var x = this.abs();
+    var i = r.t = 2*x.t;
+    while(--i >= 0) r[i] = 0;
+    for(i = 0; i < x.t-1; ++i) {
+      var c = x.am(i,x[i],r,2*i,0,1);
+      if((r[i+x.t]+=x.am(i+1,2*x[i],r,2*i+1,c,x.t-i-1)) >= x.DV) {
+        r[i+x.t] -= x.DV;
+        r[i+x.t+1] = 1;
+      }
+    }
+    if(r.t > 0) r[r.t-1] += x.am(i,x[i],r,2*i,0,1);
+    r.s = 0;
+    r.clamp();
+  }
+
+  // (protected) divide this by m, quotient and remainder to q, r (HAC 14.20)
+  // r != q, this != m.  q or r may be null.
+  function bnpDivRemTo(m,q,r) {
+    var pm = m.abs();
+    if(pm.t <= 0) return;
+    var pt = this.abs();
+    if(pt.t < pm.t) {
+      if(q != null) q.fromInt(0);
+      if(r != null) this.copyTo(r);
+      return;
+    }
+    if(r == null) r = nbi();
+    var y = nbi(), ts = this.s, ms = m.s;
+    var nsh = this.DB-nbits(pm[pm.t-1]);	// normalize modulus
+    if(nsh > 0) { pm.lShiftTo(nsh,y); pt.lShiftTo(nsh,r); }
+    else { pm.copyTo(y); pt.copyTo(r); }
+    var ys = y.t;
+    var y0 = y[ys-1];
+    if(y0 == 0) return;
+    var yt = y0*(1<<this.F1)+((ys>1)?y[ys-2]>>this.F2:0);
+    var d1 = this.FV/yt, d2 = (1<<this.F1)/yt, e = 1<<this.F2;
+    var i = r.t, j = i-ys, t = (q==null)?nbi():q;
+    y.dlShiftTo(j,t);
+    if(r.compareTo(t) >= 0) {
+      r[r.t++] = 1;
+      r.subTo(t,r);
+    }
+    BigInteger.ONE.dlShiftTo(ys,t);
+    t.subTo(y,y);	// "negative" y so we can replace sub with am later
+    while(y.t < ys) y[y.t++] = 0;
+    while(--j >= 0) {
+      // Estimate quotient digit
+      var qd = (r[--i]==y0)?this.DM:Math.floor(r[i]*d1+(r[i-1]+e)*d2);
+      if((r[i]+=y.am(0,qd,r,j,0,ys)) < qd) {	// Try it out
+        y.dlShiftTo(j,t);
+        r.subTo(t,r);
+        while(r[i] < --qd) r.subTo(t,r);
+      }
+    }
+    if(q != null) {
+      r.drShiftTo(ys,q);
+      if(ts != ms) BigInteger.ZERO.subTo(q,q);
+    }
+    r.t = ys;
+    r.clamp();
+    if(nsh > 0) r.rShiftTo(nsh,r);	// Denormalize remainder
+    if(ts < 0) BigInteger.ZERO.subTo(r,r);
+  }
+
+  // (public) this mod a
+  function bnMod(a) {
+    var r = nbi();
+    this.abs().divRemTo(a,null,r);
+    if(this.s < 0 && r.compareTo(BigInteger.ZERO) > 0) a.subTo(r,r);
+    return r;
+  }
+
+  // Modular reduction using "classic" algorithm
+  function Classic(m) { this.m = m; }
+  function cConvert(x) {
+    if(x.s < 0 || x.compareTo(this.m) >= 0) return x.mod(this.m);
+    else return x;
+  }
+  function cRevert(x) { return x; }
+  function cReduce(x) { x.divRemTo(this.m,null,x); }
+  function cMulTo(x,y,r) { x.multiplyTo(y,r); this.reduce(r); }
+  function cSqrTo(x,r) { x.squareTo(r); this.reduce(r); }
+
+  Classic.prototype.convert = cConvert;
+  Classic.prototype.revert = cRevert;
+  Classic.prototype.reduce = cReduce;
+  Classic.prototype.mulTo = cMulTo;
+  Classic.prototype.sqrTo = cSqrTo;
+
+  // (protected) return "-1/this % 2^DB"; useful for Mont. reduction
+  // justification:
+  //         xy == 1 (mod m)
+  //         xy =  1+km
+  //   xy(2-xy) = (1+km)(1-km)
+  // x[y(2-xy)] = 1-k^2m^2
+  // x[y(2-xy)] == 1 (mod m^2)
+  // if y is 1/x mod m, then y(2-xy) is 1/x mod m^2
+  // should reduce x and y(2-xy) by m^2 at each step to keep size bounded.
+  // JS multiply "overflows" differently from C/C++, so care is needed here.
+  function bnpInvDigit() {
+    if(this.t < 1) return 0;
+    var x = this[0];
+    if((x&1) == 0) return 0;
+    var y = x&3;		// y == 1/x mod 2^2
+    y = (y*(2-(x&0xf)*y))&0xf;	// y == 1/x mod 2^4
+    y = (y*(2-(x&0xff)*y))&0xff;	// y == 1/x mod 2^8
+    y = (y*(2-(((x&0xffff)*y)&0xffff)))&0xffff;	// y == 1/x mod 2^16
+    // last step - calculate inverse mod DV directly;
+    // assumes 16 < DB <= 32 and assumes ability to handle 48-bit ints
+    y = (y*(2-x*y%this.DV))%this.DV;		// y == 1/x mod 2^dbits
+    // we really want the negative inverse, and -DV < y < DV
+    return (y>0)?this.DV-y:-y;
+  }
+
+  // Montgomery reduction
+  function Montgomery(m) {
+    this.m = m;
+    this.mp = m.invDigit();
+    this.mpl = this.mp&0x7fff;
+    this.mph = this.mp>>15;
+    this.um = (1<<(m.DB-15))-1;
+    this.mt2 = 2*m.t;
+  }
+
+  // xR mod m
+  function montConvert(x) {
+    var r = nbi();
+    x.abs().dlShiftTo(this.m.t,r);
+    r.divRemTo(this.m,null,r);
+    if(x.s < 0 && r.compareTo(BigInteger.ZERO) > 0) this.m.subTo(r,r);
+    return r;
+  }
+
+  // x/R mod m
+  function montRevert(x) {
+    var r = nbi();
+    x.copyTo(r);
+    this.reduce(r);
+    return r;
+  }
+
+  // x = x/R mod m (HAC 14.32)
+  function montReduce(x) {
+    while(x.t <= this.mt2)	// pad x so am has enough room later
+      x[x.t++] = 0;
+    for(var i = 0; i < this.m.t; ++i) {
+      // faster way of calculating u0 = x[i]*mp mod DV
+      var j = x[i]&0x7fff;
+      var u0 = (j*this.mpl+(((j*this.mph+(x[i]>>15)*this.mpl)&this.um)<<15))&x.DM;
+      // use am to combine the multiply-shift-add into one call
+      j = i+this.m.t;
+      x[j] += this.m.am(0,u0,x,i,0,this.m.t);
+      // propagate carry
+      while(x[j] >= x.DV) { x[j] -= x.DV; x[++j]++; }
+    }
+    x.clamp();
+    x.drShiftTo(this.m.t,x);
+    if(x.compareTo(this.m) >= 0) x.subTo(this.m,x);
+  }
+
+  // r = "x^2/R mod m"; x != r
+  function montSqrTo(x,r) { x.squareTo(r); this.reduce(r); }
+
+  // r = "xy/R mod m"; x,y != r
+  function montMulTo(x,y,r) { x.multiplyTo(y,r); this.reduce(r); }
+
+  Montgomery.prototype.convert = montConvert;
+  Montgomery.prototype.revert = montRevert;
+  Montgomery.prototype.reduce = montReduce;
+  Montgomery.prototype.mulTo = montMulTo;
+  Montgomery.prototype.sqrTo = montSqrTo;
+
+  // (protected) true iff this is even
+  function bnpIsEven() { return ((this.t>0)?(this[0]&1):this.s) == 0; }
+
+  // (protected) this^e, e < 2^32, doing sqr and mul with "r" (HAC 14.79)
+  function bnpExp(e,z) {
+    if(e > 0xffffffff || e < 1) return BigInteger.ONE;
+    var r = nbi(), r2 = nbi(), g = z.convert(this), i = nbits(e)-1;
+    g.copyTo(r);
+    while(--i >= 0) {
+      z.sqrTo(r,r2);
+      if((e&(1<<i)) > 0) z.mulTo(r2,g,r);
+      else { var t = r; r = r2; r2 = t; }
+    }
+    return z.revert(r);
+  }
+
+  // (public) this^e % m, 0 <= e < 2^32
+  function bnModPowInt(e,m) {
+    var z;
+    if(e < 256 || m.isEven()) z = new Classic(m); else z = new Montgomery(m);
+    return this.exp(e,z);
+  }
+
+  // protected
+  BigInteger.prototype.copyTo = bnpCopyTo;
+  BigInteger.prototype.fromInt = bnpFromInt;
+  BigInteger.prototype.fromString = bnpFromString;
+  BigInteger.prototype.clamp = bnpClamp;
+  BigInteger.prototype.dlShiftTo = bnpDLShiftTo;
+  BigInteger.prototype.drShiftTo = bnpDRShiftTo;
+  BigInteger.prototype.lShiftTo = bnpLShiftTo;
+  BigInteger.prototype.rShiftTo = bnpRShiftTo;
+  BigInteger.prototype.subTo = bnpSubTo;
+  BigInteger.prototype.multiplyTo = bnpMultiplyTo;
+  BigInteger.prototype.squareTo = bnpSquareTo;
+  BigInteger.prototype.divRemTo = bnpDivRemTo;
+  BigInteger.prototype.invDigit = bnpInvDigit;
+  BigInteger.prototype.isEven = bnpIsEven;
+  BigInteger.prototype.exp = bnpExp;
+
+  // public
+  BigInteger.prototype.toString = bnToString;
+  BigInteger.prototype.negate = bnNegate;
+  BigInteger.prototype.abs = bnAbs;
+  BigInteger.prototype.compareTo = bnCompareTo;
+  BigInteger.prototype.bitLength = bnBitLength;
+  BigInteger.prototype.mod = bnMod;
+  BigInteger.prototype.modPowInt = bnModPowInt;
+
+  // "constants"
+  BigInteger.ZERO = nbv(0);
+  BigInteger.ONE = nbv(1);
+
+  // jsbn2 stuff
+
+  // (protected) convert from radix string
+  function bnpFromRadix(s,b) {
+    this.fromInt(0);
+    if(b == null) b = 10;
+    var cs = this.chunkSize(b);
+    var d = Math.pow(b,cs), mi = false, j = 0, w = 0;
+    for(var i = 0; i < s.length; ++i) {
+      var x = intAt(s,i);
+      if(x < 0) {
+        if(s.charAt(i) == "-" && this.signum() == 0) mi = true;
+        continue;
+      }
+      w = b*w+x;
+      if(++j >= cs) {
+        this.dMultiply(d);
+        this.dAddOffset(w,0);
+        j = 0;
+        w = 0;
+      }
+    }
+    if(j > 0) {
+      this.dMultiply(Math.pow(b,j));
+      this.dAddOffset(w,0);
+    }
+    if(mi) BigInteger.ZERO.subTo(this,this);
+  }
+
+  // (protected) return x s.t. r^x < DV
+  function bnpChunkSize(r) { return Math.floor(Math.LN2*this.DB/Math.log(r)); }
+
+  // (public) 0 if this == 0, 1 if this > 0
+  function bnSigNum() {
+    if(this.s < 0) return -1;
+    else if(this.t <= 0 || (this.t == 1 && this[0] <= 0)) return 0;
+    else return 1;
+  }
+
+  // (protected) this *= n, this >= 0, 1 < n < DV
+  function bnpDMultiply(n) {
+    this[this.t] = this.am(0,n-1,this,0,0,this.t);
+    ++this.t;
+    this.clamp();
+  }
+
+  // (protected) this += n << w words, this >= 0
+  function bnpDAddOffset(n,w) {
+    if(n == 0) return;
+    while(this.t <= w) this[this.t++] = 0;
+    this[w] += n;
+    while(this[w] >= this.DV) {
+      this[w] -= this.DV;
+      if(++w >= this.t) this[this.t++] = 0;
+      ++this[w];
+    }
+  }
+
+  // (protected) convert to radix string
+  function bnpToRadix(b) {
+    if(b == null) b = 10;
+    if(this.signum() == 0 || b < 2 || b > 36) return "0";
+    var cs = this.chunkSize(b);
+    var a = Math.pow(b,cs);
+    var d = nbv(a), y = nbi(), z = nbi(), r = "";
+    this.divRemTo(d,y,z);
+    while(y.signum() > 0) {
+      r = (a+z.intValue()).toString(b).substr(1) + r;
+      y.divRemTo(d,y,z);
+    }
+    return z.intValue().toString(b) + r;
+  }
+
+  // (public) return value as integer
+  function bnIntValue() {
+    if(this.s < 0) {
+      if(this.t == 1) return this[0]-this.DV;
+      else if(this.t == 0) return -1;
+    }
+    else if(this.t == 1) return this[0];
+    else if(this.t == 0) return 0;
+    // assumes 16 < DB < 32
+    return ((this[1]&((1<<(32-this.DB))-1))<<this.DB)|this[0];
+  }
+
+  // (protected) r = this + a
+  function bnpAddTo(a,r) {
+    var i = 0, c = 0, m = Math.min(a.t,this.t);
+    while(i < m) {
+      c += this[i]+a[i];
+      r[i++] = c&this.DM;
+      c >>= this.DB;
+    }
+    if(a.t < this.t) {
+      c += a.s;
+      while(i < this.t) {
+        c += this[i];
+        r[i++] = c&this.DM;
+        c >>= this.DB;
+      }
+      c += this.s;
+    }
+    else {
+      c += this.s;
+      while(i < a.t) {
+        c += a[i];
+        r[i++] = c&this.DM;
+        c >>= this.DB;
+      }
+      c += a.s;
+    }
+    r.s = (c<0)?-1:0;
+    if(c > 0) r[i++] = c;
+    else if(c < -1) r[i++] = this.DV+c;
+    r.t = i;
+    r.clamp();
+  }
+
+  BigInteger.prototype.fromRadix = bnpFromRadix;
+  BigInteger.prototype.chunkSize = bnpChunkSize;
+  BigInteger.prototype.signum = bnSigNum;
+  BigInteger.prototype.dMultiply = bnpDMultiply;
+  BigInteger.prototype.dAddOffset = bnpDAddOffset;
+  BigInteger.prototype.toRadix = bnpToRadix;
+  BigInteger.prototype.intValue = bnIntValue;
+  BigInteger.prototype.addTo = bnpAddTo;
+
+  //======= end jsbn =======
+
+  // Emscripten wrapper
+  var Wrapper = {
+    abs: function(l, h) {
+      var x = new goog.math.Long(l, h);
+      var ret;
+      if (x.isNegative()) {
+        ret = x.negate();
+      } else {
+        ret = x;
+      }
+      HEAP32[tempDoublePtr>>2] = ret.low_;
+      HEAP32[tempDoublePtr+4>>2] = ret.high_;
+    },
+    ensureTemps: function() {
+      if (Wrapper.ensuredTemps) return;
+      Wrapper.ensuredTemps = true;
+      Wrapper.two32 = new BigInteger();
+      Wrapper.two32.fromString('4294967296', 10);
+      Wrapper.two64 = new BigInteger();
+      Wrapper.two64.fromString('18446744073709551616', 10);
+      Wrapper.temp1 = new BigInteger();
+      Wrapper.temp2 = new BigInteger();
+    },
+    lh2bignum: function(l, h) {
+      var a = new BigInteger();
+      a.fromString(h.toString(), 10);
+      var b = new BigInteger();
+      a.multiplyTo(Wrapper.two32, b);
+      var c = new BigInteger();
+      c.fromString(l.toString(), 10);
+      var d = new BigInteger();
+      c.addTo(b, d);
+      return d;
+    },
+    stringify: function(l, h, unsigned) {
+      var ret = new goog.math.Long(l, h).toString();
+      if (unsigned && ret[0] == '-') {
+        // unsign slowly using jsbn bignums
+        Wrapper.ensureTemps();
+        var bignum = new BigInteger();
+        bignum.fromString(ret, 10);
+        ret = new BigInteger();
+        Wrapper.two64.addTo(bignum, ret);
+        ret = ret.toString(10);
+      }
+      return ret;
+    },
+    fromString: function(str, base, min, max, unsigned) {
+      Wrapper.ensureTemps();
+      var bignum = new BigInteger();
+      bignum.fromString(str, base);
+      var bigmin = new BigInteger();
+      bigmin.fromString(min, 10);
+      var bigmax = new BigInteger();
+      bigmax.fromString(max, 10);
+      if (unsigned && bignum.compareTo(BigInteger.ZERO) < 0) {
+        var temp = new BigInteger();
+        bignum.addTo(Wrapper.two64, temp);
+        bignum = temp;
+      }
+      var error = false;
+      if (bignum.compareTo(bigmin) < 0) {
+        bignum = bigmin;
+        error = true;
+      } else if (bignum.compareTo(bigmax) > 0) {
+        bignum = bigmax;
+        error = true;
+      }
+      var ret = goog.math.Long.fromString(bignum.toString()); // min-max checks should have clamped this to a range goog.math.Long can handle well
+      HEAP32[tempDoublePtr>>2] = ret.low_;
+      HEAP32[tempDoublePtr+4>>2] = ret.high_;
+      if (error) throw 'range error';
+    }
+  };
+  return Wrapper;
+})();
+
+//======= end closure i64 code =======
+
+
 
 // === Auto-generated postamble setup entry stuff ===
 
 if (memoryInitializer) {
-  if (Module['memoryInitializerPrefixURL']) {
+  if (typeof Module['locateFile'] === 'function') {
+    memoryInitializer = Module['locateFile'](memoryInitializer);
+  } else if (Module['memoryInitializerPrefixURL']) {
     memoryInitializer = Module['memoryInitializerPrefixURL'] + memoryInitializer;
   }
   if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
@@ -15410,13 +17171,25 @@ function exit(status) {
   exitRuntime();
 
   if (ENVIRONMENT_IS_NODE) {
-    process['exit'](status);
-  } else if (ENVIRONMENT_IS_SHELL && typeof quit === 'function') {
+    // Work around a node.js bug where stdout buffer is not flushed at process exit:
+    // Instead of process.exit() directly, wait for stdout flush event.
+    // See https://github.com/joyent/node/issues/1669 and https://github.com/kripken/emscripten/issues/2582
+    // Workaround is based on https://github.com/RReverser/acorn/commit/50ab143cecc9ed71a2d66f78b4aec3bb2e9844f6
+    process['stdout']['once']('drain', function () {
+      process['exit'](status);
+    });
+    console.log(' '); // Make sure to print something to force the drain event to occur, in case the stdout buffer was empty.
+    // Work around another node bug where sometimes 'drain' is never fired - make another effort
+    // to emit the exit status, after a significant delay (if node hasn't fired drain by then, give up)
+    setTimeout(function() {
+      process['exit'](status);
+    }, 500);
+  } else
+  if (ENVIRONMENT_IS_SHELL && typeof quit === 'function') {
     quit(status);
-  } else {
-    // no proper way to exit with a return code, throw an exception to halt the current execution
-    throw new ExitStatus(status);
   }
+  // if we reach here, we must throw an exception to halt the current execution
+  throw new ExitStatus(status);
 }
 Module['exit'] = Module.exit = exit;
 
@@ -15464,4 +17237,3 @@ run();
 
 
 
-//# sourceMappingURL=val_scan.js.map

@@ -16,9 +16,16 @@ Module.expectedDataFileDownloads++;
       PACKAGE_PATH = encodeURIComponent(location.pathname.toString().substring(0, location.pathname.toString().lastIndexOf('/')) + '/');
     }
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-davibu/js/val_smallptgpu1.data';
-    var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_smallptgpu1.data';
+    var REMOTE_PACKAGE_BASE = 'val_smallptgpu1.data';
+    if (typeof Module['locateFilePackage'] === 'function' && !Module['locateFile']) {
+      Module['locateFile'] = Module['locateFilePackage'];
+      Module.printErr('warning: you defined Module.locateFilePackage, that has been renamed to Module.locateFile (using your locateFilePackage for now)');
+    }
+    var REMOTE_PACKAGE_NAME = typeof Module['locateFile'] === 'function' ?
+                              Module['locateFile'](REMOTE_PACKAGE_BASE) :
+                              ((Module['filePackagePrefixURL'] || '') + REMOTE_PACKAGE_BASE);
     var REMOTE_PACKAGE_SIZE = 43004;
-    var PACKAGE_UUID = '6f8dbbc7-3df4-4a0f-bf57-bf34a0760fd7';
+    var PACKAGE_UUID = 'b7b79515-430e-450a-b1a8-e7823d252b30';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -236,10 +243,19 @@ if (ENVIRONMENT_IS_NODE) {
     globalEval(read(f));
   };
 
-  Module['thisProgram'] = process['argv'][1];
+  Module['thisProgram'] = process['argv'][1].replace(/\\/g, '/');
   Module['arguments'] = process['argv'].slice(2);
 
-  module['exports'] = Module;
+  if (typeof module !== 'undefined') {
+    module['exports'] = Module;
+  }
+
+  process['on']('uncaughtException', function(ex) {
+    // suppress ExitStatus exceptions from showing an error
+    if (!(ex instanceof ExitStatus)) {
+      throw ex;
+    }
+  });
 }
 else if (ENVIRONMENT_IS_SHELL) {
   if (!Module['print']) Module['print'] = print;
@@ -252,7 +268,12 @@ else if (ENVIRONMENT_IS_SHELL) {
   }
 
   Module['readBinary'] = function readBinary(f) {
-    return read(f, 'binary');
+    if (typeof readbuffer === 'function') {
+      return new Uint8Array(readbuffer(f));
+    }
+    var data = read(f, 'binary');
+    assert(typeof data === 'object');
+    return data;
   };
 
   if (typeof scriptArgs != 'undefined') {
@@ -307,7 +328,7 @@ else {
 function globalEval(x) {
   eval.call(null, x);
 }
-if (!Module['load'] == 'undefined' && Module['read']) {
+if (!Module['load'] && Module['read']) {
   Module['load'] = function load(f) {
     globalEval(Module['read'](f));
   };
@@ -344,7 +365,15 @@ for (var key in moduleOverrides) {
 
 
 
-// === Auto-generated preamble library stuff ===
+// === Preamble library stuff ===
+
+// Documentation for the public APIs defined in this file must be updated in: 
+//    site/source/docs/api_reference/preamble.js.rst
+// A prebuilt local version of the documentation is available at: 
+//    site/build/text/docs/api_reference/preamble.js.txt
+// You can also build docs locally as HTML or other formats in site/
+// An online HTML version (which may be of a different version of Emscripten)
+//    is up at http://kripken.github.io/emscripten-site/docs/api_reference/preamble.js.html
 
 //========================================
 // Runtime code shared with compiler
@@ -362,46 +391,6 @@ var Runtime = {
   },
   stackRestore: function (stackTop) {
     STACKTOP = stackTop;
-  },
-  forceAlign: function (target, quantum) {
-    quantum = quantum || 4;
-    if (quantum == 1) return target;
-    if (isNumber(target) && isNumber(quantum)) {
-      return Math.ceil(target/quantum)*quantum;
-    } else if (isNumber(quantum) && isPowerOfTwo(quantum)) {
-      return '(((' +target + ')+' + (quantum-1) + ')&' + -quantum + ')';
-    }
-    return 'Math.ceil((' + target + ')/' + quantum + ')*' + quantum;
-  },
-  isNumberType: function (type) {
-    return type in Runtime.INT_TYPES || type in Runtime.FLOAT_TYPES;
-  },
-  isPointerType: function isPointerType(type) {
-  return type[type.length-1] == '*';
-},
-  isStructType: function isStructType(type) {
-  if (isPointerType(type)) return false;
-  if (isArrayType(type)) return true;
-  if (/<?\{ ?[^}]* ?\}>?/.test(type)) return true; // { i32, i8 } etc. - anonymous struct types
-  // See comment in isStructPointerType()
-  return type[0] == '%';
-},
-  INT_TYPES: {"i1":0,"i8":0,"i16":0,"i32":0,"i64":0},
-  FLOAT_TYPES: {"float":0,"double":0},
-  or64: function (x, y) {
-    var l = (x | 0) | (y | 0);
-    var h = (Math.round(x / 4294967296) | Math.round(y / 4294967296)) * 4294967296;
-    return l + h;
-  },
-  and64: function (x, y) {
-    var l = (x | 0) & (y | 0);
-    var h = (Math.round(x / 4294967296) & Math.round(y / 4294967296)) * 4294967296;
-    return l + h;
-  },
-  xor64: function (x, y) {
-    var l = (x | 0) ^ (y | 0);
-    var h = (Math.round(x / 4294967296) ^ Math.round(y / 4294967296)) * 4294967296;
-    return l + h;
   },
   getNativeTypeSize: function (type) {
     switch (type) {
@@ -427,138 +416,12 @@ var Runtime = {
   getNativeFieldSize: function (type) {
     return Math.max(Runtime.getNativeTypeSize(type), Runtime.QUANTUM_SIZE);
   },
-  dedup: function dedup(items, ident) {
-  var seen = {};
-  if (ident) {
-    return items.filter(function(item) {
-      if (seen[item[ident]]) return false;
-      seen[item[ident]] = true;
-      return true;
-    });
-  } else {
-    return items.filter(function(item) {
-      if (seen[item]) return false;
-      seen[item] = true;
-      return true;
-    });
-  }
-},
-  set: function set() {
-  var args = typeof arguments[0] === 'object' ? arguments[0] : arguments;
-  var ret = {};
-  for (var i = 0; i < args.length; i++) {
-    ret[args[i]] = 0;
-  }
-  return ret;
-},
-  STACK_ALIGN: 8,
+  STACK_ALIGN: 16,
   getAlignSize: function (type, size, vararg) {
     // we align i64s and doubles on 64-bit boundaries, unlike x86
     if (!vararg && (type == 'i64' || type == 'double')) return 8;
     if (!type) return Math.min(size, 8); // align structures internally to 64 bits
     return Math.min(size || (type ? Runtime.getNativeFieldSize(type) : 0), Runtime.QUANTUM_SIZE);
-  },
-  calculateStructAlignment: function calculateStructAlignment(type) {
-    type.flatSize = 0;
-    type.alignSize = 0;
-    var diffs = [];
-    var prev = -1;
-    var index = 0;
-    type.flatIndexes = type.fields.map(function(field) {
-      index++;
-      var size, alignSize;
-      if (Runtime.isNumberType(field) || Runtime.isPointerType(field)) {
-        size = Runtime.getNativeTypeSize(field); // pack char; char; in structs, also char[X]s.
-        alignSize = Runtime.getAlignSize(field, size);
-      } else if (Runtime.isStructType(field)) {
-        if (field[1] === '0') {
-          // this is [0 x something]. When inside another structure like here, it must be at the end,
-          // and it adds no size
-          // XXX this happens in java-nbody for example... assert(index === type.fields.length, 'zero-length in the middle!');
-          size = 0;
-          if (Types.types[field]) {
-            alignSize = Runtime.getAlignSize(null, Types.types[field].alignSize);
-          } else {
-            alignSize = type.alignSize || QUANTUM_SIZE;
-          }
-        } else {
-          size = Types.types[field].flatSize;
-          alignSize = Runtime.getAlignSize(null, Types.types[field].alignSize);
-        }
-      } else if (field[0] == 'b') {
-        // bN, large number field, like a [N x i8]
-        size = field.substr(1)|0;
-        alignSize = 1;
-      } else if (field[0] === '<') {
-        // vector type
-        size = alignSize = Types.types[field].flatSize; // fully aligned
-      } else if (field[0] === 'i') {
-        // illegal integer field, that could not be legalized because it is an internal structure field
-        // it is ok to have such fields, if we just use them as markers of field size and nothing more complex
-        size = alignSize = parseInt(field.substr(1))/8;
-        assert(size % 1 === 0, 'cannot handle non-byte-size field ' + field);
-      } else {
-        assert(false, 'invalid type for calculateStructAlignment');
-      }
-      if (type.packed) alignSize = 1;
-      type.alignSize = Math.max(type.alignSize, alignSize);
-      var curr = Runtime.alignMemory(type.flatSize, alignSize); // if necessary, place this on aligned memory
-      type.flatSize = curr + size;
-      if (prev >= 0) {
-        diffs.push(curr-prev);
-      }
-      prev = curr;
-      return curr;
-    });
-    if (type.name_ && type.name_[0] === '[') {
-      // arrays have 2 elements, so we get the proper difference. then we scale here. that way we avoid
-      // allocating a potentially huge array for [999999 x i8] etc.
-      type.flatSize = parseInt(type.name_.substr(1))*type.flatSize/2;
-    }
-    type.flatSize = Runtime.alignMemory(type.flatSize, type.alignSize);
-    if (diffs.length == 0) {
-      type.flatFactor = type.flatSize;
-    } else if (Runtime.dedup(diffs).length == 1) {
-      type.flatFactor = diffs[0];
-    }
-    type.needsFlattening = (type.flatFactor != 1);
-    return type.flatIndexes;
-  },
-  generateStructInfo: function (struct, typeName, offset) {
-    var type, alignment;
-    if (typeName) {
-      offset = offset || 0;
-      type = (typeof Types === 'undefined' ? Runtime.typeInfo : Types.types)[typeName];
-      if (!type) return null;
-      if (type.fields.length != struct.length) {
-        printErr('Number of named fields must match the type for ' + typeName + ': possibly duplicate struct names. Cannot return structInfo');
-        return null;
-      }
-      alignment = type.flatIndexes;
-    } else {
-      var type = { fields: struct.map(function(item) { return item[0] }) };
-      alignment = Runtime.calculateStructAlignment(type);
-    }
-    var ret = {
-      __size__: type.flatSize
-    };
-    if (typeName) {
-      struct.forEach(function(item, i) {
-        if (typeof item === 'string') {
-          ret[item] = alignment[i] + offset;
-        } else {
-          // embedded struct
-          var key;
-          for (var k in item) key = k;
-          ret[key] = Runtime.generateStructInfo(item[key], type.fields[i], alignment[i]);
-        }
-      });
-    } else {
-      struct.forEach(function(item, i) {
-        ret[item[1]] = alignment[i];
-      });
-    }
-    return ret;
   },
   dynCall: function (sig, ptr, args) {
     if (args && args.length) {
@@ -606,7 +469,8 @@ var Runtime = {
       }
     }
     try {
-      var evalled = eval('(function(' + args.join(',') + '){ ' + source + ' })'); // new Function does not allow upvars in node
+      // Module is the only 'upvar', which we provide directly. We also provide FS for legacy support.
+      var evalled = eval('(function(Module, FS) { return function(' + args.join(',') + '){ ' + source + ' } })')(Module, typeof FS !== 'undefined' ? FS : null);
     } catch(e) {
       Module.printErr('error in executing inline EM_ASM code: ' + e + ' on: \n\n' + source + '\n\nwith args |' + args + '| (make sure to use the right one out of EM_ASM, EM_ASM_ARGS, etc.)');
       throw e;
@@ -675,7 +539,7 @@ var Runtime = {
         var codePoint = ((c1 & 0x07) << 18) | ((c2 & 0x3F) << 12) |
                         ((c3 & 0x3F) << 6)  | (c4 & 0x3F);
         ret = String.fromCharCode(
-          Math.floor((codePoint - 0x10000) / 0x400) + 0xD800,
+          (((codePoint - 0x10000) / 0x400)|0) + 0xD800,
           (codePoint - 0x10000) % 0x400 + 0xDC00);
       }
       buffer.length = 0;
@@ -698,10 +562,10 @@ var Runtime = {
   getCompilerSetting: function (name) {
     throw 'You must build with -s RETAIN_COMPILER_SETTINGS=1 for Runtime.getCompilerSetting or emscripten_get_compiler_setting to work';
   },
-  stackAlloc: function (size) { var ret = STACKTOP;STACKTOP = (STACKTOP + size)|0;STACKTOP = (((STACKTOP)+7)&-8);(assert((((STACKTOP|0) < (STACK_MAX|0))|0))|0); return ret; },
-  staticAlloc: function (size) { var ret = STATICTOP;STATICTOP = (STATICTOP + (assert(!staticSealed),size))|0;STATICTOP = (((STATICTOP)+7)&-8); return ret; },
-  dynamicAlloc: function (size) { var ret = DYNAMICTOP;DYNAMICTOP = (DYNAMICTOP + (assert(DYNAMICTOP > 0),size))|0;DYNAMICTOP = (((DYNAMICTOP)+7)&-8); if (DYNAMICTOP >= TOTAL_MEMORY) enlargeMemory();; return ret; },
-  alignMemory: function (size,quantum) { var ret = size = Math.ceil((size)/(quantum ? quantum : 8))*(quantum ? quantum : 8); return ret; },
+  stackAlloc: function (size) { var ret = STACKTOP;STACKTOP = (STACKTOP + size)|0;STACKTOP = (((STACKTOP)+15)&-16);(assert((((STACKTOP|0) < (STACK_MAX|0))|0))|0); return ret; },
+  staticAlloc: function (size) { var ret = STATICTOP;STATICTOP = (STATICTOP + (assert(!staticSealed),size))|0;STATICTOP = (((STATICTOP)+15)&-16); return ret; },
+  dynamicAlloc: function (size) { var ret = DYNAMICTOP;DYNAMICTOP = (DYNAMICTOP + (assert(DYNAMICTOP > 0),size))|0;DYNAMICTOP = (((DYNAMICTOP)+15)&-16); if (DYNAMICTOP >= TOTAL_MEMORY) enlargeMemory();; return ret; },
+  alignMemory: function (size,quantum) { var ret = size = Math.ceil((size)/(quantum ? quantum : 16))*(quantum ? quantum : 16); return ret; },
   makeBigInt: function (low,high,unsigned) { var ret = (unsigned ? ((+((low>>>0)))+((+((high>>>0)))*4294967296.0)) : ((+((low>>>0)))+((+((high|0)))*4294967296.0))); return ret; },
   GLOBAL_BASE: 8,
   QUANTUM_SIZE: 4,
@@ -774,7 +638,8 @@ var cwrap, ccall;
     'stringToC' : function(str) {
       var ret = 0;
       if (str !== null && str !== undefined && str !== 0) { // null string
-        ret = Runtime.stackAlloc(str.length + 1); // +1 for the trailing '\0'
+        // at most 4 bytes per UTF-8 code point, +1 for the trailing '\0'
+        ret = Runtime.stackAlloc((str.length << 2) + 1);
         writeStringToMemory(str, ret);
       }
       return ret;
@@ -783,30 +648,7 @@ var cwrap, ccall;
   // For fast lookup of conversion functions
   var toC = {'string' : JSfuncs['stringToC'], 'array' : JSfuncs['arrayToC']};
 
-  // C calling interface. A convenient way to call C functions (in C files, or
-  // defined with extern "C").
-  //
-  // Note: ccall/cwrap use the C stack for temporary values. If you pass a string
-  //       then it is only alive until the call is complete. If the code being
-  //       called saves the pointer to be used later, it may point to invalid
-  //       data. If you need a string to live forever, you can create it (and
-  //       must later delete it manually!) using malloc and writeStringToMemory,
-  //       for example.
-  //
-  // Note: LLVM optimizations can inline and remove functions, after which you will not be
-  //       able to call them. Closure can also do so. To avoid that, add your function to
-  //       the exports using something like
-  //
-  //         -s EXPORTED_FUNCTIONS='["_main", "_myfunc"]'
-  //
-  // @param ident      The name of the C function (note that C++ functions will be name-mangled - use extern "C")
-  // @param returnType The return type of the function, one of the JS types 'number', 'string' or 'array' (use 'number' for any C pointer, and
-  //                   'array' for JavaScript arrays and typed arrays; note that arrays are 8-bit).
-  // @param argTypes   An array of the types of arguments for the function (if there are no arguments, this can be ommitted). Types are as in returnType,
-  //                   except that 'array' is not possible (there is no way for us to know the length of the array)
-  // @param args       An array of the arguments to the function, as native JS values (as in returnType)
-  //                   Note that string arguments will be stored on the stack (the JS string will become a C string on the stack).
-  // @return           The return value, as a native JS value (as in returnType)
+  // C calling interface. 
   ccall = function ccallFunc(ident, returnType, argTypes, args) {
     var func = getCFunc(ident);
     var cArgs = [];
@@ -842,13 +684,8 @@ var cwrap, ccall;
       JSsource[fun] = parseJSFunc(JSfuncs[fun]);
     }
   }
-  // Returns a native JS wrapper for a C function. This is similar to ccall, but
-  // returns a function you can call repeatedly in a normal way. For example:
-  //
-  //   var my_function = cwrap('my_c_function', 'number', ['number', 'number']);
-  //   alert(my_function(5, 22));
-  //   alert(my_function(99, 12));
-  //
+
+  
   cwrap = function cwrap(ident, returnType, argTypes) {
     argTypes = argTypes || [];
     var cfunc = getCFunc(ident);
@@ -897,14 +734,7 @@ var cwrap, ccall;
 Module["cwrap"] = cwrap;
 Module["ccall"] = ccall;
 
-// Sets a value in memory in a dynamic way at run-time. Uses the
-// type data. This is the same as makeSetValue, except that
-// makeSetValue is done at compile-time and generates the needed
-// code then, whereas this function picks the right code at
-// run-time.
-// Note that setValue and getValue only do *aligned* writes and reads!
-// Note that ccall uses JS types as for defining types, while setValue and
-// getValue need LLVM types ('i8', 'i32') - this is a lower-level operation
+
 function setValue(ptr, value, type, noSafe) {
   type = type || 'i8';
   if (type.charAt(type.length-1) === '*') type = 'i32'; // pointers are 32-bit
@@ -921,7 +751,7 @@ function setValue(ptr, value, type, noSafe) {
 }
 Module['setValue'] = setValue;
 
-// Parallel to setValue.
+
 function getValue(ptr, type, noSafe) {
   type = type || 'i8';
   if (type.charAt(type.length-1) === '*') type = 'i32'; // pointers are 32-bit
@@ -1076,8 +906,6 @@ function Pointer_stringify(ptr, /* optional */ length) {
 }
 Module['Pointer_stringify'] = Pointer_stringify;
 
-// Given a pointer 'ptr' to a null-terminated UTF16LE-encoded string in the emscripten HEAP, returns
-// a copy of that string as a Javascript String object.
 function UTF16ToString(ptr) {
   var i = 0;
 
@@ -1093,8 +921,7 @@ function UTF16ToString(ptr) {
 }
 Module['UTF16ToString'] = UTF16ToString;
 
-// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr',
-// null-terminated and encoded in UTF16LE form. The copy will require at most (str.length*2+1)*2 bytes of space in the HEAP.
+
 function stringToUTF16(str, outPtr) {
   for(var i = 0; i < str.length; ++i) {
     // charCodeAt returns a UTF-16 encoded code unit, so it can be directly written to the HEAP.
@@ -1106,8 +933,7 @@ function stringToUTF16(str, outPtr) {
 }
 Module['stringToUTF16'] = stringToUTF16;
 
-// Given a pointer 'ptr' to a null-terminated UTF32LE-encoded string in the emscripten HEAP, returns
-// a copy of that string as a Javascript String object.
+
 function UTF32ToString(ptr) {
   var i = 0;
 
@@ -1128,9 +954,7 @@ function UTF32ToString(ptr) {
 }
 Module['UTF32ToString'] = UTF32ToString;
 
-// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr',
-// null-terminated and encoded in UTF32LE form. The copy will require at most (str.length+1)*4 bytes of space in the HEAP,
-// but can use less, since str.length does not return the number of characters in the string, but the number of UTF-16 code units in the string.
+
 function stringToUTF32(str, outPtr) {
   var iChar = 0;
   for(var iCodeUnit = 0; iCodeUnit < str.length; ++iCodeUnit) {
@@ -1371,7 +1195,7 @@ var TOTAL_STACK = Module['TOTAL_STACK'] || 5242880;
 var TOTAL_MEMORY = Module['TOTAL_MEMORY'] || 16777216;
 var FAST_MEMORY = Module['FAST_MEMORY'] || 2097152;
 
-var totalMemory = 4096;
+var totalMemory = 64*1024;
 while (totalMemory < TOTAL_MEMORY || totalMemory < 2*TOTAL_STACK) {
   if (totalMemory < 16*1024*1024) {
     totalMemory *= 2;
@@ -1509,8 +1333,7 @@ Module['addOnPostRun'] = Module.addOnPostRun = addOnPostRun;
 
 // Tools
 
-// This processes a JS string into a C-line array of numbers, 0-terminated.
-// For LLVM-originating strings, see parser.js:parseLLVMString function
+
 function intArrayFromString(stringy, dontAddNull, length /* optional */) {
   var ret = (new Runtime.UTF8Processor()).processJSString(stringy);
   if (length) {
@@ -1537,7 +1360,6 @@ function intArrayToString(array) {
 }
 Module['intArrayToString'] = intArrayToString;
 
-// Write a Javascript array to somewhere in the heap
 function writeStringToMemory(string, buffer, dontAddNull) {
   var array = intArrayFromString(string, dontAddNull);
   var i = 0;
@@ -1700,11 +1522,11 @@ var memoryInitializer = null;
 
 STATIC_BASE = 8;
 
-STATICTOP = STATIC_BASE + Runtime.alignMemory(5947);
+STATICTOP = STATIC_BASE + Runtime.alignMemory(5955);
   /* global initializers */ __ATINIT__.push();
   
 
-/* memory initializer */ allocate([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,32,79,112,101,110,67,76,32,97,114,103,46,32,35,49,58,32,37,100,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,32,79,112,101,110,67,76,32,97,114,103,46,32,35,50,58,32,37,100,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,32,79,112,101,110,67,76,32,97,114,103,46,32,35,51,58,32,37,100,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,32,79,112,101,110,67,76,32,97,114,103,46,32,35,52,58,32,37,100,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,32,79,112,101,110,67,76,32,97,114,103,46,32,35,53,58,32,37,100,10,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,32,79,112,101,110,67,76,32,97,114,103,46,32,35,54,58,32,37,100,10,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,32,79,112,101,110,67,76,32,97,114,103,46,32,35,55,58,32,37,100,10,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,32,79,112,101,110,67,76,32,97,114,103,46,32,35,56,58,32,37,100,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,32,79,112,101,110,67,76,32,97,114,103,46,32,35,57,58,32,37,100,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,116,104,101,32,79,112,101,110,67,76,32,112,105,120,101,108,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,82,101,110,100,101,114,105,110,103,32,116,105,109,101,32,37,46,51,102,32,115,101,99,32,40,112,97,115,115,32,37,100,41,32,32,83,97,109,112,108,101,47,115,101,99,32,32,37,46,49,102,75,10,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,119,114,105,116,101,32,116,104,101,32,79,112,101,110,67,76,32,115,99,101,110,101,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,119,114,105,116,101,32,116,104,101,32,79,112,101,110,67,76,32,99,97,109,101,114,97,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,85,115,97,103,101,58,32,37,115,10,0,0,0,0,0,0,85,115,97,103,101,58,32,37,115,32,60,117,115,101,32,67,80,85,47,71,80,85,32,100,101,118,105,99,101,32,40,48,61,67,80,85,32,111,114,32,49,61,71,80,85,41,62,32,60,119,111,114,107,103,114,111,117,112,32,115,105,122,101,32,40,48,61,100,101,102,97,117,108,116,32,118,97,108,117,101,32,111,114,32,97,110,121,116,104,105,110,103,32,62,32,48,32,97,110,100,32,112,111,119,101,114,32,111,102,32,50,41,62,32,60,107,101,114,110,101,108,32,102,105,108,101,32,110,97,109,101,62,32,60,119,105,110,100,111,119,32,119,105,100,116,104,62,32,60,119,105,110,100,111,119,32,104,101,105,103,104,116,62,32,60,115,99,101,110,101,32,102,105,108,101,62,10,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,120,11,0,0,0,0,0,0,0,64,28,70,0,68,28,70,51,51,35,66,51,51,163,66,0,0,0,0,0,0,0,0,0,0,0,0,0,0,64,63,0,0,128,62,0,0,128,62,0,0,0,0,0,64,28,70,0,180,26,198,51,51,35,66,51,51,163,66,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,62,0,0,128,62,0,0,64,63,0,0,0,0,0,64,28,70,0,0,72,66,51,51,35,66,0,64,28,70,0,0,0,0,0,0,0,0,0,0,0,0,0,0,64,63,0,0,64,63,0,0,64,63,0,0,0,0,0,64,28,70,0,0,72,66,51,51,35,66,0,8,24,198,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,64,28,70,0,0,72,66,0,64,28,70,51,51,163,66,0,0,0,0,0,0,0,0,0,0,0,0,0,0,64,63,0,0,64,63,0,0,64,63,0,0,0,0,0,64,28,70,0,0,72,66,154,249,26,198,51,51,163,66,0,0,0,0,0,0,0,0,0,0,0,0,0,0,64,63,0,0,64,63,0,0,64,63,0,0,0,0,0,0,132,65,0,0,216,65,0,0,132,65,0,0,60,66,0,0,0,0,0,0,0,0,0,0,0,0,102,102,102,63,102,102,102,63,102,102,102,63,1,0,0,0,0,0,132,65,0,0,146,66,0,0,132,65,0,0,156,66,0,0,0,0,0,0,0,0,0,0,0,0,102,102,102,63,102,102,102,63,102,102,102,63,2,0,0,0,0,0,224,64,0,0,72,66,51,51,133,66,51,51,163,66,0,0,64,65,0,0,64,65,0,0,64,65,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,83,109,97,108,108,80,84,32,71,80,85,32,86,49,46,54,32,40,87,114,105,116,116,101,110,32,98,121,32,68,97,118,105,100,32,66,117,99,99,105,97,114,101,108,108,105,41,0,70,97,105,108,101,100,32,116,111,32,103,101,116,32,79,112,101,110,67,76,32,112,108,97,116,102,111,114,109,115,10,0,70,97,105,108,101,100,32,116,111,32,103,101,116,32,79,112,101,110,67,76,32,112,108,97,116,102,111,114,109,32,73,68,115,10,0,0,0,0,0,0,79,112,101,110,67,76,32,80,108,97,116,102,111,114,109,32,37,100,58,32,37,115,10,0,70,97,105,108,101,100,32,116,111,32,103,101,116,32,79,112,101,110,67,76,32,100,101,118,105,99,101,32,73,68,115,10,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,103,101,116,32,79,112,101,110,67,76,32,100,101,118,105,99,101,32,105,110,102,111,58,32,37,100,10,0,0,0,84,89,80,69,95,65,76,76,0,0,0,0,0,0,0,0,84,89,80,69,95,68,69,70,65,85,76,84,0,0,0,0,84,89,80,69,95,67,80,85,0,0,0,0,0,0,0,0,84,89,80,69,95,71,80,85,0,0,0,0,0,0,0,0,84,89,80,69,95,85,78,75,78,79,87,78,0,0,0,0,79,112,101,110,67,76,32,68,101,118,105,99,101,32,37,100,58,32,84,121,112,101,32,61,32,37,115,10,0,0,0,0,79,112,101,110,67,76,32,68,101,118,105,99,101,32,37,100,58,32,78,97,109,101,32,61,32,37,115,10,0,0,0,0,79,112,101,110,67,76,32,68,101,118,105,99,101,32,37,100,58,32,67,111,109,112,117,116,101,32,117,110,105,116,115,32,61,32,37,117,10,0,0,0,79,112,101,110,67,76,32,68,101,118,105,99,101,32,37,100,58,32,77,97,120,46,32,119,111,114,107,32,103,114,111,117,112,32,115,105,122,101,32,61,32,37,100,10,0,0,0,0,85,110,97,98,108,101,32,116,111,32,115,101,108,101,99,116,32,97,110,32,97,112,112,114,111,112,114,105,97,116,101,32,100,101,118,105,99,101,10,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,111,112,101,110,32,79,112,101,110,67,76,32,99,111,110,116,101,120,116,10,0,0,70,97,105,108,101,100,32,116,111,32,103,101,116,32,79,112,101,110,67,76,32,99,111,110,116,101,120,116,32,105,110,102,111,58,32,37,100,10,0,0,91,83,69,76,69,67,84,69,68,93,32,79,112,101,110,67,76,32,68,101,118,105,99,101,32,37,100,58,32,84,121,112,101,32,61,32,37,115,10,0,91,83,69,76,69,67,84,69,68,93,32,79,112,101,110,67,76,32,68,101,118,105,99,101,32,37,100,58,32,78,97,109,101,32,61,32,37,115,10,0,91,83,69,76,69,67,84,69,68,93,32,79,112,101,110,67,76,32,68,101,118,105,99,101,32,37,100,58,32,67,111,109,112,117,116,101,32,117,110,105,116,115,32,61,32,37,117,10,0,0,0,0,0,0,0,0,91,83,69,76,69,67,84,69,68,93,32,79,112,101,110,67,76,32,68,101,118,105,99,101,32,37,100,58,32,77,97,120,46,32,119,111,114,107,32,103,114,111,117,112,32,115,105,122,101,32,61,32,37,100,10,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,67,76,32,99,111,109,109,97,110,100,32,113,117,101,117,101,58,32,37,100,10,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,67,76,32,115,99,101,110,101,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,67,76,32,99,97,109,101,114,97,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,111,112,101,110,32,79,112,101,110,67,76,32,107,101,114,110,101,108,32,115,111,117,114,99,101,115,58,32,37,100,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,98,117,105,108,100,32,79,112,101,110,67,76,32,107,101,114,110,101,108,58,32,37,100,10,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,103,101,116,32,79,112,101,110,67,76,32,107,101,114,110,101,108,32,105,110,102,111,32,115,105,122,101,58,32,37,100,10,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,103,101,116,32,79,112,101,110,67,76,32,107,101,114,110,101,108,32,105,110,102,111,58,32,37,100,10,0,0,0,79,112,101,110,67,76,32,80,114,111,103,114,97,109,109,32,66,117,105,108,100,32,76,111,103,58,32,37,115,10,0,0,82,97,100,105,97,110,99,101,71,80,85,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,67,76,32,107,101,114,110,101,108,58,32,37,100,10,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,103,101,116,32,79,112,101,110,67,76,32,107,101,114,110,101,108,32,119,111,114,107,32,103,114,111,117,112,32,115,105,122,101,32,105,110,102,111,58,32,37,100,10,0,0,0,1,0,0,0,0,0,0,0,79,112,101,110,67,76,32,68,101,118,105,99,101,32,48,58,32,107,101,114,110,101,108,32,119,111,114,107,32,103,114,111,117,112,32,115,105,122,101,32,61,32,37,100,10,0,0,0,79,112,101,110,67,76,32,68,101,118,105,99,101,32,48,58,32,102,111,114,99,101,100,32,107,101,114,110,101,108,32,119,111,114,107,32,103,114,111,117,112,32,115,105,122,101,32,61,32,37,100,10,0,0,0,0,114,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,111,112,101,110,32,102,105,108,101,32,39,37,115,39,10,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,101,107,32,102,105,108,101,32,39,37,115,39,10,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,104,101,99,107,32,112,111,115,105,116,105,111,110,32,111,110,32,102,105,108,101,32,39,37,115,39,10,0,0,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,109,101,109,111,114,121,32,102,111,114,32,102,105,108,101,32,39,37,115,39,10,0,0,0,0,0,0,0,0,82,101,97,100,105,110,103,32,102,105,108,101,32,39,37,115,39,32,40,115,105,122,101,32,37,108,100,32,98,121,116,101,115,41,10,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,102,105,108,101,32,39,37,115,39,32,40,114,101,97,100,32,37,108,100,41,10,0,0,0,0,112,114,101,112,114,111,99,101,115,115,101,100,95,114,101,110,100,101,114,105,110,103,95,107,101,114,110,101,108,95,100,108,46,99,108,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,67,76,32,111,117,116,112,117,116,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,67,76,32,112,105,120,101,108,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,67,76,32,115,101,101,100,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,119,114,105,116,101,32,116,104,101,32,79,112,101,110,67,76,32,115,101,101,100,115,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,108,101,97,115,101,32,79,112,101,110,67,76,32,99,111,108,111,114,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,108,101,97,115,101,32,79,112,101,110,67,76,32,112,105,120,101,108,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,108,101,97,115,101,32,79,112,101,110,67,76,32,115,101,101,100,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,101,110,113,117,101,117,101,32,79,112,101,110,67,76,32,119,111,114,107,58,32,37,100,10,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,2,0,0,0,0,0,0,82,101,97,100,105,110,103,32,115,99,101,110,101,58,32,37,115,10,0,0,0,0,0,0,114,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,111,112,101,110,32,102,105,108,101,58,32,37,115,10,0,0,0,0,0,0,0,0,99,97,109,101,114,97,32,37,102,32,37,102,32,37,102,32,32,37,102,32,37,102,32,37,102,10,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,54,32,99,97,109,101,114,97,32,112,97,114,97,109,101,116,101,114,115,58,32,37,100,10,0,115,105,122,101,32,37,117,10,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,115,112,104,101,114,101,32,99,111,117,110,116,58,32,37,100,10,0,0,0,0,0,0,0,0,83,99,101,110,101,32,115,105,122,101,58,32,37,100,10,0,115,112,104,101,114,101,32,37,102,32,32,37,102,32,37,102,32,37,102,32,32,37,102,32,37,102,32,37,102,32,32,37,102,32,37,102,32,37,102,32,32,37,100,10,0,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,109,97,116,101,114,105,97,108,32,116,121,112,101,32,102,111,114,32,115,112,104,101,114,101,32,35,37,100,58,32,37,100,10,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,115,112,104,101,114,101,32,35,37,100,58,32,37,100,10,0,0,0,0,0,0,0,0,128,63,0,0,0,0,0,0,0,0,225,13,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,25,0,0,0,0,0,0,1,20,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,83,109,97,108,108,112,116,67,80,85,32,118,49,46,54,32,40,87,114,105,116,116,101,110,32,98,121,32,68,97,118,105,100,32,66,117,99,99,105,97,114,101,108,108,105,41,0,0,83,109,97,108,108,112,116,71,80,85,32,118,49,46,54,32,40,87,114,105,116,116,101,110,32,98,121,32,68,97,118,105,100,32,66,117,99,99,105,97,114,101,108,108,105,41,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,105,109,97,103,101,46,112,112,109,0,0,0,0,0,0,0,119,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,111,112,101,110,32,105,109,97,103,101,32,102,105,108,101,58,32,105,109,97,103,101,46,112,112,109,10,0,0,0,80,51,10,37,100,32,37,100,10,37,100,10,0,0,0,0,37,100,32,37,100,32,37,100,32,0,0,0,0,0,0,0,68,111,110,101,46,10,0,0,0,0,0,0,0,0,0,0,83,101,108,101,99,116,101,100,32,115,112,104,101,114,101,32,37,100,32,40,37,102,32,37,102,32,37,102,41,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,191,0,0,128,191,0,0,128,63,0,0,128,191,0,0,128,63,0,0,128,63,0,0,128,191,0,0,128,63,67,114,101,97,116,105,110,103,32,84,101,120,116,117,114,101,32,49,32,37,100,32,120,32,37,100,46,46,46,10,0,0,193,132,0,0,0,0,0,0,8,25,0,0,0,0,0,0,72,101,108,112,0,0,0,0,104,32,45,32,116,111,103,103,108,101,32,72,101,108,112,0,97,114,114,111,119,32,75,101,121,115,32,45,32,114,111,116,97,116,101,32,99,97,109,101,114,97,32,108,101,102,116,47,114,105,103,104,116,47,117,112,47,100,111,119,110,0,0,0,97,32,97,110,100,32,100,32,45,32,109,111,118,101,32,99,97,109,101,114,97,32,108,101,102,116,32,97,110,100,32,114,105,103,104,116,0,0,0,0,119,32,97,110,100,32,115,32,45,32,109,111,118,101,32,99,97,109,101,114,97,32,102,111,114,119,97,114,100,32,97,110,100,32,98,97,99,107,119,97,114,100,0,0,0,0,0,0,114,32,97,110,100,32,102,32,45,32,109,111,118,101,32,99,97,109,101,114,97,32,117,112,32,97,110,100,32,100,111,119,110,0,0,0,0,0,0,0,80,97,103,101,85,112,32,97,110,100,32,80,97,103,101,68,111,119,110,32,45,32,109,111,118,101,32,99,97,109,101,114,97,32,116,97,114,103,101,116,32,117,112,32,97,110,100,32,100,111,119,110,0,0,0,0,43,32,97,110,100,32,45,32,45,32,116,111,32,115,101,108,101,99,116,32,110,101,120,116,47,112,114,101,118,105,111,117,115,32,111,98,106,101,99,116,0,0,0,0,0,0,0,0,50,44,32,51,44,32,52,44,32,53,44,32,54,44,32,56,44,32,57,32,45,32,116,111,32,109,111,118,101,32,115,101,108,101,99,116,101,100,32,111,98,106,101,99,116,0,0,0,37,115,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,0,10,0,17,17,17,0,0,0,0,5,0,0,0,0,0,0,9,0,0,0,0,11,0,0,0,0,0,0,0,0,17,0,15,10,17,17,17,3,10,7,0,1,19,9,11,11,0,0,9,6,11,0,0,11,0,6,17,0,0,0,17,17,17,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,11,0,0,0,0,0,0,0,0,17,0,10,10,17,17,17,0,10,0,0,2,0,9,11,0,0,0,9,0,11,0,0,11,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,12,0,0,0,0,9,12,0,0,0,0,0,12,0,0,12,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,14,0,0,0,0,0,0,0,0,0,0,0,13,0,0,0,4,13,0,0,0,0,9,14,0,0,0,0,0,14,0,0,14,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,16,0,0,0,0,0,0,0,0,0,0,0,15,0,0,0,0,15,0,0,0,0,9,16,0,0,0,0,0,16,0,0,16,0,0,18,0,0,0,18,18,18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,18,0,0,0,18,18,18,0,0,0,0,0,0,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,11,0,0,0,0,0,0,0,0,0,0,0,10,0,0,0,0,10,0,0,0,0,9,11,0,0,0,0,0,11,0,0,11,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,12,0,0,0,0,9,12,0,0,0,0,0,12,0,0,12,0,0,45,43,32,32,32,48,88,48,120,0,0,0,0,0,0,0,40,110,117,108,108,41,0,0,45,48,88,43,48,88,32,48,88,45,48,120,43,48,120,32,48,120,0,0,0,0,0,0,105,110,102,0,0,0,0,0,73,78,70,0,0,0,0,0,110,97,110,0,0,0,0,0,78,65,78,0,0,0,0,0,48,49,50,51,52,53,54,55,56,57,65,66,67,68,69,70,46,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,255,255,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], "i8", ALLOC_NONE, Runtime.GLOBAL_BASE);
+/* memory initializer */ allocate([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,32,79,112,101,110,67,76,32,97,114,103,46,32,35,49,58,32,37,100,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,32,79,112,101,110,67,76,32,97,114,103,46,32,35,50,58,32,37,100,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,32,79,112,101,110,67,76,32,97,114,103,46,32,35,51,58,32,37,100,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,32,79,112,101,110,67,76,32,97,114,103,46,32,35,52,58,32,37,100,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,32,79,112,101,110,67,76,32,97,114,103,46,32,35,53,58,32,37,100,10,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,32,79,112,101,110,67,76,32,97,114,103,46,32,35,54,58,32,37,100,10,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,32,79,112,101,110,67,76,32,97,114,103,46,32,35,55,58,32,37,100,10,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,32,79,112,101,110,67,76,32,97,114,103,46,32,35,56,58,32,37,100,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,116,32,79,112,101,110,67,76,32,97,114,103,46,32,35,57,58,32,37,100,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,116,104,101,32,79,112,101,110,67,76,32,112,105,120,101,108,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,82,101,110,100,101,114,105,110,103,32,116,105,109,101,32,37,46,51,102,32,115,101,99,32,40,112,97,115,115,32,37,100,41,32,32,83,97,109,112,108,101,47,115,101,99,32,32,37,46,49,102,75,10,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,119,114,105,116,101,32,116,104,101,32,79,112,101,110,67,76,32,115,99,101,110,101,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,119,114,105,116,101,32,116,104,101,32,79,112,101,110,67,76,32,99,97,109,101,114,97,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,85,115,97,103,101,58,32,37,115,10,0,0,0,0,0,0,85,115,97,103,101,58,32,37,115,32,60,117,115,101,32,67,80,85,47,71,80,85,32,100,101,118,105,99,101,32,40,48,61,67,80,85,32,111,114,32,49,61,71,80,85,41,62,32,60,119,111,114,107,103,114,111,117,112,32,115,105,122,101,32,40,48,61,100,101,102,97,117,108,116,32,118,97,108,117,101,32,111,114,32,97,110,121,116,104,105,110,103,32,62,32,48,32,97,110,100,32,112,111,119,101,114,32,111,102,32,50,41,62,32,60,107,101,114,110,101,108,32,102,105,108,101,32,110,97,109,101,62,32,60,119,105,110,100,111,119,32,119,105,100,116,104,62,32,60,119,105,110,100,111,119,32,104,101,105,103,104,116,62,32,60,115,99,101,110,101,32,102,105,108,101,62,10,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,120,11,0,0,0,0,0,0,0,64,28,70,0,68,28,70,51,51,35,66,51,51,163,66,0,0,0,0,0,0,0,0,0,0,0,0,0,0,64,63,0,0,128,62,0,0,128,62,0,0,0,0,0,64,28,70,0,180,26,198,51,51,35,66,51,51,163,66,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,62,0,0,128,62,0,0,64,63,0,0,0,0,0,64,28,70,0,0,72,66,51,51,35,66,0,64,28,70,0,0,0,0,0,0,0,0,0,0,0,0,0,0,64,63,0,0,64,63,0,0,64,63,0,0,0,0,0,64,28,70,0,0,72,66,51,51,35,66,0,8,24,198,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,64,28,70,0,0,72,66,0,64,28,70,51,51,163,66,0,0,0,0,0,0,0,0,0,0,0,0,0,0,64,63,0,0,64,63,0,0,64,63,0,0,0,0,0,64,28,70,0,0,72,66,154,249,26,198,51,51,163,66,0,0,0,0,0,0,0,0,0,0,0,0,0,0,64,63,0,0,64,63,0,0,64,63,0,0,0,0,0,0,132,65,0,0,216,65,0,0,132,65,0,0,60,66,0,0,0,0,0,0,0,0,0,0,0,0,102,102,102,63,102,102,102,63,102,102,102,63,1,0,0,0,0,0,132,65,0,0,146,66,0,0,132,65,0,0,156,66,0,0,0,0,0,0,0,0,0,0,0,0,102,102,102,63,102,102,102,63,102,102,102,63,2,0,0,0,0,0,224,64,0,0,72,66,51,51,133,66,51,51,163,66,0,0,64,65,0,0,64,65,0,0,64,65,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,83,109,97,108,108,80,84,32,71,80,85,32,86,49,46,54,32,40,87,114,105,116,116,101,110,32,98,121,32,68,97,118,105,100,32,66,117,99,99,105,97,114,101,108,108,105,41,0,70,97,105,108,101,100,32,116,111,32,103,101,116,32,79,112,101,110,67,76,32,112,108,97,116,102,111,114,109,115,10,0,70,97,105,108,101,100,32,116,111,32,103,101,116,32,79,112,101,110,67,76,32,112,108,97,116,102,111,114,109,32,73,68,115,10,0,0,0,0,0,0,79,112,101,110,67,76,32,80,108,97,116,102,111,114,109,32,37,100,58,32,37,115,10,0,70,97,105,108,101,100,32,116,111,32,103,101,116,32,79,112,101,110,67,76,32,100,101,118,105,99,101,32,73,68,115,10,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,103,101,116,32,79,112,101,110,67,76,32,100,101,118,105,99,101,32,105,110,102,111,58,32,37,100,10,0,0,0,84,89,80,69,95,65,76,76,0,0,0,0,0,0,0,0,84,89,80,69,95,68,69,70,65,85,76,84,0,0,0,0,84,89,80,69,95,67,80,85,0,0,0,0,0,0,0,0,84,89,80,69,95,71,80,85,0,0,0,0,0,0,0,0,84,89,80,69,95,85,78,75,78,79,87,78,0,0,0,0,79,112,101,110,67,76,32,68,101,118,105,99,101,32,37,100,58,32,84,121,112,101,32,61,32,37,115,10,0,0,0,0,79,112,101,110,67,76,32,68,101,118,105,99,101,32,37,100,58,32,78,97,109,101,32,61,32,37,115,10,0,0,0,0,79,112,101,110,67,76,32,68,101,118,105,99,101,32,37,100,58,32,67,111,109,112,117,116,101,32,117,110,105,116,115,32,61,32,37,117,10,0,0,0,79,112,101,110,67,76,32,68,101,118,105,99,101,32,37,100,58,32,77,97,120,46,32,119,111,114,107,32,103,114,111,117,112,32,115,105,122,101,32,61,32,37,100,10,0,0,0,0,85,110,97,98,108,101,32,116,111,32,115,101,108,101,99,116,32,97,110,32,97,112,112,114,111,112,114,105,97,116,101,32,100,101,118,105,99,101,10,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,111,112,101,110,32,79,112,101,110,67,76,32,99,111,110,116,101,120,116,10,0,0,70,97,105,108,101,100,32,116,111,32,103,101,116,32,79,112,101,110,67,76,32,99,111,110,116,101,120,116,32,105,110,102,111,58,32,37,100,10,0,0,91,83,69,76,69,67,84,69,68,93,32,79,112,101,110,67,76,32,68,101,118,105,99,101,32,37,100,58,32,84,121,112,101,32,61,32,37,115,10,0,91,83,69,76,69,67,84,69,68,93,32,79,112,101,110,67,76,32,68,101,118,105,99,101,32,37,100,58,32,78,97,109,101,32,61,32,37,115,10,0,91,83,69,76,69,67,84,69,68,93,32,79,112,101,110,67,76,32,68,101,118,105,99,101,32,37,100,58,32,67,111,109,112,117,116,101,32,117,110,105,116,115,32,61,32,37,117,10,0,0,0,0,0,0,0,0,91,83,69,76,69,67,84,69,68,93,32,79,112,101,110,67,76,32,68,101,118,105,99,101,32,37,100,58,32,77,97,120,46,32,119,111,114,107,32,103,114,111,117,112,32,115,105,122,101,32,61,32,37,100,10,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,67,76,32,99,111,109,109,97,110,100,32,113,117,101,117,101,58,32,37,100,10,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,67,76,32,115,99,101,110,101,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,67,76,32,99,97,109,101,114,97,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,111,112,101,110,32,79,112,101,110,67,76,32,107,101,114,110,101,108,32,115,111,117,114,99,101,115,58,32,37,100,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,98,117,105,108,100,32,79,112,101,110,67,76,32,107,101,114,110,101,108,58,32,37,100,10,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,103,101,116,32,79,112,101,110,67,76,32,107,101,114,110,101,108,32,105,110,102,111,32,115,105,122,101,58,32,37,100,10,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,103,101,116,32,79,112,101,110,67,76,32,107,101,114,110,101,108,32,105,110,102,111,58,32,37,100,10,0,0,0,79,112,101,110,67,76,32,80,114,111,103,114,97,109,109,32,66,117,105,108,100,32,76,111,103,58,32,37,115,10,0,0,82,97,100,105,97,110,99,101,71,80,85,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,67,76,32,107,101,114,110,101,108,58,32,37,100,10,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,103,101,116,32,79,112,101,110,67,76,32,107,101,114,110,101,108,32,119,111,114,107,32,103,114,111,117,112,32,115,105,122,101,32,105,110,102,111,58,32,37,100,10,0,0,0,1,0,0,0,0,0,0,0,79,112,101,110,67,76,32,68,101,118,105,99,101,32,48,58,32,107,101,114,110,101,108,32,119,111,114,107,32,103,114,111,117,112,32,115,105,122,101,32,61,32,37,100,10,0,0,0,79,112,101,110,67,76,32,68,101,118,105,99,101,32,48,58,32,102,111,114,99,101,100,32,107,101,114,110,101,108,32,119,111,114,107,32,103,114,111,117,112,32,115,105,122,101,32,61,32,37,100,10,0,0,0,0,114,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,111,112,101,110,32,102,105,108,101,32,39,37,115,39,10,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,115,101,101,107,32,102,105,108,101,32,39,37,115,39,10,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,104,101,99,107,32,112,111,115,105,116,105,111,110,32,111,110,32,102,105,108,101,32,39,37,115,39,10,0,0,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,109,101,109,111,114,121,32,102,111,114,32,102,105,108,101,32,39,37,115,39,10,0,0,0,0,0,0,0,0,82,101,97,100,105,110,103,32,102,105,108,101,32,39,37,115,39,32,40,115,105,122,101,32,37,108,100,32,98,121,116,101,115,41,10,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,102,105,108,101,32,39,37,115,39,32,40,114,101,97,100,32,37,108,100,41,10,0,0,0,0,112,114,101,112,114,111,99,101,115,115,101,100,95,114,101,110,100,101,114,105,110,103,95,107,101,114,110,101,108,95,100,108,46,99,108,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,67,76,32,111,117,116,112,117,116,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,67,76,32,112,105,120,101,108,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,79,112,101,110,67,76,32,115,101,101,100,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,119,114,105,116,101,32,116,104,101,32,79,112,101,110,67,76,32,115,101,101,100,115,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,108,101,97,115,101,32,79,112,101,110,67,76,32,99,111,108,111,114,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,108,101,97,115,101,32,79,112,101,110,67,76,32,112,105,120,101,108,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,108,101,97,115,101,32,79,112,101,110,67,76,32,115,101,101,100,32,98,117,102,102,101,114,58,32,37,100,10,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,101,110,113,117,101,117,101,32,79,112,101,110,67,76,32,119,111,114,107,58,32,37,100,10,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,2,0,0,0,0,0,0,82,101,97,100,105,110,103,32,115,99,101,110,101,58,32,37,115,10,0,0,0,0,0,0,114,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,111,112,101,110,32,102,105,108,101,58,32,37,115,10,0,0,0,0,0,0,0,0,99,97,109,101,114,97,32,37,102,32,37,102,32,37,102,32,32,37,102,32,37,102,32,37,102,10,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,54,32,99,97,109,101,114,97,32,112,97,114,97,109,101,116,101,114,115,58,32,37,100,10,0,115,105,122,101,32,37,117,10,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,115,112,104,101,114,101,32,99,111,117,110,116,58,32,37,100,10,0,0,0,0,0,0,0,0,83,99,101,110,101,32,115,105,122,101,58,32,37,100,10,0,115,112,104,101,114,101,32,37,102,32,32,37,102,32,37,102,32,37,102,32,32,37,102,32,37,102,32,37,102,32,32,37,102,32,37,102,32,37,102,32,32,37,100,10,0,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,109,97,116,101,114,105,97,108,32,116,121,112,101,32,102,111,114,32,115,112,104,101,114,101,32,35,37,100,58,32,37,100,10,0,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,115,112,104,101,114,101,32,35,37,100,58,32,37,100,10,0,0,0,0,0,0,0,0,128,63,0,0,0,0,0,0,0,0,225,13,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,25,0,0,0,0,0,0,1,20,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,83,109,97,108,108,112,116,67,80,85,32,118,49,46,54,32,40,87,114,105,116,116,101,110,32,98,121,32,68,97,118,105,100,32,66,117,99,99,105,97,114,101,108,108,105,41,0,0,83,109,97,108,108,112,116,71,80,85,32,118,49,46,54,32,40,87,114,105,116,116,101,110,32,98,121,32,68,97,118,105,100,32,66,117,99,99,105,97,114,101,108,108,105,41,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,105,109,97,103,101,46,112,112,109,0,0,0,0,0,0,0,119,0,0,0,0,0,0,0,70,97,105,108,101,100,32,116,111,32,111,112,101,110,32,105,109,97,103,101,32,102,105,108,101,58,32,105,109,97,103,101,46,112,112,109,10,0,0,0,80,51,10,37,100,32,37,100,10,37,100,10,0,0,0,0,37,100,32,37,100,32,37,100,32,0,0,0,0,0,0,0,68,111,110,101,46,10,0,0,0,0,0,0,0,0,0,0,83,101,108,101,99,116,101,100,32,115,112,104,101,114,101,32,37,100,32,40,37,102,32,37,102,32,37,102,41,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,191,0,0,128,191,0,0,128,63,0,0,128,191,0,0,128,63,0,0,128,63,0,0,128,191,0,0,128,63,67,114,101,97,116,105,110,103,32,84,101,120,116,117,114,101,32,49,32,37,100,32,120,32,37,100,46,46,46,10,0,0,193,132,0,0,0,0,0,0,8,25,0,0,0,0,0,0,72,101,108,112,0,0,0,0,104,32,45,32,116,111,103,103,108,101,32,72,101,108,112,0,97,114,114,111,119,32,75,101,121,115,32,45,32,114,111,116,97,116,101,32,99,97,109,101,114,97,32,108,101,102,116,47,114,105,103,104,116,47,117,112,47,100,111,119,110,0,0,0,97,32,97,110,100,32,100,32,45,32,109,111,118,101,32,99,97,109,101,114,97,32,108,101,102,116,32,97,110,100,32,114,105,103,104,116,0,0,0,0,119,32,97,110,100,32,115,32,45,32,109,111,118,101,32,99,97,109,101,114,97,32,102,111,114,119,97,114,100,32,97,110,100,32,98,97,99,107,119,97,114,100,0,0,0,0,0,0,114,32,97,110,100,32,102,32,45,32,109,111,118,101,32,99,97,109,101,114,97,32,117,112,32,97,110,100,32,100,111,119,110,0,0,0,0,0,0,0,80,97,103,101,85,112,32,97,110,100,32,80,97,103,101,68,111,119,110,32,45,32,109,111,118,101,32,99,97,109,101,114,97,32,116,97,114,103,101,116,32,117,112,32,97,110,100,32,100,111,119,110,0,0,0,0,43,32,97,110,100,32,45,32,45,32,116,111,32,115,101,108,101,99,116,32,110,101,120,116,47,112,114,101,118,105,111,117,115,32,111,98,106,101,99,116,0,0,0,0,0,0,0,0,50,44,32,51,44,32,52,44,32,53,44,32,54,44,32,56,44,32,57,32,45,32,116,111,32,109,111,118,101,32,115,101,108,101,99,116,101,100,32,111,98,106,101,99,116,0,0,0,37,115,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,0,10,0,17,17,17,0,0,0,0,5,0,0,0,0,0,0,9,0,0,0,0,11,0,0,0,0,0,0,0,0,17,0,15,10,17,17,17,3,10,7,0,1,19,9,11,11,0,0,9,6,11,0,0,11,0,6,17,0,0,0,17,17,17,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,11,0,0,0,0,0,0,0,0,17,0,10,10,17,17,17,0,10,0,0,2,0,9,11,0,0,0,9,0,11,0,0,11,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,12,0,0,0,0,9,12,0,0,0,0,0,12,0,0,12,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,14,0,0,0,0,0,0,0,0,0,0,0,13,0,0,0,4,13,0,0,0,0,9,14,0,0,0,0,0,14,0,0,14,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,16,0,0,0,0,0,0,0,0,0,0,0,15,0,0,0,0,15,0,0,0,0,9,16,0,0,0,0,0,16,0,0,16,0,0,18,0,0,0,18,18,18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,18,0,0,0,18,18,18,0,0,0,0,0,0,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,11,0,0,0,0,0,0,0,0,0,0,0,10,0,0,0,0,10,0,0,0,0,9,11,0,0,0,0,0,11,0,0,11,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,12,0,0,0,0,9,12,0,0,0,0,0,12,0,0,12,0,0,45,43,32,32,32,48,88,48,120,0,0,0,0,0,0,0,40,110,117,108,108,41,0,0,45,48,88,43,48,88,32,48,88,45,48,120,43,48,120,32,48,120,0,0,0,0,0,0,105,110,102,0,0,0,0,0,73,78,70,0,0,0,0,0,110,97,110,0,0,0,0,0,78,65,78,0,0,0,0,0,48,49,50,51,52,53,54,55,56,57,65,66,67,68,69,70,46,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,255,255,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], "i8", ALLOC_NONE, Runtime.GLOBAL_BASE);
 
 
 
@@ -1747,16 +1569,12 @@ function copyTempDouble(ptr) {
 
 
   
-   
-  Module["_rand_r"] = _rand_r;
-  
-  var ___rand_seed=allocate([0x0273459b, 0, 0, 0], "i32", ALLOC_STATIC); 
-  Module["_rand"] = _rand;
-
-  
-  var GL={counter:1,lastError:0,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],vaos:[],currArrayBuffer:0,currElementArrayBuffer:0,byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],programInfos:{},stringCache:{},packAlignment:4,unpackAlignment:4,init:function () {
+  var GL={counter:1,lastError:0,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],vaos:[],contexts:[],currArrayBuffer:0,currElementArrayBuffer:0,byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],programInfos:{},stringCache:{},packAlignment:4,unpackAlignment:4,init:function () {
         GL.createLog2ceilLookup(GL.MAX_TEMP_BUFFER_SIZE);
-        Browser.moduleContextCreatedCallbacks.push(GL.initExtensions);
+        GL.miniTempBuffer = new Float32Array(GL.MINI_TEMP_BUFFER_SIZE);
+        for (var i = 0; i < GL.MINI_TEMP_BUFFER_SIZE; i++) {
+          GL.miniTempBufferViews[i] = GL.miniTempBuffer.subarray(0, i+1);
+        }
       },recordError:function recordError(errorCode) {
         if (!GL.lastError) {
           GL.lastError = errorCode;
@@ -1767,7 +1585,7 @@ function copyTempDouble(ptr) {
           table[i] = null;
         }
         return ret;
-      },MINI_TEMP_BUFFER_SIZE:16,miniTempBuffer:null,miniTempBufferViews:[0],MAX_TEMP_BUFFER_SIZE:2097152,tempVertexBuffers1:[],tempVertexBufferCounters1:[],tempVertexBuffers2:[],tempVertexBufferCounters2:[],numTempVertexBuffersPerSize:64,tempIndexBuffers:[],tempQuadIndexBuffer:null,log2ceilLookup:null,createLog2ceilLookup:function (maxValue) {
+      },MINI_TEMP_BUFFER_SIZE:16,miniTempBuffer:null,miniTempBufferViews:[0],MAX_TEMP_BUFFER_SIZE:2097152,numTempVertexBuffersPerSize:64,log2ceilLookup:null,createLog2ceilLookup:function (maxValue) {
         GL.log2ceilLookup = new Uint8Array(maxValue+1);
         var log2 = 0;
         var pow2 = 1;
@@ -1779,19 +1597,24 @@ function copyTempDouble(ptr) {
           }
           GL.log2ceilLookup[i] = log2;
         }
-      },generateTempBuffers:function (quads) {
+      },generateTempBuffers:function (quads, context) {
         var largestIndex = GL.log2ceilLookup[GL.MAX_TEMP_BUFFER_SIZE];
-        GL.tempVertexBufferCounters1.length = GL.tempVertexBufferCounters2.length = largestIndex+1;
-        GL.tempVertexBuffers1.length = GL.tempVertexBuffers2.length = largestIndex+1;
-        GL.tempIndexBuffers.length = largestIndex+1;
+        context.tempVertexBufferCounters1 = [];
+        context.tempVertexBufferCounters2 = [];
+        context.tempVertexBufferCounters1.length = context.tempVertexBufferCounters2.length = largestIndex+1;
+        context.tempVertexBuffers1 = [];
+        context.tempVertexBuffers2 = [];
+        context.tempVertexBuffers1.length = context.tempVertexBuffers2.length = largestIndex+1;
+        context.tempIndexBuffers = [];
+        context.tempIndexBuffers.length = largestIndex+1;
         for(var i = 0; i <= largestIndex; ++i) {
-          GL.tempIndexBuffers[i] = null; // Created on-demand
-          GL.tempVertexBufferCounters1[i] = GL.tempVertexBufferCounters2[i] = 0;
+          context.tempIndexBuffers[i] = null; // Created on-demand
+          context.tempVertexBufferCounters1[i] = context.tempVertexBufferCounters2[i] = 0;
           var ringbufferLength = GL.numTempVertexBuffersPerSize;
-          GL.tempVertexBuffers1[i] = [];
-          GL.tempVertexBuffers2[i] = [];
-          var ringbuffer1 = GL.tempVertexBuffers1[i];
-          var ringbuffer2 = GL.tempVertexBuffers2[i];
+          context.tempVertexBuffers1[i] = [];
+          context.tempVertexBuffers2[i] = [];
+          var ringbuffer1 = context.tempVertexBuffers1[i];
+          var ringbuffer2 = context.tempVertexBuffers2[i];
           ringbuffer1.length = ringbuffer2.length = ringbufferLength;
           for(var j = 0; j < ringbufferLength; ++j) {
             ringbuffer1[j] = ringbuffer2[j] = null; // Created on-demand
@@ -1800,8 +1623,8 @@ function copyTempDouble(ptr) {
   
         if (quads) {
           // GL_QUAD indexes can be precalculated
-          GL.tempQuadIndexBuffer = GLctx.createBuffer();
-          GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, GL.tempQuadIndexBuffer);
+          context.tempQuadIndexBuffer = GLctx.createBuffer();
+          context.GLctx.bindBuffer(context.GLctx.ELEMENT_ARRAY_BUFFER, context.tempQuadIndexBuffer);
           var numIndexes = GL.MAX_TEMP_BUFFER_SIZE >> 1;
           var quadIndexes = new Uint16Array(numIndexes);
           var i = 0, v = 0;
@@ -1820,14 +1643,14 @@ function copyTempDouble(ptr) {
             if (i >= numIndexes) break;
             v += 4;
           }
-          GLctx.bufferData(GLctx.ELEMENT_ARRAY_BUFFER, quadIndexes, GLctx.STATIC_DRAW);
-          GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, null);
+          context.GLctx.bufferData(context.GLctx.ELEMENT_ARRAY_BUFFER, quadIndexes, context.GLctx.STATIC_DRAW);
+          context.GLctx.bindBuffer(context.GLctx.ELEMENT_ARRAY_BUFFER, null);
         }
       },getTempVertexBuffer:function getTempVertexBuffer(sizeBytes) {
         var idx = GL.log2ceilLookup[sizeBytes];
-        var ringbuffer = GL.tempVertexBuffers1[idx];
-        var nextFreeBufferIndex = GL.tempVertexBufferCounters1[idx];
-        GL.tempVertexBufferCounters1[idx] = (GL.tempVertexBufferCounters1[idx]+1) & (GL.numTempVertexBuffersPerSize-1);
+        var ringbuffer = GL.currentContext.tempVertexBuffers1[idx];
+        var nextFreeBufferIndex = GL.currentContext.tempVertexBufferCounters1[idx];
+        GL.currentContext.tempVertexBufferCounters1[idx] = (GL.currentContext.tempVertexBufferCounters1[idx]+1) & (GL.numTempVertexBuffersPerSize-1);
         var vbo = ringbuffer[nextFreeBufferIndex];
         if (vbo) {
           return vbo;
@@ -1840,26 +1663,26 @@ function copyTempDouble(ptr) {
         return ringbuffer[nextFreeBufferIndex];
       },getTempIndexBuffer:function getTempIndexBuffer(sizeBytes) {
         var idx = GL.log2ceilLookup[sizeBytes];
-        var ibo = GL.tempIndexBuffers[idx];
+        var ibo = GL.currentContext.tempIndexBuffers[idx];
         if (ibo) {
           return ibo;
         }
         var prevIBO = GLctx.getParameter(GLctx.ELEMENT_ARRAY_BUFFER_BINDING);
-        GL.tempIndexBuffers[idx] = GLctx.createBuffer();
-        GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, GL.tempIndexBuffers[idx]);
+        GL.currentContext.tempIndexBuffers[idx] = GLctx.createBuffer();
+        GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, GL.currentContext.tempIndexBuffers[idx]);
         GLctx.bufferData(GLctx.ELEMENT_ARRAY_BUFFER, 1 << idx, GLctx.DYNAMIC_DRAW);
         GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, prevIBO);
-        return GL.tempIndexBuffers[idx];
+        return GL.currentContext.tempIndexBuffers[idx];
       },newRenderingFrameStarted:function newRenderingFrameStarted() {
-        var vb = GL.tempVertexBuffers1;
-        GL.tempVertexBuffers1 = GL.tempVertexBuffers2;
-        GL.tempVertexBuffers2 = vb;
-        vb = GL.tempVertexBufferCounters1;
-        GL.tempVertexBufferCounters1 = GL.tempVertexBufferCounters2;
-        GL.tempVertexBufferCounters2 = vb;
+        var vb = GL.currentContext.tempVertexBuffers1;
+        GL.currentContext.tempVertexBuffers1 = GL.currentContext.tempVertexBuffers2;
+        GL.currentContext.tempVertexBuffers2 = vb;
+        vb = GL.currentContext.tempVertexBufferCounters1;
+        GL.currentContext.tempVertexBufferCounters1 = GL.currentContext.tempVertexBufferCounters2;
+        GL.currentContext.tempVertexBufferCounters2 = vb;
         var largestIndex = GL.log2ceilLookup[GL.MAX_TEMP_BUFFER_SIZE];
         for(var i = 0; i <= largestIndex; ++i) {
-          GL.tempVertexBufferCounters1[i] = 0;
+          GL.currentContext.tempVertexBufferCounters1[i] = 0;
         }
       },findToken:function (source, token) {
         function isIdentChar(ch) {
@@ -1915,6 +1738,7 @@ function copyTempDouble(ptr) {
         }
         return source;
       },computeImageSize:function (width, height, sizePerPixel, alignment) {
+        // FIXME: possible bug with negative x
         function roundedToNextMultipleOf(x, y) {
           return Math.floor((x + y - 1) / y) * y
         }
@@ -2152,37 +1976,85 @@ function copyTempDouble(ptr) {
           GL.enabledClientAttribIndices[index] = false;
           GLctx.disableVertexAttribArray(index);
         }
-      },initExtensions:function () {
-        if (GL.initExtensions.done) return;
-        GL.initExtensions.done = true;
-  
-        if (!Module.useWebGL) return; // an app might link both gl and 2d backends
-  
-        GL.miniTempBuffer = new Float32Array(GL.MINI_TEMP_BUFFER_SIZE);
-        for (var i = 0; i < GL.MINI_TEMP_BUFFER_SIZE; i++) {
-          GL.miniTempBufferViews[i] = GL.miniTempBuffer.subarray(0, i+1);
+      },createContext:function (canvas, webGLContextAttributes) {
+        // Default to creating a WebGL 1.0 context if nothing else is specified.
+        if (typeof webGLContextAttributes.majorVersion === 'undefined' && typeof webGLContextAttributes.minorVersion === 'undefined') {
+          webGLContextAttributes.majorVersion = 1;
+          webGLContextAttributes.minorVersion = 0;
         }
+        var ctx;
+        var errorInfo = '?';
+        function onContextCreationError(event) {
+          errorInfo = event.statusMessage || errorInfo;
+        }
+        try {
+          canvas.addEventListener('webglcontextcreationerror', onContextCreationError, false);
+          try {
+            if (webGLContextAttributes.majorVersion == 1 && webGLContextAttributes.minorVersion == 0) {
+              ctx = canvas.getContext("webgl", webGLContextAttributes) || canvas.getContext("experimental-webgl", webGLContextAttributes);
+            } else {
+              throw 'Unsupported WebGL context version ' + majorVersion + '.' + minorVersion + '!'
+            }
+          } finally {
+            canvas.removeEventListener('webglcontextcreationerror', onContextCreationError, false);
+          }
+          if (!ctx) throw ':(';
+        } catch (e) {
+          Module.print('Could not create canvas: ' + [errorInfo, e]);
+          return 0;
+        }
+        // possible GL_DEBUG entry point: ctx = wrapDebugGL(ctx);
   
-        GL.maxVertexAttribs = GLctx.getParameter(GLctx.MAX_VERTEX_ATTRIBS);
+        if (!ctx) return 0;
+        var handle = GL.getNewId(GL.contexts);
+        var context = { handle: handle };
+        context.GLctx = ctx;
+        GL.contexts[handle] = context;
+        if (typeof webGLContextAttributes['webGLContextAttributes'] === 'undefined' || webGLContextAttributes.enableExtensionsByDefault) {
+          GL.initExtensions(context);
+        }
+        return handle;
+      },makeContextCurrent:function (contextHandle) {
+        var context = GL.contexts[contextHandle];
+        if (!context) return false;
+        GLctx = Module.ctx = context.GLctx; // Active WebGL context object.
+        GL.currentContext = context; // Active Emscripten GL layer context object.
+        return true;
+      },getContext:function (contextHandle) {
+        return GL.contexts[contextHandle];
+      },deleteContext:function (contextHandle) {
+        if (GL.currentContext === GL.contexts[contextHandle]) GL.currentContext = 0;
+        GL.contexts[contextHandle] = null;
+      },initExtensions:function (context) {
+  
+        // If this function is called without a specific context object, init the extensions of the currently active context.
+        if (!context) context = GL.currentContext;
+  
+        if (context.initExtensionsDone) return;
+        context.initExtensionsDone = true;
+  
+        var GLctx = context.GLctx;
+  
+        context.maxVertexAttribs = GLctx.getParameter(GLctx.MAX_VERTEX_ATTRIBS);
   
         // Detect the presence of a few extensions manually, this GL interop layer itself will need to know if they exist. 
-        GL.compressionExt = GLctx.getExtension('WEBGL_compressed_texture_s3tc') ||
+        context.compressionExt = GLctx.getExtension('WEBGL_compressed_texture_s3tc') ||
                             GLctx.getExtension('MOZ_WEBGL_compressed_texture_s3tc') ||
                             GLctx.getExtension('WEBKIT_WEBGL_compressed_texture_s3tc');
   
-        GL.anisotropicExt = GLctx.getExtension('EXT_texture_filter_anisotropic') ||
+        context.anisotropicExt = GLctx.getExtension('EXT_texture_filter_anisotropic') ||
                             GLctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
                             GLctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
   
-        GL.floatExt = GLctx.getExtension('OES_texture_float');
+        context.floatExt = GLctx.getExtension('OES_texture_float');
   
         // Extension available from Firefox 26 and Google Chrome 30
-        GL.instancedArraysExt = GLctx.getExtension('ANGLE_instanced_arrays');
+        context.instancedArraysExt = GLctx.getExtension('ANGLE_instanced_arrays');
         
         // Extension available from Firefox 25 and WebKit
-        GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');
+        context.vaoExt = GLctx.getExtension('OES_vertex_array_object');
   
-        GL.drawBuffersExt = Module.ctx.getExtension('WEBGL_draw_buffers');
+        context.drawBuffersExt = GLctx.getExtension('WEBGL_draw_buffers');
   
         // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
         // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
@@ -2984,6 +2856,7 @@ function copyTempDouble(ptr) {
             return callback(new Error('node type not supported'));
           }
   
+          FS.chmod(path, entry.mode);
           FS.utime(path, entry.timestamp, entry.timestamp);
         } catch (e) {
           return callback(e);
@@ -3438,7 +3311,7 @@ function copyTempDouble(ptr) {
       },lookupNode:function (parent, name) {
         var err = FS.mayLookup(parent);
         if (err) {
-          throw new FS.ErrnoError(err);
+          throw new FS.ErrnoError(err, parent);
         }
         var hash = FS.hashName(parent.id, name);
         for (var node = FS.nameTable[hash]; node; node = node.name_next) {
@@ -3998,6 +3871,9 @@ function copyTempDouble(ptr) {
       },readlink:function (path) {
         var lookup = FS.lookupPath(path);
         var link = lookup.node;
+        if (!link) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
+        }
         if (!link.node_ops.readlink) {
           throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
         }
@@ -4384,7 +4260,7 @@ function copyTempDouble(ptr) {
           random_device = function() { return require('crypto').randomBytes(1)[0]; };
         } else {
           // default for ES5 platforms
-          random_device = function() { return Math.floor(Math.random()*256); };
+          random_device = function() { return (Math.random()*256)|0; };
         }
         FS.createDevice('/dev', 'random', random_device);
         FS.createDevice('/dev', 'urandom', random_device);
@@ -4431,14 +4307,18 @@ function copyTempDouble(ptr) {
         assert(stderr.fd === 2, 'invalid handle for stderr (' + stderr.fd + ')');
       },ensureErrnoError:function () {
         if (FS.ErrnoError) return;
-        FS.ErrnoError = function ErrnoError(errno) {
-          this.errno = errno;
-          for (var key in ERRNO_CODES) {
-            if (ERRNO_CODES[key] === errno) {
-              this.code = key;
-              break;
+        FS.ErrnoError = function ErrnoError(errno, node) {
+          this.node = node;
+          this.setErrno = function(errno) {
+            this.errno = errno;
+            for (var key in ERRNO_CODES) {
+              if (ERRNO_CODES[key] === errno) {
+                this.code = key;
+                break;
+              }
             }
-          }
+          };
+          this.setErrno(errno);
           this.message = ERRNO_MESSAGES[errno];
           if (this.stack) this.stack = demangleAll(this.stack);
         };
@@ -4655,7 +4535,7 @@ function copyTempDouble(ptr) {
             return undefined;
           }
           var chunkOffset = idx % this.chunkSize;
-          var chunkNum = Math.floor(idx / this.chunkSize);
+          var chunkNum = (idx / this.chunkSize)|0;
           return this.getter(chunkNum)[chunkOffset];
         }
         LazyUint8Array.prototype.setDataGetter = function LazyUint8Array_setDataGetter(getter) {
@@ -5129,7 +5009,9 @@ function copyTempDouble(ptr) {
   
         // cross-browser wheel delta
         var e = window.event || event; // old IE support
+        // Note the minus sign that flips browser wheel direction (positive direction scrolls page down) to native wheel direction (positive direction is mouse wheel up)
         var delta = -Browser.getMouseWheelDelta(event);
+        delta = (delta == 0) ? 0 : (delta > 0 ? Math.max(delta, 1) : Math.min(delta, -1)); // Quantize to integer so that minimum scroll is at least +/- 1.
   
         var button = 3; // wheel up
         if (delta < 0) {
@@ -5405,53 +5287,40 @@ function copyTempDouble(ptr) {
           }
         }
       },createContext:function (canvas, useWebGL, setInModule, webGLContextAttributes) {
-        if (useWebGL && Module.ctx) return Module.ctx; // no need to recreate singleton GL context
+        if (useWebGL && Module.ctx && canvas == Module.canvas) return Module.ctx; // no need to recreate GL context if it's already been created for this canvas.
   
         var ctx;
-        var errorInfo = '?';
-        function onContextCreationError(event) {
-          errorInfo = event.statusMessage || errorInfo;
-        }
-        try {
-          if (useWebGL) {
-            var contextAttributes = {
-              antialias: false,
-              alpha: false
-            };
-  
-            if (webGLContextAttributes) {
-              for (var attribute in webGLContextAttributes) {
-                contextAttributes[attribute] = webGLContextAttributes[attribute];
-              }
-            }
-  
-  
-            canvas.addEventListener('webglcontextcreationerror', onContextCreationError, false);
-            try {
-              ['experimental-webgl', 'webgl'].some(function(webglId) {
-                return ctx = canvas.getContext(webglId, contextAttributes);
-              });
-            } finally {
-              canvas.removeEventListener('webglcontextcreationerror', onContextCreationError, false);
-            }
-          } else {
-            ctx = canvas.getContext('2d');
-          }
-          if (!ctx) throw ':(';
-        } catch (e) {
-          Module.print('Could not create canvas: ' + [errorInfo, e]);
-          return null;
-        }
+        var contextHandle;
         if (useWebGL) {
-          // possible GL_DEBUG entry point: ctx = wrapDebugGL(ctx);
+          // For GLES2/desktop GL compatibility, adjust a few defaults to be different to WebGL defaults, so that they align better with the desktop defaults.
+          var contextAttributes = {
+            antialias: false,
+            alpha: false
+          };
   
+          if (webGLContextAttributes) {
+            for (var attribute in webGLContextAttributes) {
+              contextAttributes[attribute] = webGLContextAttributes[attribute];
+            }
+          }
+  
+          contextHandle = GL.createContext(canvas, contextAttributes);
+          if (contextHandle) {
+            ctx = GL.getContext(contextHandle).GLctx;
+          }
           // Set the background of the WebGL canvas to black
           canvas.style.backgroundColor = "black";
+        } else {
+          ctx = canvas.getContext('2d');
         }
+  
+        if (!ctx) return null;
+  
         if (setInModule) {
           if (!useWebGL) assert(typeof GLctx === 'undefined', 'cannot set in module if GLctx is used, but we are a non-GL context that would replace it');
+  
           Module.ctx = ctx;
-          if (useWebGL) GLctx = ctx;
+          if (useWebGL) GL.makeContextCurrent(contextHandle);
           Module.useWebGL = useWebGL;
           Browser.moduleContextCreatedCallbacks.forEach(function(callback) { callback() });
           Browser.init();
@@ -5590,15 +5459,15 @@ function copyTempDouble(ptr) {
             delta = event.detail;
             break;
           case 'mousewheel': 
-            delta = -event.wheelDelta;
+            delta = event.wheelDelta;
             break;
           case 'wheel': 
-            delta = event.deltaY;
+            delta = event['deltaY'];
             break;
           default:
             throw 'unrecognized mouse wheel event: ' + event.type;
         }
-        return Math.max(-1, Math.min(1, delta));
+        return delta;
       },mouseX:0,mouseY:0,mouseMovementX:0,mouseMovementY:0,touches:{},lastTouches:{},calculateMouseEvent:function (event) { // event should be mousemove, mousedown or mouseup
         if (Browser.pointerLock) {
           // When the pointer is locked, calculate the coordinates
@@ -5773,6 +5642,10 @@ function copyTempDouble(ptr) {
             }
           }
         }
+      },wgetRequests:{},nextWgetRequestHandle:0,getNextWgetRequestHandle:function () {
+        var handle = Browser.nextWgetRequestHandle;
+        Browser.nextWgetRequestHandle++;
+        return handle;
       }};
   
   
@@ -5871,7 +5744,8 @@ function copyTempDouble(ptr) {
       var bufferObj = buffer ? GL.buffers[buffer] : null;
   
       if (target == GLctx.ARRAY_BUFFER) {
-        GLImmediate.lastArrayBuffer = GL.currArrayBuffer = buffer;
+        GL.currArrayBuffer = buffer;
+        GLImmediate.lastArrayBuffer = buffer;
       } else if (target == GLctx.ELEMENT_ARRAY_BUFFER) {
         GL.currElementArrayBuffer = buffer;
       }
@@ -6070,8 +5944,8 @@ function copyTempDouble(ptr) {
             case 0x1F03 /* GL_EXTENSIONS */: // Add various extensions that we can support
               var ret = allocate(intArrayFromString(GLctx.getSupportedExtensions().join(' ') +
                      ' GL_EXT_texture_env_combine GL_ARB_texture_env_crossbar GL_ATI_texture_env_combine3 GL_NV_texture_env_combine4 GL_EXT_texture_env_dot3 GL_ARB_multitexture GL_ARB_vertex_buffer_object GL_EXT_framebuffer_object GL_ARB_vertex_program GL_ARB_fragment_program GL_ARB_shading_language_100 GL_ARB_shader_objects GL_ARB_vertex_shader GL_ARB_fragment_shader GL_ARB_texture_cube_map GL_EXT_draw_range_elements' +
-                     (GL.compressionExt ? ' GL_ARB_texture_compression GL_EXT_texture_compression_s3tc' : '') +
-                     (GL.anisotropicExt ? ' GL_EXT_texture_filter_anisotropic' : '')
+                     (GL.currentContext.compressionExt ? ' GL_ARB_texture_compression GL_EXT_texture_compression_s3tc' : '') +
+                     (GL.currentContext.anisotropicExt ? ' GL_EXT_texture_filter_anisotropic' : '')
               ), 'i8', ALLOC_NORMAL);
               GL.stringCache[name_] = ret;
               return ret;
@@ -8053,7 +7927,7 @@ function copyTempDouble(ptr) {
   
         GLImmediate.vertexDataU8 = new Uint8Array(GLImmediate.tempData.buffer);
   
-        GL.generateTempBuffers(true);
+        GL.generateTempBuffers(true, GL.currentContext);
   
         GLImmediate.clientColor = new Float32Array([1, 1, 1, 1]);
       },prepareClientAttributes:function prepareClientAttributes(count, beginEnd) {
@@ -8198,7 +8072,7 @@ function copyTempDouble(ptr) {
           var numQuads = numVertexes / 4;
           numIndexes = numQuads * 6; // 0 1 2, 0 2 3 pattern
           assert(ptr + (numIndexes << 1) <= GL.MAX_TEMP_BUFFER_SIZE, 'too many immediate mode indexes (b)');
-          GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, GL.tempQuadIndexBuffer);
+          GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, GL.currentContext.tempQuadIndexBuffer);
           emulatedElementArrayBuffer = true;
         }
   
@@ -10337,7 +10211,8 @@ function copyTempDouble(ptr) {
               }
   
               if (url === 'ws://' || url === 'wss://') { // Is the supplied URL config just a prefix, if so complete it.
-                url = url + addr + ':' + port;
+                var parts = addr.split('/');
+                url = url + parts[0] + ":" + port + "/" + parts.slice(1).join('/');
               }
   
               // Make the WebSocket subprotocol (Sec-WebSocket-Protocol) default to binary if no configuration is set.
@@ -10826,7 +10701,7 @@ function copyTempDouble(ptr) {
         if (streamObj) streamObj.error = true;
         return 0;
       } else {
-        return Math.floor(bytesWritten / size);
+        return (bytesWritten / size)|0;
       }
     }
   
@@ -11832,6 +11707,9 @@ function copyTempDouble(ptr) {
           case webcl.FLOAT:
             _type = webcl.FLOAT;
             break;
+          case webcl.HALF_FLOAT:
+            _type = webcl.HALF_FLOAT;
+            break;
           default:
             console.error("getImageFormatType : This channel type is not yet implemented => "+_info.channelType);
         }
@@ -12588,7 +12466,7 @@ function copyTempDouble(ptr) {
       }
       bytesRead += err;
       if (bytesRead < bytesToRead) streamObj.eof = true;
-      return Math.floor(bytesRead / size);
+      return (bytesRead / size)|0;
     }
 
   function _glutCreateWindow(name) {
@@ -14095,7 +13973,7 @@ function copyTempDouble(ptr) {
     }
 
   function _time(ptr) {
-      var ret = Math.floor(Date.now()/1000);
+      var ret = (Date.now()/1000)|0;
       if (ptr) {
         HEAP32[((ptr)>>2)]=ret;
       }
@@ -14274,12 +14152,6 @@ function invoke_v(index) {
   }
 }
 
-  function asmPrintInt(x, y) {
-    Module.print('int ' + x + ',' + y);// + ' ' + new Error().stack);
-  }
-  function asmPrintFloat(x, y) {
-    Module.print('float ' + x + ',' + y);// + ' ' + new Error().stack);
-  }
   // EMSCRIPTEN_START_ASM
   var asm = (function(global, env, buffer) {
     'almost asm';
@@ -14298,7 +14170,6 @@ function invoke_v(index) {
   var ABORT=env.ABORT|0;
   var cttz_i8=env.cttz_i8|0;
   var ctlz_i8=env.ctlz_i8|0;
-  var ___rand_seed=env.___rand_seed|0;
   var _stderr=env._stderr|0;
 
     var __THREW__ = 0;
@@ -14335,8 +14206,6 @@ function invoke_v(index) {
   var Math_imul=global.Math.imul;
   var abort=env.abort;
   var assert=env.assert;
-  var asmPrintInt=env.asmPrintInt;
-  var asmPrintFloat=env.asmPrintFloat;
   var Math_min=env.min;
   var nullFunc_iiii=env.nullFunc_iiii;
   var nullFunc_vii=env.nullFunc_vii;
@@ -14353,7 +14222,7 @@ function invoke_v(index) {
   var _glDeleteProgram=env._glDeleteProgram;
   var _clCreateProgramWithSource=env._clCreateProgramWithSource;
   var _glBindBuffer=env._glBindBuffer;
-  var _fsync=env._fsync;
+  var _ftell=env._ftell;
   var _sbrk=env._sbrk;
   var _glBlendFunc=env._glBlendFunc;
   var _glutReshapeWindow=env._glutReshapeWindow;
@@ -14368,14 +14237,15 @@ function invoke_v(index) {
   var _clCreateCommandQueue=env._clCreateCommandQueue;
   var _glLoadIdentity=env._glLoadIdentity;
   var _write=env._write;
-  var _ftell=env._ftell;
+  var _fsync=env._fsync;
+  var _strerror=env._strerror;
   var _glutSpecialFunc=env._glutSpecialFunc;
   var _glShaderSource=env._glShaderSource;
   var _glOrtho=env._glOrtho;
   var _glVertexPointer=env._glVertexPointer;
   var _glGetBooleanv=env._glGetBooleanv;
-  var _glutCreateWindow=env._glutCreateWindow;
-  var _glEnableVertexAttribArray=env._glEnableVertexAttribArray;
+  var _glutPostRedisplay=env._glutPostRedisplay;
+  var __getFloat=env.__getFloat;
   var _glVertexAttribPointer=env._glVertexAttribPointer;
   var _glHint=env._glHint;
   var _send=env._send;
@@ -14387,7 +14257,7 @@ function invoke_v(index) {
   var _glViewport=env._glViewport;
   var _fscanf=env._fscanf;
   var ___setErrNo=env.___setErrNo;
-  var _glutPostRedisplay=env._glutPostRedisplay;
+  var _glutCreateWindow=env._glutCreateWindow;
   var _clGetPlatformInfo=env._clGetPlatformInfo;
   var _glutReshapeFunc=env._glutReshapeFunc;
   var _glEnable=env._glEnable;
@@ -14395,7 +14265,7 @@ function invoke_v(index) {
   var _glGenTextures=env._glGenTextures;
   var _glGetIntegerv=env._glGetIntegerv;
   var _glGetString=env._glGetString;
-  var _glutMainLoop=env._glutMainLoop;
+  var _fopen=env._fopen;
   var _glPushMatrix=env._glPushMatrix;
   var _emscripten_get_now=env._emscripten_get_now;
   var _glAttachShader=env._glAttachShader;
@@ -14403,7 +14273,7 @@ function invoke_v(index) {
   var _clSetKernelArg=env._clSetKernelArg;
   var _fwrite=env._fwrite;
   var _time=env._time;
-  var _glColor3f=env._glColor3f;
+  var _fprintf=env._fprintf;
   var _glDetachShader=env._glDetachShader;
   var _glutInitWindowPosition=env._glutInitWindowPosition;
   var _clEnqueueReadBuffer=env._clEnqueueReadBuffer;
@@ -14416,34 +14286,33 @@ function invoke_v(index) {
   var _glIsEnabled=env._glIsEnabled;
   var _glBindTexture=env._glBindTexture;
   var _clReleaseMemObject=env._clReleaseMemObject;
-  var _clGetPlatformIDs=env._clGetPlatformIDs;
+  var _glGetFloatv=env._glGetFloatv;
   var _glutIdleFunc=env._glutIdleFunc;
   var _emscripten_memcpy_big=env._emscripten_memcpy_big;
   var _clFinish=env._clFinish;
   var _fseek=env._fseek;
   var _clGetDeviceIDs=env._clGetDeviceIDs;
-  var _glutInit=env._glutInit;
+  var _fclose=env._fclose;
   var _glActiveTexture=env._glActiveTexture;
-  var _glGetFloatv=env._glGetFloatv;
+  var _clGetPlatformIDs=env._clGetPlatformIDs;
   var _clGetKernelWorkGroupInfo=env._clGetKernelWorkGroupInfo;
   var _clCreateBuffer=env._clCreateBuffer;
   var _glTexCoordPointer=env._glTexCoordPointer;
   var _recv=env._recv;
   var _glCompileShader=env._glCompileShader;
-  var __getFloat=env.__getFloat;
+  var _glEnableVertexAttribArray=env._glEnableVertexAttribArray;
   var _abort=env._abort;
   var _clBuildProgram=env._clBuildProgram;
   var _glTexImage2D=env._glTexImage2D;
-  var _fopen=env._fopen;
+  var _glutMainLoop=env._glutMainLoop;
   var _clGetContextInfo=env._clGetContextInfo;
   var _clCreateKernel=env._clCreateKernel;
   var _sin=env._sin;
   var _glutKeyboardFunc=env._glutKeyboardFunc;
   var _ungetc=env._ungetc;
-  var _glTexParameteri=env._glTexParameteri;
   var _clEnqueueWriteBuffer=env._clEnqueueWriteBuffer;
-  var _clGetDeviceInfo=env._clGetDeviceInfo;
-  var _fprintf=env._fprintf;
+  var _glLinkProgram=env._glLinkProgram;
+  var _glColor3f=env._glColor3f;
   var __reallyNegative=env.__reallyNegative;
   var _glutInitWindowSize=env._glutInitWindowSize;
   var _glClear=env._glClear;
@@ -14457,16 +14326,16 @@ function invoke_v(index) {
   var _pread=env._pread;
   var _mkport=env._mkport;
   var _glEnd=env._glEnd;
-  var _glLinkProgram=env._glLinkProgram;
+  var _clGetDeviceInfo=env._clGetDeviceInfo;
   var _fflush=env._fflush;
   var _exit=env._exit;
   var ___errno_location=env.___errno_location;
   var _fgetc=env._fgetc;
   var __scanString=env.__scanString;
   var _glClientActiveTexture=env._glClientActiveTexture;
-  var _fclose=env._fclose;
+  var _glutInit=env._glutInit;
   var _glDisable=env._glDisable;
-  var _strerror=env._strerror;
+  var _glTexParameteri=env._glTexParameteri;
   var __formatString=env.__formatString;
   var _sqrt=env._sqrt;
   var _glTexSubImage2D=env._glTexSubImage2D;
@@ -14478,7 +14347,9 @@ function invoke_v(index) {
     var ret = 0;
     ret = STACKTOP;
     STACKTOP = (STACKTOP + size)|0;
-  STACKTOP = (STACKTOP + 7)&-8;
+  STACKTOP = (STACKTOP + 15)&-16;
+if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
+
     return ret|0;
   }
   function stackSave() {
@@ -14532,7 +14403,7 @@ function _UpdateRendering() {
  var $90 = 0, $91 = 0, $92 = 0.0, $93 = 0.0, $94 = 0.0, $95 = 0, $96 = 0, $97 = 0, $98 = 0, $99 = 0, $elapsedTime = 0.0, $elapsedTime1 = 0.0, $k = 0.0, $sampleSec = 0.0, $samples = 0, $startSampleCount = 0, $startTime = 0.0, $status = 0, $tresholdTime = 0.0, $vararg_buffer = 0;
  var $vararg_buffer1 = 0, $vararg_buffer10 = 0, $vararg_buffer13 = 0, $vararg_buffer16 = 0, $vararg_buffer19 = 0, $vararg_buffer22 = 0, $vararg_buffer25 = 0, $vararg_buffer28 = 0, $vararg_buffer4 = 0, $vararg_buffer7 = 0, $vararg_ptr31 = 0, $vararg_ptr32 = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 160|0;
+ STACKTOP = STACKTOP + 160|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer28 = sp + 24|0;
  $vararg_buffer25 = sp + 88|0;
  $vararg_buffer22 = sp + 8|0;
@@ -14761,7 +14632,7 @@ function _UpdateRendering() {
 function _ReInitScene() {
  var $0 = 0, $1 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $status = 0, $vararg_buffer = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0;
+ STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer = sp;
  HEAP32[8>>2] = 0;
  $0 = HEAP32[432>>2]|0;
@@ -14788,7 +14659,7 @@ function _ReInit($reallocBuffers) {
  $reallocBuffers = $reallocBuffers|0;
  var $0 = 0, $1 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $status = 0, $vararg_buffer = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0;
+ STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer = sp;
  $0 = $reallocBuffers;
  $1 = $0;
@@ -14825,7 +14696,7 @@ function _main($argc,$argv) {
  var $27 = 0, $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, label = 0;
  var sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 32|0;
+ STACKTOP = STACKTOP + 32|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer1 = sp + 8|0;
  $vararg_buffer = sp;
  $0 = 0;
@@ -14925,7 +14796,7 @@ function _SetUpOpenCL() {
  var $vararg_buffer48 = 0, $vararg_buffer5 = 0, $vararg_buffer52 = 0, $vararg_buffer55 = 0, $vararg_buffer59 = 0, $vararg_buffer62 = 0, $vararg_buffer66 = 0, $vararg_buffer69 = 0, $vararg_buffer73 = 0, $vararg_buffer76 = 0, $vararg_buffer79 = 0, $vararg_buffer8 = 0, $vararg_buffer82 = 0, $vararg_buffer85 = 0, $vararg_buffer88 = 0, $vararg_buffer91 = 0, $vararg_buffer94 = 0, $vararg_buffer97 = 0, $vararg_ptr16 = 0, $vararg_ptr23 = 0;
  var $vararg_ptr30 = 0, $vararg_ptr37 = 0, $vararg_ptr51 = 0, $vararg_ptr58 = 0, $vararg_ptr65 = 0, $vararg_ptr7 = 0, $vararg_ptr72 = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 1168|0;
+ STACKTOP = STACKTOP + 1168|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer112 = sp + 56|0;
  $vararg_buffer109 = sp + 296|0;
  $vararg_buffer106 = sp + 8|0;
@@ -15654,7 +15525,7 @@ function _ReadSources($fileName) {
  var $45 = 0, $46 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $file = 0, $res = 0, $size = 0, $src = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer10 = 0, $vararg_buffer14 = 0, $vararg_buffer4 = 0, $vararg_buffer7 = 0, $vararg_ptr13 = 0, $vararg_ptr17 = 0, label = 0;
  var sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 80|0;
+ STACKTOP = STACKTOP + 80|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer14 = sp + 40|0;
  $vararg_buffer10 = sp + 24|0;
  $vararg_buffer7 = sp + 32|0;
@@ -15762,7 +15633,7 @@ function _AllocateBuffers() {
  var $63 = 0, $64 = 0, $65 = 0, $66 = 0, $67 = 0, $68 = 0, $69 = 0, $7 = 0, $70 = 0, $71 = 0, $72 = 0, $73 = 0, $74 = 0, $75 = 0, $76 = 0, $77 = 0, $78 = 0, $79 = 0, $8 = 0, $80 = 0;
  var $81 = 0, $82 = 0, $9 = 0, $i = 0, $pixelCount = 0, $sizeBytes = 0, $status = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer4 = 0, $vararg_buffer7 = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 48|0;
+ STACKTOP = STACKTOP + 48|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer7 = sp + 24|0;
  $vararg_buffer4 = sp + 8|0;
  $vararg_buffer1 = sp;
@@ -15912,7 +15783,7 @@ function _FreeBuffers() {
  var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0;
  var $9 = 0, $status = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer4 = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 32|0;
+ STACKTOP = STACKTOP + 32|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer4 = sp + 16|0;
  $vararg_buffer1 = sp + 8|0;
  $vararg_buffer = sp;
@@ -15968,7 +15839,7 @@ function _ExecuteKernel() {
  var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0;
  var $9 = 0, $globalThreads = 0, $localThreads = 0, $status = 0, $vararg_buffer = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0;
+ STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer = sp;
  $globalThreads = sp + 12|0;
  $localThreads = sp + 8|0;
@@ -16024,7 +15895,7 @@ function _ReadScene($fileName) {
  var $i = 0, $mat = 0, $s = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer12 = 0, $vararg_buffer15 = 0, $vararg_buffer18 = 0, $vararg_buffer21 = 0, $vararg_buffer24 = 0, $vararg_buffer37 = 0, $vararg_buffer4 = 0, $vararg_buffer41 = 0, $vararg_ptr10 = 0, $vararg_ptr11 = 0, $vararg_ptr27 = 0, $vararg_ptr28 = 0, $vararg_ptr29 = 0, $vararg_ptr30 = 0, $vararg_ptr31 = 0;
  var $vararg_ptr32 = 0, $vararg_ptr33 = 0, $vararg_ptr34 = 0, $vararg_ptr35 = 0, $vararg_ptr36 = 0, $vararg_ptr40 = 0, $vararg_ptr44 = 0, $vararg_ptr7 = 0, $vararg_ptr8 = 0, $vararg_ptr9 = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 176|0;
+ STACKTOP = STACKTOP + 176|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer41 = sp + 128|0;
  $vararg_buffer37 = sp + 8|0;
  $vararg_buffer24 = sp + 32|0;
@@ -16228,7 +16099,7 @@ function _UpdateCamera() {
  var $90 = 0.0, $91 = 0.0, $92 = 0.0, $93 = 0.0, $94 = 0.0, $95 = 0.0, $96 = 0.0, $97 = 0.0, $98 = 0.0, $99 = 0.0, $fov = 0.0, $k = 0.0, $k2 = 0.0, $k3 = 0.0, $k5 = 0.0, $k6 = 0.0, $l = 0.0, $l1 = 0.0, $l4 = 0.0, label = 0;
  var sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 48|0;
+ STACKTOP = STACKTOP + 48|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $0 = +HEAPF32[((600 + 12|0))>>2];
  $1 = +HEAPF32[600>>2];
  $2 = $0 - $1;
@@ -16497,7 +16368,7 @@ function _PrintString($font,$string) {
  $string = $string|0;
  var $0 = 0, $1 = 0, $2 = 0, $vararg_buffer = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0;
+ STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer = sp;
  $0 = $font;
  $1 = $string;
@@ -16511,7 +16382,7 @@ function _reshapeFunc($newWidth,$newHeight) {
  $newHeight = $newHeight|0;
  var $0 = 0, $1 = 0, $10 = 0, $11 = 0.0, $12 = 0.0, $13 = 0.0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0.0, $8 = 0.0, $9 = 0.0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0;
+ STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $0 = $newWidth;
  $1 = $newHeight;
  $2 = $0;
@@ -16560,13 +16431,13 @@ function _keyFunc($key,$x,$y) {
  var $f = 0, $k = 0.0, $k11 = 0.0, $k3 = 0.0, $k6 = 0.0, $k7 = 0.0, $k9 = 0.0, $l = 0.0, $l5 = 0.0, $p = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer10 = 0, $vararg_buffer12 = 0, $vararg_buffer18 = 0, $vararg_buffer5 = 0, $vararg_ptr15 = 0, $vararg_ptr16 = 0, $vararg_ptr17 = 0, $vararg_ptr21 = 0;
  var $vararg_ptr22 = 0, $vararg_ptr23 = 0, $vararg_ptr3 = 0, $vararg_ptr4 = 0, $vararg_ptr8 = 0, $vararg_ptr9 = 0, $x1 = 0, $y2 = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 224|0;
- $vararg_buffer18 = sp + 48|0;
- $vararg_buffer12 = sp;
- $vararg_buffer10 = sp + 104|0;
- $vararg_buffer5 = sp + 32|0;
- $vararg_buffer1 = sp + 80|0;
- $vararg_buffer = sp + 96|0;
+ STACKTOP = STACKTOP + 224|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
+ $vararg_buffer18 = sp;
+ $vararg_buffer12 = sp + 48|0;
+ $vararg_buffer10 = sp + 32|0;
+ $vararg_buffer5 = sp + 80|0;
+ $vararg_buffer1 = sp + 96|0;
+ $vararg_buffer = sp + 40|0;
  $dir = sp + 108|0;
  $dir4 = sp + 168|0;
  $dir8 = sp + 192|0;
@@ -17157,7 +17028,7 @@ function _specialFunc($key,$x,$y) {
  var $70 = 0, $71 = 0.0, $72 = 0.0, $73 = 0.0, $74 = 0.0, $75 = 0, $76 = 0.0, $77 = 0.0, $78 = 0.0, $79 = 0.0, $8 = 0.0, $80 = 0.0, $81 = 0.0, $82 = 0, $83 = 0, $84 = 0.0, $85 = 0.0, $86 = 0.0, $87 = 0.0, $88 = 0.0;
  var $89 = 0, $9 = 0.0, $90 = 0.0, $91 = 0.0, $92 = 0.0, $93 = 0.0, $94 = 0.0, $95 = 0.0, $96 = 0, $97 = 0.0, $98 = 0.0, $99 = 0.0, $t = 0, $t1 = 0, $t2 = 0, $t3 = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 64|0;
+ STACKTOP = STACKTOP + 64|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $t = sp + 48|0;
  $t1 = sp + 12|0;
  $t2 = sp;
@@ -17167,86 +17038,6 @@ function _specialFunc($key,$x,$y) {
  $2 = $y;
  $3 = $0;
  switch ($3|0) {
- case 102:  {
-  ;HEAP32[$t3+0>>2]=HEAP32[((600 + 12|0))+0>>2]|0;HEAP32[$t3+4>>2]=HEAP32[((600 + 12|0))+4>>2]|0;HEAP32[$t3+8>>2]=HEAP32[((600 + 12|0))+8>>2]|0;
-  $159 = +HEAPF32[$t3>>2];
-  $160 = +HEAPF32[600>>2];
-  $161 = $159 - $160;
-  HEAPF32[$t3>>2] = $161;
-  $162 = (($t3) + 4|0);
-  $163 = +HEAPF32[$162>>2];
-  $164 = +HEAPF32[((600 + 4|0))>>2];
-  $165 = $163 - $164;
-  $166 = (($t3) + 4|0);
-  HEAPF32[$166>>2] = $165;
-  $167 = (($t3) + 8|0);
-  $168 = +HEAPF32[$167>>2];
-  $169 = +HEAPF32[((600 + 8|0))>>2];
-  $170 = $168 - $169;
-  $171 = (($t3) + 8|0);
-  HEAPF32[$171>>2] = $170;
-  $172 = +HEAPF32[$t3>>2];
-  $173 = $172;
-  $174 = (+Math_cos(0.0349065850398865909487));
-  $175 = $173 * $174;
-  $176 = (($t3) + 8|0);
-  $177 = +HEAPF32[$176>>2];
-  $178 = $177;
-  $179 = (+Math_sin(0.0349065850398865909487));
-  $180 = $178 * $179;
-  $181 = $175 - $180;
-  $182 = $181;
-  HEAPF32[$t3>>2] = $182;
-  $183 = +HEAPF32[$t3>>2];
-  $184 = $183;
-  $185 = (+Math_sin(0.0349065850398865909487));
-  $186 = $184 * $185;
-  $187 = (($t3) + 8|0);
-  $188 = +HEAPF32[$187>>2];
-  $189 = $188;
-  $190 = (+Math_cos(0.0349065850398865909487));
-  $191 = $189 * $190;
-  $192 = $186 + $191;
-  $193 = $192;
-  $194 = (($t3) + 8|0);
-  HEAPF32[$194>>2] = $193;
-  $195 = +HEAPF32[$t3>>2];
-  $196 = +HEAPF32[600>>2];
-  $197 = $195 + $196;
-  HEAPF32[$t3>>2] = $197;
-  $198 = (($t3) + 4|0);
-  $199 = +HEAPF32[$198>>2];
-  $200 = +HEAPF32[((600 + 4|0))>>2];
-  $201 = $199 + $200;
-  $202 = (($t3) + 4|0);
-  HEAPF32[$202>>2] = $201;
-  $203 = (($t3) + 8|0);
-  $204 = +HEAPF32[$203>>2];
-  $205 = +HEAPF32[((600 + 8|0))>>2];
-  $206 = $204 + $205;
-  $207 = (($t3) + 8|0);
-  HEAPF32[$207>>2] = $206;
-  ;HEAP32[((600 + 12|0))+0>>2]=HEAP32[$t3+0>>2]|0;HEAP32[((600 + 12|0))+4>>2]=HEAP32[$t3+4>>2]|0;HEAP32[((600 + 12|0))+8>>2]=HEAP32[$t3+8>>2]|0;
-  _ReInit(0);
-  STACKTOP = sp;return;
-  break;
- }
- case 104:  {
-  $208 = +HEAPF32[((600 + 16|0))>>2];
-  $209 = $208 + 10.0;
-  HEAPF32[((600 + 16|0))>>2] = $209;
-  _ReInit(0);
-  STACKTOP = sp;return;
-  break;
- }
- case 105:  {
-  $210 = +HEAPF32[((600 + 16|0))>>2];
-  $211 = $210 - 10.0;
-  HEAPF32[((600 + 16|0))>>2] = $211;
-  _ReInit(0);
-  STACKTOP = sp;return;
-  break;
- }
  case 101:  {
   ;HEAP32[$t+0>>2]=HEAP32[((600 + 12|0))+0>>2]|0;HEAP32[$t+4>>2]=HEAP32[((600 + 12|0))+4>>2]|0;HEAP32[$t+8>>2]=HEAP32[((600 + 12|0))+8>>2]|0;
   $4 = +HEAPF32[$t>>2];
@@ -17447,6 +17238,86 @@ function _specialFunc($key,$x,$y) {
   STACKTOP = sp;return;
   break;
  }
+ case 102:  {
+  ;HEAP32[$t3+0>>2]=HEAP32[((600 + 12|0))+0>>2]|0;HEAP32[$t3+4>>2]=HEAP32[((600 + 12|0))+4>>2]|0;HEAP32[$t3+8>>2]=HEAP32[((600 + 12|0))+8>>2]|0;
+  $159 = +HEAPF32[$t3>>2];
+  $160 = +HEAPF32[600>>2];
+  $161 = $159 - $160;
+  HEAPF32[$t3>>2] = $161;
+  $162 = (($t3) + 4|0);
+  $163 = +HEAPF32[$162>>2];
+  $164 = +HEAPF32[((600 + 4|0))>>2];
+  $165 = $163 - $164;
+  $166 = (($t3) + 4|0);
+  HEAPF32[$166>>2] = $165;
+  $167 = (($t3) + 8|0);
+  $168 = +HEAPF32[$167>>2];
+  $169 = +HEAPF32[((600 + 8|0))>>2];
+  $170 = $168 - $169;
+  $171 = (($t3) + 8|0);
+  HEAPF32[$171>>2] = $170;
+  $172 = +HEAPF32[$t3>>2];
+  $173 = $172;
+  $174 = (+Math_cos(0.0349065850398865909487));
+  $175 = $173 * $174;
+  $176 = (($t3) + 8|0);
+  $177 = +HEAPF32[$176>>2];
+  $178 = $177;
+  $179 = (+Math_sin(0.0349065850398865909487));
+  $180 = $178 * $179;
+  $181 = $175 - $180;
+  $182 = $181;
+  HEAPF32[$t3>>2] = $182;
+  $183 = +HEAPF32[$t3>>2];
+  $184 = $183;
+  $185 = (+Math_sin(0.0349065850398865909487));
+  $186 = $184 * $185;
+  $187 = (($t3) + 8|0);
+  $188 = +HEAPF32[$187>>2];
+  $189 = $188;
+  $190 = (+Math_cos(0.0349065850398865909487));
+  $191 = $189 * $190;
+  $192 = $186 + $191;
+  $193 = $192;
+  $194 = (($t3) + 8|0);
+  HEAPF32[$194>>2] = $193;
+  $195 = +HEAPF32[$t3>>2];
+  $196 = +HEAPF32[600>>2];
+  $197 = $195 + $196;
+  HEAPF32[$t3>>2] = $197;
+  $198 = (($t3) + 4|0);
+  $199 = +HEAPF32[$198>>2];
+  $200 = +HEAPF32[((600 + 4|0))>>2];
+  $201 = $199 + $200;
+  $202 = (($t3) + 4|0);
+  HEAPF32[$202>>2] = $201;
+  $203 = (($t3) + 8|0);
+  $204 = +HEAPF32[$203>>2];
+  $205 = +HEAPF32[((600 + 8|0))>>2];
+  $206 = $204 + $205;
+  $207 = (($t3) + 8|0);
+  HEAPF32[$207>>2] = $206;
+  ;HEAP32[((600 + 12|0))+0>>2]=HEAP32[$t3+0>>2]|0;HEAP32[((600 + 12|0))+4>>2]=HEAP32[$t3+4>>2]|0;HEAP32[((600 + 12|0))+8>>2]=HEAP32[$t3+8>>2]|0;
+  _ReInit(0);
+  STACKTOP = sp;return;
+  break;
+ }
+ case 104:  {
+  $208 = +HEAPF32[((600 + 16|0))>>2];
+  $209 = $208 + 10.0;
+  HEAPF32[((600 + 16|0))>>2] = $209;
+  _ReInit(0);
+  STACKTOP = sp;return;
+  break;
+ }
+ case 105:  {
+  $210 = +HEAPF32[((600 + 16|0))>>2];
+  $211 = $210 - 10.0;
+  HEAPF32[((600 + 16|0))>>2] = $211;
+  _ReInit(0);
+  STACKTOP = sp;return;
+  break;
+ }
  default: {
   STACKTOP = sp;return;
  }
@@ -17459,7 +17330,7 @@ function _InitGlut($argc,$argv,$windowTittle) {
  var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0.0, $13 = 0.0, $14 = 0.0, $15 = 0, $16 = 0.0, $17 = 0.0, $18 = 0.0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, label = 0;
  var sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0;
+ STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $0 = sp + 8|0;
  HEAP32[$0>>2] = $argc;
  $1 = $argv;
@@ -17501,7 +17372,7 @@ function _SetupGraphics($width,$height) {
  $height = $height|0;
  var $0 = 0, $1 = 0, $10 = 0, $11 = 0.0, $12 = 0, $13 = 0.0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0.0, $8 = 0, $9 = 0.0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0;
+ STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $0 = $width;
  $1 = $height;
  $2 = $0;
@@ -17545,7 +17416,7 @@ function _CreateTexture($width,$height) {
  $height = $height|0;
  var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $vararg_buffer = 0, $vararg_ptr1 = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0;
+ STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer = sp;
  $0 = $width;
  $1 = $height;
@@ -18207,7 +18078,7 @@ function _malloc($bytes) {
      $276 = ((4776 + ($idx$0$i<<2)|0) + 304|0);
      $277 = HEAP32[$276>>2]|0;
      $278 = ($277|0)==(0|0);
-     L126: do {
+     L9: do {
       if ($278) {
        $rsize$2$i = $250;$t$1$i = 0;$v$2$i = 0;
       } else {
@@ -18231,7 +18102,7 @@ function _malloc($bytes) {
          $289 = ($286|0)==($247|0);
          if ($289) {
           $rsize$2$i = $287;$t$1$i = $t$0$i14;$v$2$i = $t$0$i14;
-          break L126;
+          break L9;
          } else {
           $rsize$1$i = $287;$v$1$i = $t$0$i14;
          }
@@ -18516,7 +18387,7 @@ function _malloc($bytes) {
         }
        } while(0);
        $412 = ($rsize$3$lcssa$i>>>0)<(16);
-       L204: do {
+       L87: do {
         if ($412) {
          $413 = (($rsize$3$lcssa$i) + ($247))|0;
          $414 = $413 | 3;
@@ -18655,7 +18526,7 @@ function _malloc($bytes) {
          $482 = HEAP32[$481>>2]|0;
          $483 = $482 & -8;
          $484 = ($483|0)==($rsize$3$lcssa$i|0);
-         L225: do {
+         L108: do {
           if ($484) {
            $T$0$lcssa$i = $477;
           } else {
@@ -18676,7 +18547,7 @@ function _malloc($bytes) {
             $492 = ($491|0)==($rsize$3$lcssa$i|0);
             if ($492) {
              $T$0$lcssa$i = $489;
-             break L225;
+             break L108;
             } else {
              $K12$025$i = $487;$T$024$i = $489;
             }
@@ -18697,7 +18568,7 @@ function _malloc($bytes) {
             $$sum13$i = (($247) + 8)|0;
             $500 = (($v$3$lcssa$i) + ($$sum13$i)|0);
             HEAP32[$500>>2] = $349;
-            break L204;
+            break L87;
            }
           }
          } while(0);
@@ -21067,6 +20938,29 @@ function _wcrtomb($s,$wc,$st) {
  }
  return 0|0;
 }
+function _rand() {
+ var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ $0 = 5272;
+ $1 = $0;
+ $2 = HEAP32[$1>>2]|0;
+ $3 = (($0) + 4)|0;
+ $4 = $3;
+ $5 = HEAP32[$4>>2]|0;
+ $6 = (___muldi3(($2|0),($5|0),1284865837,1481765933)|0);
+ $7 = tempRet0;
+ $8 = (_i64Add(($6|0),($7|0),1,0)|0);
+ $9 = tempRet0;
+ $10 = 5272;
+ $11 = $10;
+ HEAP32[$11>>2] = $8;
+ $12 = (($10) + 4)|0;
+ $13 = $12;
+ HEAP32[$13>>2] = $9;
+ $14 = (_bitshift64Lshr(($8|0),($9|0),33)|0);
+ $15 = tempRet0;
+ STACKTOP = sp;return ($14|0);
+}
 function ___towrite($f) {
  $f = $f|0;
  var $$0 = 0, $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0;
@@ -21202,7 +21096,7 @@ function _sprintf($s,$fmt,$varargs) {
  $varargs = $varargs|0;
  var $0 = 0, $ap = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0;
+ STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $ap = sp;
  HEAP32[$ap>>2] = $varargs;
  $0 = (_vsprintf($s,$fmt,$ap)|0);
@@ -21215,7 +21109,7 @@ function _MUSL_vfprintf($f,$fmt,$ap) {
  var $$ = 0, $$0 = 0, $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0;
  var $ap2 = 0, $internal_buf = 0, $nl_arg = 0, $nl_type = 0, $ret$1 = 0, $vacopy_currentptr = 0, dest = 0, label = 0, sp = 0, stop = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 224|0;
+ STACKTOP = STACKTOP + 224|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $ap2 = sp + 120|0;
  $nl_type = sp + 80|0;
  $nl_arg = sp;
@@ -21348,7 +21242,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
  var $y$03$i$i = 0, $y$03$i109$i = 0, $y$03$i118$i = 0, $y$03$i133$i = 0, $y$03$i86$i = 0, $z$0$i = 0, $z$0$lcssa = 0, $z$093 = 0, $z$1$lcssa$i = 0, $z$1262$i = 0, $z$2 = 0, $z$2$i = 0, $z$3$lcssa$i = 0, $z$3248$i = 0, $z$3248$us$i = 0, $z$4$i = 0, $z$4$us$i = 0, $z$5$i = 0, $z$6$$i = 0, $z$6$i = 0;
  var $z$6$ph$i = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 864|0;
+ STACKTOP = STACKTOP + 864|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $big$i = sp + 16|0;
  $e2$i = sp + 8|0;
  $buf$i = sp + 560|0;
@@ -21403,12 +21297,12 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
    $1047 = $21;$25 = $22;
   }
   while(1) {
-   if ((($1047<<24>>24) == 0)) {
-    $$lcssa92 = $25;$z$0$lcssa = $25;
-    break;
-   } else if ((($1047<<24>>24) == 37)) {
+   if ((($1047<<24>>24) == 37)) {
     $27 = $25;$z$093 = $25;
     label = 9;
+    break;
+   } else if ((($1047<<24>>24) == 0)) {
+    $$lcssa92 = $25;$z$0$lcssa = $25;
     break;
    }
    $24 = (($25) + 1|0);
@@ -21690,7 +21584,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     break L1;
    }
    $139 = (($135) + 1|0);
-   $140 = ((5272 + (($st$0*58)|0)|0) + ($137)|0);
+   $140 = ((5280 + (($st$0*58)|0)|0) + ($137)|0);
    $141 = HEAP8[$140>>0]|0;
    $142 = $141&255;
    $143 = (($142) + -1)|0;
@@ -21746,57 +21640,12 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     } else {
      do {
       switch ($142|0) {
-      case 17:  {
-       $arglist_current29 = HEAP32[$ap>>2]|0;
-       HEAP32[tempDoublePtr>>2]=HEAP32[$arglist_current29>>2];HEAP32[tempDoublePtr+4>>2]=HEAP32[$arglist_current29+4>>2];$190 = +HEAPF64[tempDoublePtr>>3];
-       $arglist_next30 = (($arglist_current29) + 8|0);
-       HEAP32[$ap>>2] = $arglist_next30;
-       HEAPF64[tempDoublePtr>>3] = $190;$191 = HEAP32[tempDoublePtr>>2]|0;
-       $192 = HEAP32[tempDoublePtr+4>>2]|0;
-       $193 = $191;
-       $1051 = $193;$1052 = $192;
-       label = 64;
-       break L65;
-       break;
-      }
-      case 18:  {
-       $arglist_current32 = HEAP32[$ap>>2]|0;
-       HEAP32[tempDoublePtr>>2]=HEAP32[$arglist_current32>>2];HEAP32[tempDoublePtr+4>>2]=HEAP32[$arglist_current32+4>>2];$194 = +HEAPF64[tempDoublePtr>>3];
-       $arglist_next33 = (($arglist_current32) + 8|0);
-       HEAP32[$ap>>2] = $arglist_next33;
-       HEAPF64[tempDoublePtr>>3] = $194;$195 = HEAP32[tempDoublePtr>>2]|0;
-       $196 = HEAP32[tempDoublePtr+4>>2]|0;
-       $197 = $195;
-       $1049 = $196;$1050 = $197;
-       label = 63;
-       break L65;
-       break;
-      }
-      case 15:  {
-       $arglist_current23 = HEAP32[$ap>>2]|0;
-       $181 = HEAP32[$arglist_current23>>2]|0;
-       $arglist_next24 = (($arglist_current23) + 4|0);
-       HEAP32[$ap>>2] = $arglist_next24;
-       $182 = $181&255;
-       $183 = $182 << 24 >> 24;
-       $184 = ($183|0)<(0);
-       $185 = $184 << 31 >> 31;
-       $sext = $181 << 24;
-       $186 = $sext >> 24;
-       $187 = $186;
-       $1051 = $187;$1052 = $185;
-       label = 64;
-       break L65;
-       break;
-      }
-      case 16:  {
-       $arglist_current26 = HEAP32[$ap>>2]|0;
-       $188 = HEAP32[$arglist_current26>>2]|0;
-       $arglist_next27 = (($arglist_current26) + 4|0);
-       HEAP32[$ap>>2] = $arglist_next27;
-       $$mask$i30 = $188 & 255;
-       $189 = $$mask$i30;
-       $1051 = $189;$1052 = 0;
+      case 9:  {
+       $arglist_current5 = HEAP32[$ap>>2]|0;
+       $158 = HEAP32[$arglist_current5>>2]|0;
+       $arglist_next6 = (($arglist_current5) + 4|0);
+       HEAP32[$ap>>2] = $arglist_next6;
+       $1051 = $158;$1052 = $1045;
        label = 64;
        break L65;
        break;
@@ -21870,13 +21719,58 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        break L65;
        break;
       }
-      case 9:  {
-       $arglist_current5 = HEAP32[$ap>>2]|0;
-       $158 = HEAP32[$arglist_current5>>2]|0;
-       $arglist_next6 = (($arglist_current5) + 4|0);
-       HEAP32[$ap>>2] = $arglist_next6;
-       $1051 = $158;$1052 = $1045;
+      case 15:  {
+       $arglist_current23 = HEAP32[$ap>>2]|0;
+       $181 = HEAP32[$arglist_current23>>2]|0;
+       $arglist_next24 = (($arglist_current23) + 4|0);
+       HEAP32[$ap>>2] = $arglist_next24;
+       $182 = $181&255;
+       $183 = $182 << 24 >> 24;
+       $184 = ($183|0)<(0);
+       $185 = $184 << 31 >> 31;
+       $sext = $181 << 24;
+       $186 = $sext >> 24;
+       $187 = $186;
+       $1051 = $187;$1052 = $185;
        label = 64;
+       break L65;
+       break;
+      }
+      case 16:  {
+       $arglist_current26 = HEAP32[$ap>>2]|0;
+       $188 = HEAP32[$arglist_current26>>2]|0;
+       $arglist_next27 = (($arglist_current26) + 4|0);
+       HEAP32[$ap>>2] = $arglist_next27;
+       $$mask$i30 = $188 & 255;
+       $189 = $$mask$i30;
+       $1051 = $189;$1052 = 0;
+       label = 64;
+       break L65;
+       break;
+      }
+      case 17:  {
+       $arglist_current29 = HEAP32[$ap>>2]|0;
+       HEAP32[tempDoublePtr>>2]=HEAP32[$arglist_current29>>2];HEAP32[tempDoublePtr+4>>2]=HEAP32[$arglist_current29+4>>2];$190 = +HEAPF64[tempDoublePtr>>3];
+       $arglist_next30 = (($arglist_current29) + 8|0);
+       HEAP32[$ap>>2] = $arglist_next30;
+       HEAPF64[tempDoublePtr>>3] = $190;$191 = HEAP32[tempDoublePtr>>2]|0;
+       $192 = HEAP32[tempDoublePtr+4>>2]|0;
+       $193 = $191;
+       $1051 = $193;$1052 = $192;
+       label = 64;
+       break L65;
+       break;
+      }
+      case 18:  {
+       $arglist_current32 = HEAP32[$ap>>2]|0;
+       HEAP32[tempDoublePtr>>2]=HEAP32[$arglist_current32>>2];HEAP32[tempDoublePtr+4>>2]=HEAP32[$arglist_current32+4>>2];$194 = +HEAPF64[tempDoublePtr>>3];
+       $arglist_next33 = (($arglist_current32) + 8|0);
+       HEAP32[$ap>>2] = $arglist_next33;
+       HEAPF64[tempDoublePtr>>3] = $194;$195 = HEAP32[tempDoublePtr>>2]|0;
+       $196 = HEAP32[tempDoublePtr+4>>2]|0;
+       $197 = $195;
+       $1049 = $196;$1050 = $197;
+       label = 63;
        break L65;
        break;
       }
@@ -21922,132 +21816,6 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
   $fl$1$ = $205 ? $fl$1 : $206;
   L92: do {
    switch ($t$0|0) {
-   case 112:  {
-    $222 = ($p$0>>>0)>(8);
-    $223 = $222 ? $p$0 : 8;
-    $224 = $fl$1$ | 8;
-    $fl$3 = $224;$p$1 = $223;$t$1 = 120;
-    label = 77;
-    break;
-   }
-   case 88: case 120:  {
-    $fl$3 = $fl$1$;$p$1 = $p$0;$t$1 = $t$0;
-    label = 77;
-    break;
-   }
-   case 111:  {
-    $249 = $207;
-    $250 = ($249|0)==(0);
-    $251 = ($229|0)==(0);
-    $252 = $250 & $251;
-    if ($252) {
-     $$0$lcssa$i43 = $2;
-    } else {
-     $$03$i40 = $2;$254 = $249;$258 = $229;
-     while(1) {
-      $253 = $254 & 7;
-      $255 = $253 | 48;
-      $256 = $255&255;
-      $257 = (($$03$i40) + -1|0);
-      HEAP8[$257>>0] = $256;
-      $259 = (_bitshift64Lshr(($254|0),($258|0),3)|0);
-      $260 = tempRet0;
-      $261 = ($259|0)==(0);
-      $262 = ($260|0)==(0);
-      $263 = $261 & $262;
-      if ($263) {
-       $$0$lcssa$i43 = $257;
-       break;
-      } else {
-       $$03$i40 = $257;$254 = $259;$258 = $260;
-      }
-     }
-    }
-    $264 = $fl$1$ & 8;
-    $265 = ($264|0)==(0);
-    if ($265) {
-     $308 = $207;$311 = $229;$a$0 = $$0$lcssa$i43;$fl$4 = $fl$1$;$p$2 = $p$0;$pl$1 = 0;$prefix$1 = 5736;
-     label = 94;
-    } else {
-     $$13 = $252 ? 5736 : ((5736 + 5|0));
-     $266 = $252&1;
-     $$14 = $266 ^ 1;
-     $308 = $207;$311 = $229;$a$0 = $$0$lcssa$i43;$fl$4 = $fl$1$;$p$2 = $p$0;$pl$1 = $$14;$prefix$1 = $$13;
-     label = 94;
-    }
-    break;
-   }
-   case 105: case 100:  {
-    $267 = $207;
-    $268 = ($229|0)<(0);
-    if ($268) {
-     $269 = (_i64Subtract(0,0,($267|0),($229|0))|0);
-     $270 = tempRet0;
-     $271 = $269;
-     $277 = $271;$279 = $270;$pl$0 = 1;$prefix$0 = 5736;
-     label = 89;
-     break L92;
-    }
-    $272 = $fl$1$ & 2048;
-    $273 = ($272|0)==(0);
-    if ($273) {
-     $274 = $fl$1$ & 1;
-     $275 = ($274|0)==(0);
-     $$15 = $275 ? 5736 : ((5736 + 2|0));
-     $277 = $207;$279 = $229;$pl$0 = $274;$prefix$0 = $$15;
-     label = 89;
-    } else {
-     $277 = $207;$279 = $229;$pl$0 = 1;$prefix$0 = ((5736 + 1|0));
-     label = 89;
-    }
-    break;
-   }
-   case 117:  {
-    $277 = $207;$279 = $229;$pl$0 = 0;$prefix$0 = 5736;
-    label = 89;
-    break;
-   }
-   case 99:  {
-    $319 = $207;
-    $320 = $319&255;
-    HEAP8[$4>>0] = $320;
-    $1053 = $229;$1054 = $207;$a$2 = $4;$fl$6 = $206;$p$5 = 1;$pl$2 = 0;$prefix$2 = 5736;$z$2 = $2;
-    break;
-   }
-   case 109:  {
-    $321 = (___errno_location()|0);
-    $322 = HEAP32[$321>>2]|0;
-    $323 = (_strerror(($322|0))|0);
-    $a$1 = $323;
-    label = 99;
-    break;
-   }
-   case 115:  {
-    $324 = ($207|0)==(0|0);
-    $$17 = $324 ? 5752 : $207;
-    $a$1 = $$17;
-    label = 99;
-    break;
-   }
-   case 67:  {
-    $331 = $207;
-    HEAP32[$wc>>2] = $331;
-    HEAP32[$5>>2] = 0;
-    $1055 = $wc;$1056 = $wc;$p$4296 = -1;
-    label = 104;
-    break;
-   }
-   case 83:  {
-    $332 = ($p$0|0)==(0);
-    if ($332) {
-     $1057 = $207;$1058 = $207;$i$0166 = 0;
-     label = 110;
-    } else {
-     $1055 = $207;$1056 = $207;$p$4296 = $p$0;
-     label = 104;
-    }
-    break;
-   }
    case 65: case 71: case 70: case 69: case 97: case 103: case 102: case 101:  {
     $368 = $207;
     HEAP32[tempDoublePtr>>2] = $368;HEAP32[tempDoublePtr+4>>2] = $229;$369 = +HEAPF64[tempDoublePtr>>3];
@@ -22055,17 +21823,17 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     $370 = ($229|0)<(0);
     if ($370) {
      $371 = -$369;
-     $$07$i = $371;$pl$0$i = 1;$prefix$0$i = 5760;
+     $$07$i = $371;$pl$0$i = 1;$prefix$0$i = 5768;
     } else {
      $372 = $fl$1$ & 2048;
      $373 = ($372|0)==(0);
      if ($373) {
       $374 = $fl$1$ & 1;
       $375 = ($374|0)==(0);
-      $$$i = $375 ? ((5760 + 1|0)) : ((5760 + 6|0));
+      $$$i = $375 ? ((5768 + 1|0)) : ((5768 + 6|0));
       $$07$i = $369;$pl$0$i = $374;$prefix$0$i = $$$i;
      } else {
-      $$07$i = $369;$pl$0$i = 1;$prefix$0$i = ((5760 + 3|0));
+      $$07$i = $369;$pl$0$i = 1;$prefix$0$i = ((5768 + 3|0));
      }
     }
     HEAPF64[tempDoublePtr>>3] = $$07$i;$376 = HEAP32[tempDoublePtr>>2]|0;
@@ -22079,10 +21847,10 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     if (!($383)) {
      $384 = $t$0 & 32;
      $385 = ($384|0)!=(0);
-     $386 = $385 ? 5784 : 5792;
+     $386 = $385 ? 5792 : 5800;
      $387 = ($$07$i != $$07$i) | (0.0 != 0.0);
      if ($387) {
-      $388 = $385 ? 5800 : 5808;
+      $388 = $385 ? 5808 : 5816;
       $pl$1$i = 0;$s1$0$i = $388;
      } else {
       $pl$1$i = $pl$0$i;$s1$0$i = $386;
@@ -22281,7 +22049,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $$2$us$us$i = $$1$i;$s$0$us$us$i = $buf$i;
        while(1) {
         $473 = (~~(($$2$us$us$i)));
-        $474 = (5816 + ($473)|0);
+        $474 = (5824 + ($473)|0);
         $475 = HEAP8[$474>>0]|0;
         $476 = $475&255;
         $477 = $476 | $414;
@@ -22313,7 +22081,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $$2$us$i = $$1$i;$s$0$us$i = $buf$i;
        while(1) {
         $488 = (~~(($$2$us$i)));
-        $489 = (5816 + ($488)|0);
+        $489 = (5824 + ($488)|0);
         $490 = HEAP8[$489>>0]|0;
         $491 = $490&255;
         $492 = $491 | $414;
@@ -22347,7 +22115,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $$2$us159$i = $$1$i;$s$0$us158$i = $buf$i;
        while(1) {
         $503 = (~~(($$2$us159$i)));
-        $504 = (5816 + ($503)|0);
+        $504 = (5824 + ($503)|0);
         $505 = HEAP8[$504>>0]|0;
         $506 = $505&255;
         $507 = $506 | $414;
@@ -22380,7 +22148,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $$2$i = $$1$i;$s$0$i = $buf$i;
        while(1) {
         $518 = (~~(($$2$i)));
-        $519 = (5816 + ($518)|0);
+        $519 = (5824 + ($518)|0);
         $520 = HEAP8[$519>>0]|0;
         $521 = $520&255;
         $522 = $521 | $414;
@@ -22654,7 +22422,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
      $$pr146$i = $$pr$i;$a$1$lcssa$i = $$31$i;$z$1$lcssa$i = $584;
     }
     $613 = ($$pr146$i|0)<(0);
-    L245: do {
+    L228: do {
      if ($613) {
       $614 = (($$p$i) + 25)|0;
       $615 = (($614|0) / 9)&-1;
@@ -22723,7 +22491,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
          $621 = $638;$a$3249$us$i = $$a$3$us323$i;$z$3248$us$i = $$z$4$us$i;
         } else {
          $a$3$lcssa$i = $$a$3$us323$i;$z$3$lcssa$i = $$z$4$us$i;
-         break L245;
+         break L228;
         }
        }
       } else {
@@ -23339,7 +23107,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
         break;
        }
       }
-      (___fwritex(5832,1,$f)|0);
+      (___fwritex(5840,1,$f)|0);
       $877 = ($873>>>0)<($z$6$i>>>0);
       $878 = ($$311$i|0)>(0);
       $or$cond28173$i = $877 & $878;
@@ -23486,7 +23254,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
             $s9$2$i = $918;
             break;
            }
-           (___fwritex(5832,1,$f)|0);
+           (___fwritex(5840,1,$f)|0);
            $s9$2$i = $918;
           } else {
            $915 = ($s9$0$i>>>0)>($buf$i>>>0);
@@ -23588,21 +23356,49 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     continue L1;
     break;
    }
+   case 99:  {
+    $319 = $207;
+    $320 = $319&255;
+    HEAP8[$4>>0] = $320;
+    $1053 = $229;$1054 = $207;$a$2 = $4;$fl$6 = $206;$p$5 = 1;$pl$2 = 0;$prefix$2 = 5744;$z$2 = $2;
+    break;
+   }
+   case 109:  {
+    $321 = (___errno_location()|0);
+    $322 = HEAP32[$321>>2]|0;
+    $323 = (_strerror(($322|0))|0);
+    $a$1 = $323;
+    label = 99;
+    break;
+   }
+   case 115:  {
+    $324 = ($207|0)==(0|0);
+    $$17 = $324 ? 5760 : $207;
+    $a$1 = $$17;
+    label = 99;
+    break;
+   }
+   case 67:  {
+    $331 = $207;
+    HEAP32[$wc>>2] = $331;
+    HEAP32[$5>>2] = 0;
+    $1055 = $wc;$1056 = $wc;$p$4296 = -1;
+    label = 104;
+    break;
+   }
+   case 83:  {
+    $332 = ($p$0|0)==(0);
+    if ($332) {
+     $1057 = $207;$1058 = $207;$i$0166 = 0;
+     label = 110;
+    } else {
+     $1055 = $207;$1056 = $207;$p$4296 = $p$0;
+     label = 104;
+    }
+    break;
+   }
    case 110:  {
     switch ($st$0|0) {
-    case 7:  {
-     $216 = ($cnt$1|0)<(0);
-     $217 = $216 << 31 >> 31;
-     $218 = $207;
-     $219 = $218;
-     HEAP32[$219>>2] = $cnt$1;
-     $220 = (($218) + 4)|0;
-     $221 = $220;
-     HEAP32[$221>>2] = $217;
-     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
     case 0:  {
      HEAP32[$207>>2] = $cnt$1;
      $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
@@ -23648,6 +23444,19 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
      continue L1;
      break;
     }
+    case 7:  {
+     $216 = ($cnt$1|0)<(0);
+     $217 = $216 << 31 >> 31;
+     $218 = $207;
+     $219 = $218;
+     HEAP32[$219>>2] = $cnt$1;
+     $220 = (($218) + 4)|0;
+     $221 = $220;
+     HEAP32[$221>>2] = $217;
+     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
     default: {
      $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
      continue L1;
@@ -23655,8 +23464,93 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     }
     break;
    }
+   case 112:  {
+    $222 = ($p$0>>>0)>(8);
+    $223 = $222 ? $p$0 : 8;
+    $224 = $fl$1$ | 8;
+    $fl$3 = $224;$p$1 = $223;$t$1 = 120;
+    label = 77;
+    break;
+   }
+   case 88: case 120:  {
+    $fl$3 = $fl$1$;$p$1 = $p$0;$t$1 = $t$0;
+    label = 77;
+    break;
+   }
+   case 111:  {
+    $249 = $207;
+    $250 = ($249|0)==(0);
+    $251 = ($229|0)==(0);
+    $252 = $250 & $251;
+    if ($252) {
+     $$0$lcssa$i43 = $2;
+    } else {
+     $$03$i40 = $2;$254 = $249;$258 = $229;
+     while(1) {
+      $253 = $254 & 7;
+      $255 = $253 | 48;
+      $256 = $255&255;
+      $257 = (($$03$i40) + -1|0);
+      HEAP8[$257>>0] = $256;
+      $259 = (_bitshift64Lshr(($254|0),($258|0),3)|0);
+      $260 = tempRet0;
+      $261 = ($259|0)==(0);
+      $262 = ($260|0)==(0);
+      $263 = $261 & $262;
+      if ($263) {
+       $$0$lcssa$i43 = $257;
+       break;
+      } else {
+       $$03$i40 = $257;$254 = $259;$258 = $260;
+      }
+     }
+    }
+    $264 = $fl$1$ & 8;
+    $265 = ($264|0)==(0);
+    if ($265) {
+     $308 = $207;$311 = $229;$a$0 = $$0$lcssa$i43;$fl$4 = $fl$1$;$p$2 = $p$0;$pl$1 = 0;$prefix$1 = 5744;
+     label = 94;
+    } else {
+     $$13 = $252 ? 5744 : ((5744 + 5|0));
+     $266 = $252&1;
+     $$14 = $266 ^ 1;
+     $308 = $207;$311 = $229;$a$0 = $$0$lcssa$i43;$fl$4 = $fl$1$;$p$2 = $p$0;$pl$1 = $$14;$prefix$1 = $$13;
+     label = 94;
+    }
+    break;
+   }
+   case 105: case 100:  {
+    $267 = $207;
+    $268 = ($229|0)<(0);
+    if ($268) {
+     $269 = (_i64Subtract(0,0,($267|0),($229|0))|0);
+     $270 = tempRet0;
+     $271 = $269;
+     $277 = $271;$279 = $270;$pl$0 = 1;$prefix$0 = 5744;
+     label = 89;
+     break L92;
+    }
+    $272 = $fl$1$ & 2048;
+    $273 = ($272|0)==(0);
+    if ($273) {
+     $274 = $fl$1$ & 1;
+     $275 = ($274|0)==(0);
+     $$15 = $275 ? 5744 : ((5744 + 2|0));
+     $277 = $207;$279 = $229;$pl$0 = $274;$prefix$0 = $$15;
+     label = 89;
+    } else {
+     $277 = $207;$279 = $229;$pl$0 = 1;$prefix$0 = ((5744 + 1|0));
+     label = 89;
+    }
+    break;
+   }
+   case 117:  {
+    $277 = $207;$279 = $229;$pl$0 = 0;$prefix$0 = 5744;
+    label = 89;
+    break;
+   }
    default: {
-    $1053 = $229;$1054 = $207;$a$2 = $22;$fl$6 = $fl$1$;$p$5 = $p$0;$pl$2 = 0;$prefix$2 = 5736;$z$2 = $2;
+    $1053 = $229;$1054 = $207;$a$2 = $22;$fl$6 = $fl$1$;$p$5 = $p$0;$pl$2 = 0;$prefix$2 = 5744;$z$2 = $2;
    }
    }
   } while(0);
@@ -23669,13 +23563,13 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     $228 = ($229|0)==(0);
     $230 = $227 & $228;
     if ($230) {
-     $308 = $207;$311 = $229;$a$0 = $2;$fl$4 = $fl$3;$p$2 = $p$1;$pl$1 = 0;$prefix$1 = 5736;
+     $308 = $207;$311 = $229;$a$0 = $2;$fl$4 = $fl$3;$p$2 = $p$1;$pl$1 = 0;$prefix$1 = 5744;
      label = 94;
     } else {
      $$012$i = $2;$232 = $225;$239 = $229;
      while(1) {
       $231 = $232 & 15;
-      $233 = (5816 + ($231)|0);
+      $233 = (5824 + ($231)|0);
       $234 = HEAP8[$233>>0]|0;
       $235 = $234&255;
       $236 = $235 | $226;
@@ -23696,11 +23590,11 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
      $245 = $fl$3 & 8;
      $246 = ($245|0)==(0);
      if ($246) {
-      $308 = $207;$311 = $229;$a$0 = $238;$fl$4 = $fl$3;$p$2 = $p$1;$pl$1 = 0;$prefix$1 = 5736;
+      $308 = $207;$311 = $229;$a$0 = $238;$fl$4 = $fl$3;$p$2 = $p$1;$pl$1 = 0;$prefix$1 = 5744;
       label = 94;
      } else {
       $247 = $t$1 >> 4;
-      $248 = (5736 + ($247)|0);
+      $248 = (5744 + ($247)|0);
       $308 = $207;$311 = $229;$a$0 = $238;$fl$4 = $fl$3;$p$2 = $p$1;$pl$1 = 2;$prefix$1 = $248;
       label = 94;
      }
@@ -23770,13 +23664,13 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     $326 = ($325|0)==(0|0);
     if ($326) {
      $327 = (($a$1) + ($p$0)|0);
-     $1053 = $229;$1054 = $207;$a$2 = $a$1;$fl$6 = $206;$p$5 = $p$0;$pl$2 = 0;$prefix$2 = 5736;$z$2 = $327;
+     $1053 = $229;$1054 = $207;$a$2 = $a$1;$fl$6 = $206;$p$5 = $p$0;$pl$2 = 0;$prefix$2 = 5744;$z$2 = $327;
      break;
     } else {
      $328 = $325;
      $329 = $a$1;
      $330 = (($328) - ($329))|0;
-     $1053 = $229;$1054 = $207;$a$2 = $a$1;$fl$6 = $206;$p$5 = $330;$pl$2 = 0;$prefix$2 = 5736;$z$2 = $325;
+     $1053 = $229;$1054 = $207;$a$2 = $a$1;$fl$6 = $206;$p$5 = $330;$pl$2 = 0;$prefix$2 = 5744;$z$2 = $325;
      break;
     }
    }
@@ -23879,20 +23773,20 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     (___fwritex($pad$i,$$0$lcssa$i59,$f)|0);
    }
    $352 = ($i$0166|0)==(0);
-   L481: do {
+   L479: do {
     if (!($352)) {
      $i$1174 = 0;$ws$1175 = $1057;
      while(1) {
       $353 = HEAP32[$ws$1175>>2]|0;
       $354 = ($353|0)==(0);
       if ($354) {
-       break L481;
+       break L479;
       }
       $355 = (_wctomb($mb,$353)|0);
       $356 = (($355) + ($i$1174))|0;
       $357 = ($356|0)>($i$0166|0);
       if ($357) {
-       break L481;
+       break L479;
       }
       $358 = (($ws$1175) + 4|0);
       (___fwritex($mb,$355,$f)|0);
@@ -24077,83 +23971,17 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
    }
    $983 = (($nl_arg) + ($i$289<<3)|0);
    $984 = ($981>>>0)>(20);
-   L540: do {
+   L531: do {
     if (!($984)) {
      do {
       switch ($981|0) {
-      case 15:  {
-       $arglist_current53 = HEAP32[$ap>>2]|0;
-       $1022 = HEAP32[$arglist_current53>>2]|0;
-       $arglist_next54 = (($arglist_current53) + 4|0);
-       HEAP32[$ap>>2] = $arglist_next54;
-       $1023 = $1022&255;
-       $1024 = $1023 << 24 >> 24;
-       $1025 = ($1024|0)<(0);
-       $1026 = $1025 << 31 >> 31;
-       $1027 = $983;
-       $1028 = $1027;
-       HEAP32[$1028>>2] = $1024;
-       $1029 = (($1027) + 4)|0;
-       $1030 = $1029;
-       HEAP32[$1030>>2] = $1026;
-       break L540;
-       break;
-      }
-      case 16:  {
-       $arglist_current56 = HEAP32[$ap>>2]|0;
-       $1031 = HEAP32[$arglist_current56>>2]|0;
-       $arglist_next57 = (($arglist_current56) + 4|0);
-       HEAP32[$ap>>2] = $arglist_next57;
-       $$mask$i = $1031 & 255;
-       $1032 = $983;
-       $1033 = $1032;
-       HEAP32[$1033>>2] = $$mask$i;
-       $1034 = (($1032) + 4)|0;
-       $1035 = $1034;
-       HEAP32[$1035>>2] = 0;
-       break L540;
-       break;
-      }
-      case 17:  {
-       $arglist_current59 = HEAP32[$ap>>2]|0;
-       HEAP32[tempDoublePtr>>2]=HEAP32[$arglist_current59>>2];HEAP32[tempDoublePtr+4>>2]=HEAP32[$arglist_current59+4>>2];$1036 = +HEAPF64[tempDoublePtr>>3];
-       $arglist_next60 = (($arglist_current59) + 8|0);
-       HEAP32[$ap>>2] = $arglist_next60;
-       HEAPF64[$983>>3] = $1036;
-       break L540;
-       break;
-      }
-      case 18:  {
-       $arglist_current62 = HEAP32[$ap>>2]|0;
-       HEAP32[tempDoublePtr>>2]=HEAP32[$arglist_current62>>2];HEAP32[tempDoublePtr+4>>2]=HEAP32[$arglist_current62+4>>2];$1037 = +HEAPF64[tempDoublePtr>>3];
-       $arglist_next63 = (($arglist_current62) + 8|0);
-       HEAP32[$ap>>2] = $arglist_next63;
-       HEAPF64[$983>>3] = $1037;
-       break L540;
-       break;
-      }
-      case 14:  {
-       $arglist_current50 = HEAP32[$ap>>2]|0;
-       $1017 = HEAP32[$arglist_current50>>2]|0;
-       $arglist_next51 = (($arglist_current50) + 4|0);
-       HEAP32[$ap>>2] = $arglist_next51;
-       $$mask1$i = $1017 & 65535;
-       $1018 = $983;
-       $1019 = $1018;
-       HEAP32[$1019>>2] = $$mask1$i;
-       $1020 = (($1018) + 4)|0;
-       $1021 = $1020;
-       HEAP32[$1021>>2] = 0;
-       break L540;
-       break;
-      }
       case 9:  {
        $arglist_current35 = HEAP32[$ap>>2]|0;
        $985 = HEAP32[$arglist_current35>>2]|0;
        $arglist_next36 = (($arglist_current35) + 4|0);
        HEAP32[$ap>>2] = $arglist_next36;
        HEAP32[$983>>2] = $985;
-       break L540;
+       break L531;
        break;
       }
       case 10:  {
@@ -24169,7 +23997,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $991 = (($989) + 4)|0;
        $992 = $991;
        HEAP32[$992>>2] = $988;
-       break L540;
+       break L531;
        break;
       }
       case 11:  {
@@ -24183,7 +24011,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $996 = (($994) + 4)|0;
        $997 = $996;
        HEAP32[$997>>2] = 0;
-       break L540;
+       break L531;
        break;
       }
       case 12:  {
@@ -24202,7 +24030,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $1006 = (($1004) + 4)|0;
        $1007 = $1006;
        HEAP32[$1007>>2] = $1003;
-       break L540;
+       break L531;
        break;
       }
       case 13:  {
@@ -24220,11 +24048,77 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $1015 = (($1013) + 4)|0;
        $1016 = $1015;
        HEAP32[$1016>>2] = $1012;
-       break L540;
+       break L531;
+       break;
+      }
+      case 14:  {
+       $arglist_current50 = HEAP32[$ap>>2]|0;
+       $1017 = HEAP32[$arglist_current50>>2]|0;
+       $arglist_next51 = (($arglist_current50) + 4|0);
+       HEAP32[$ap>>2] = $arglist_next51;
+       $$mask1$i = $1017 & 65535;
+       $1018 = $983;
+       $1019 = $1018;
+       HEAP32[$1019>>2] = $$mask1$i;
+       $1020 = (($1018) + 4)|0;
+       $1021 = $1020;
+       HEAP32[$1021>>2] = 0;
+       break L531;
+       break;
+      }
+      case 15:  {
+       $arglist_current53 = HEAP32[$ap>>2]|0;
+       $1022 = HEAP32[$arglist_current53>>2]|0;
+       $arglist_next54 = (($arglist_current53) + 4|0);
+       HEAP32[$ap>>2] = $arglist_next54;
+       $1023 = $1022&255;
+       $1024 = $1023 << 24 >> 24;
+       $1025 = ($1024|0)<(0);
+       $1026 = $1025 << 31 >> 31;
+       $1027 = $983;
+       $1028 = $1027;
+       HEAP32[$1028>>2] = $1024;
+       $1029 = (($1027) + 4)|0;
+       $1030 = $1029;
+       HEAP32[$1030>>2] = $1026;
+       break L531;
+       break;
+      }
+      case 16:  {
+       $arglist_current56 = HEAP32[$ap>>2]|0;
+       $1031 = HEAP32[$arglist_current56>>2]|0;
+       $arglist_next57 = (($arglist_current56) + 4|0);
+       HEAP32[$ap>>2] = $arglist_next57;
+       $$mask$i = $1031 & 255;
+       $1032 = $983;
+       $1033 = $1032;
+       HEAP32[$1033>>2] = $$mask$i;
+       $1034 = (($1032) + 4)|0;
+       $1035 = $1034;
+       HEAP32[$1035>>2] = 0;
+       break L531;
+       break;
+      }
+      case 17:  {
+       $arglist_current59 = HEAP32[$ap>>2]|0;
+       HEAP32[tempDoublePtr>>2]=HEAP32[$arglist_current59>>2];HEAP32[tempDoublePtr+4>>2]=HEAP32[$arglist_current59+4>>2];$1036 = +HEAPF64[tempDoublePtr>>3];
+       $arglist_next60 = (($arglist_current59) + 8|0);
+       HEAP32[$ap>>2] = $arglist_next60;
+       HEAPF64[$983>>3] = $1036;
+       break L531;
+       break;
+      }
+      case 18:  {
+       $arglist_current62 = HEAP32[$ap>>2]|0;
+       HEAP32[tempDoublePtr>>2]=HEAP32[$arglist_current62>>2];HEAP32[tempDoublePtr+4>>2]=HEAP32[$arglist_current62+4>>2];$1037 = +HEAPF64[tempDoublePtr>>3];
+       $arglist_next63 = (($arglist_current62) + 8|0);
+       HEAP32[$ap>>2] = $arglist_next63;
+       HEAPF64[$983>>3] = $1037;
+       break L531;
        break;
       }
       default: {
-       break L540;
+       break L531;
       }
       }
      } while(0);
@@ -24279,10 +24173,10 @@ function _vsnprintf($s,$n,$fmt,$ap) {
  var $$$02 = 0, $$0 = 0, $$01 = 0, $$02 = 0, $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0;
  var $6 = 0, $7 = 0, $8 = 0, $9 = 0, $b = 0, $f = 0, dest = 0, label = 0, sp = 0, src = 0, stop = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 128|0;
+ STACKTOP = STACKTOP + 128|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $b = sp + 112|0;
  $f = sp;
- dest=$f+0|0; src=5840+0|0; stop=dest+112|0; do { HEAP32[dest>>2]=HEAP32[src>>2]|0; dest=dest+4|0; src=src+4|0; } while ((dest|0) < (stop|0));
+ dest=$f+0|0; src=5848+0|0; stop=dest+112|0; do { HEAP32[dest>>2]=HEAP32[src>>2]|0; dest=dest+4|0; src=src+4|0; } while ((dest|0) < (stop|0));
  $0 = (($n) + -1)|0;
  $1 = ($0>>>0)>(2147483646);
  if ($1) {
@@ -24378,11 +24272,11 @@ function _atoi($s) {
  }
  $5 = HEAP8[$$0>>0]|0;
  $6 = $5 << 24 >> 24;
- if ((($6|0) == 43)) {
-  $neg$0 = 0;
-  label = 5;
- } else if ((($6|0) == 45)) {
+ if ((($6|0) == 45)) {
   $neg$0 = 1;
+  label = 5;
+ } else if ((($6|0) == 43)) {
+  $neg$0 = 0;
   label = 5;
  } else {
   $$1$ph = $$0;$8 = $5;$neg$1$ph = 0;
@@ -24551,16 +24445,6 @@ function _memchr($src,$c,$n) {
 }
 function runPostSets() {
  
-}
-function _rand_r(seedp) {
-    seedp = seedp|0; 
-    var val = 0;
-    val = ((Math_imul(((HEAP32[((seedp)>>2)])|0), 31010991)|0) + 0x676e6177 ) & 2147483647; // assumes RAND_MAX is in bit mask form (power of 2 minus 1)
-    HEAP32[((seedp)>>2)]=val;
-    return val|0;
-}
-function _rand() {
-    return _rand_r(___rand_seed)|0;
 }
 function _i64Subtract(a, b, c, d) {
     a = a|0; b = b|0; c = c|0; d = d|0;
@@ -25046,10 +24930,10 @@ function b0(p0,p1,p2) { p0 = p0|0;p1 = p1|0;p2 = p2|0; nullFunc_iiii(0);return 0
   var FUNCTION_TABLE_viii = [b2,b2,b2,_keyFunc,_specialFunc,b2,b2,b2];
   var FUNCTION_TABLE_v = [b3,b3,b3,b3,b3,_displayFunc,_idleFunc,b3];
 
-    return { _i64Subtract: _i64Subtract, _free: _free, _main: _main, _rand_r: _rand_r, _i64Add: _i64Add, _strlen: _strlen, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, _bitshift64Lshr: _bitshift64Lshr, _rand: _rand, _bitshift64Shl: _bitshift64Shl, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, setThrew: setThrew, setTempRet0: setTempRet0, getTempRet0: getTempRet0, dynCall_iiii: dynCall_iiii, dynCall_vii: dynCall_vii, dynCall_viii: dynCall_viii, dynCall_v: dynCall_v };
+    return { _i64Subtract: _i64Subtract, _free: _free, _main: _main, _i64Add: _i64Add, _strlen: _strlen, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, _bitshift64Lshr: _bitshift64Lshr, _bitshift64Shl: _bitshift64Shl, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, setThrew: setThrew, setTempRet0: setTempRet0, getTempRet0: getTempRet0, dynCall_iiii: dynCall_iiii, dynCall_vii: dynCall_vii, dynCall_viii: dynCall_viii, dynCall_v: dynCall_v };
   })
   // EMSCRIPTEN_END_ASM
-  ({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "nullFunc_iiii": nullFunc_iiii, "nullFunc_vii": nullFunc_vii, "nullFunc_viii": nullFunc_viii, "nullFunc_v": nullFunc_v, "invoke_iiii": invoke_iiii, "invoke_vii": invoke_vii, "invoke_viii": invoke_viii, "invoke_v": invoke_v, "_glUseProgram": _glUseProgram, "_fread": _fread, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_clCreateContext": _clCreateContext, "_glDeleteProgram": _glDeleteProgram, "_clCreateProgramWithSource": _clCreateProgramWithSource, "_glBindBuffer": _glBindBuffer, "_fsync": _fsync, "_sbrk": _sbrk, "_glBlendFunc": _glBlendFunc, "_glutReshapeWindow": _glutReshapeWindow, "_glDisableVertexAttribArray": _glDisableVertexAttribArray, "_glCreateShader": _glCreateShader, "_glutSwapBuffers": _glutSwapBuffers, "_sysconf": _sysconf, "_close": _close, "_rewind": _rewind, "_cos": _cos, "_glTexCoord2i": _glTexCoord2i, "_clCreateCommandQueue": _clCreateCommandQueue, "_glLoadIdentity": _glLoadIdentity, "_write": _write, "_ftell": _ftell, "_glutSpecialFunc": _glutSpecialFunc, "_glShaderSource": _glShaderSource, "_glOrtho": _glOrtho, "_glVertexPointer": _glVertexPointer, "_glGetBooleanv": _glGetBooleanv, "_glutCreateWindow": _glutCreateWindow, "_glEnableVertexAttribArray": _glEnableVertexAttribArray, "_glVertexAttribPointer": _glVertexAttribPointer, "_glHint": _glHint, "_send": _send, "_glutDisplayFunc": _glutDisplayFunc, "_glBegin": _glBegin, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "_glutInitDisplayMode": _glutInitDisplayMode, "_strerror_r": _strerror_r, "_glViewport": _glViewport, "_fscanf": _fscanf, "___setErrNo": ___setErrNo, "_glutPostRedisplay": _glutPostRedisplay, "_clGetPlatformInfo": _clGetPlatformInfo, "_glutReshapeFunc": _glutReshapeFunc, "_glEnable": _glEnable, "_printf": _printf, "_glGenTextures": _glGenTextures, "_glGetIntegerv": _glGetIntegerv, "_glGetString": _glGetString, "_glutMainLoop": _glutMainLoop, "_glPushMatrix": _glPushMatrix, "_emscripten_get_now": _emscripten_get_now, "_glAttachShader": _glAttachShader, "_read": _read, "_clSetKernelArg": _clSetKernelArg, "_fwrite": _fwrite, "_time": _time, "_glColor3f": _glColor3f, "_glDetachShader": _glDetachShader, "_glutInitWindowPosition": _glutInitWindowPosition, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_glColor4f": _glColor4f, "_lseek": _lseek, "_glEnableClientState": _glEnableClientState, "_pwrite": _pwrite, "_open": _open, "_glClearColor": _glClearColor, "_glIsEnabled": _glIsEnabled, "_glBindTexture": _glBindTexture, "_clReleaseMemObject": _clReleaseMemObject, "_clGetPlatformIDs": _clGetPlatformIDs, "_glutIdleFunc": _glutIdleFunc, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_clFinish": _clFinish, "_fseek": _fseek, "_clGetDeviceIDs": _clGetDeviceIDs, "_glutInit": _glutInit, "_glActiveTexture": _glActiveTexture, "_glGetFloatv": _glGetFloatv, "_clGetKernelWorkGroupInfo": _clGetKernelWorkGroupInfo, "_clCreateBuffer": _clCreateBuffer, "_glTexCoordPointer": _glTexCoordPointer, "_recv": _recv, "_glCompileShader": _glCompileShader, "__getFloat": __getFloat, "_abort": _abort, "_clBuildProgram": _clBuildProgram, "_glTexImage2D": _glTexImage2D, "_fopen": _fopen, "_clGetContextInfo": _clGetContextInfo, "_clCreateKernel": _clCreateKernel, "_sin": _sin, "_glutKeyboardFunc": _glutKeyboardFunc, "_ungetc": _ungetc, "_glTexParameteri": _glTexParameteri, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_clGetDeviceInfo": _clGetDeviceInfo, "_fprintf": _fprintf, "__reallyNegative": __reallyNegative, "_glutInitWindowSize": _glutInitWindowSize, "_glClear": _glClear, "_fileno": _fileno, "_glPopMatrix": _glPopMatrix, "_glMatrixMode": _glMatrixMode, "__exit": __exit, "_glBindAttribLocation": _glBindAttribLocation, "_emscripten_glColor4f": _emscripten_glColor4f, "_glVertex3f": _glVertex3f, "_pread": _pread, "_mkport": _mkport, "_glEnd": _glEnd, "_glLinkProgram": _glLinkProgram, "_fflush": _fflush, "_exit": _exit, "___errno_location": ___errno_location, "_fgetc": _fgetc, "__scanString": __scanString, "_glClientActiveTexture": _glClientActiveTexture, "_fclose": _fclose, "_glDisable": _glDisable, "_strerror": _strerror, "__formatString": __formatString, "_sqrt": _sqrt, "_glTexSubImage2D": _glTexSubImage2D, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "cttz_i8": cttz_i8, "ctlz_i8": ctlz_i8, "___rand_seed": ___rand_seed, "NaN": NaN, "Infinity": Infinity, "_stderr": _stderr }, buffer);
+  ({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "min": Math_min, "nullFunc_iiii": nullFunc_iiii, "nullFunc_vii": nullFunc_vii, "nullFunc_viii": nullFunc_viii, "nullFunc_v": nullFunc_v, "invoke_iiii": invoke_iiii, "invoke_vii": invoke_vii, "invoke_viii": invoke_viii, "invoke_v": invoke_v, "_glUseProgram": _glUseProgram, "_fread": _fread, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_clCreateContext": _clCreateContext, "_glDeleteProgram": _glDeleteProgram, "_clCreateProgramWithSource": _clCreateProgramWithSource, "_glBindBuffer": _glBindBuffer, "_ftell": _ftell, "_sbrk": _sbrk, "_glBlendFunc": _glBlendFunc, "_glutReshapeWindow": _glutReshapeWindow, "_glDisableVertexAttribArray": _glDisableVertexAttribArray, "_glCreateShader": _glCreateShader, "_glutSwapBuffers": _glutSwapBuffers, "_sysconf": _sysconf, "_close": _close, "_rewind": _rewind, "_cos": _cos, "_glTexCoord2i": _glTexCoord2i, "_clCreateCommandQueue": _clCreateCommandQueue, "_glLoadIdentity": _glLoadIdentity, "_write": _write, "_fsync": _fsync, "_strerror": _strerror, "_glutSpecialFunc": _glutSpecialFunc, "_glShaderSource": _glShaderSource, "_glOrtho": _glOrtho, "_glVertexPointer": _glVertexPointer, "_glGetBooleanv": _glGetBooleanv, "_glutPostRedisplay": _glutPostRedisplay, "__getFloat": __getFloat, "_glVertexAttribPointer": _glVertexAttribPointer, "_glHint": _glHint, "_send": _send, "_glutDisplayFunc": _glutDisplayFunc, "_glBegin": _glBegin, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "_glutInitDisplayMode": _glutInitDisplayMode, "_strerror_r": _strerror_r, "_glViewport": _glViewport, "_fscanf": _fscanf, "___setErrNo": ___setErrNo, "_glutCreateWindow": _glutCreateWindow, "_clGetPlatformInfo": _clGetPlatformInfo, "_glutReshapeFunc": _glutReshapeFunc, "_glEnable": _glEnable, "_printf": _printf, "_glGenTextures": _glGenTextures, "_glGetIntegerv": _glGetIntegerv, "_glGetString": _glGetString, "_fopen": _fopen, "_glPushMatrix": _glPushMatrix, "_emscripten_get_now": _emscripten_get_now, "_glAttachShader": _glAttachShader, "_read": _read, "_clSetKernelArg": _clSetKernelArg, "_fwrite": _fwrite, "_time": _time, "_fprintf": _fprintf, "_glDetachShader": _glDetachShader, "_glutInitWindowPosition": _glutInitWindowPosition, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_glColor4f": _glColor4f, "_lseek": _lseek, "_glEnableClientState": _glEnableClientState, "_pwrite": _pwrite, "_open": _open, "_glClearColor": _glClearColor, "_glIsEnabled": _glIsEnabled, "_glBindTexture": _glBindTexture, "_clReleaseMemObject": _clReleaseMemObject, "_glGetFloatv": _glGetFloatv, "_glutIdleFunc": _glutIdleFunc, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_clFinish": _clFinish, "_fseek": _fseek, "_clGetDeviceIDs": _clGetDeviceIDs, "_fclose": _fclose, "_glActiveTexture": _glActiveTexture, "_clGetPlatformIDs": _clGetPlatformIDs, "_clGetKernelWorkGroupInfo": _clGetKernelWorkGroupInfo, "_clCreateBuffer": _clCreateBuffer, "_glTexCoordPointer": _glTexCoordPointer, "_recv": _recv, "_glCompileShader": _glCompileShader, "_glEnableVertexAttribArray": _glEnableVertexAttribArray, "_abort": _abort, "_clBuildProgram": _clBuildProgram, "_glTexImage2D": _glTexImage2D, "_glutMainLoop": _glutMainLoop, "_clGetContextInfo": _clGetContextInfo, "_clCreateKernel": _clCreateKernel, "_sin": _sin, "_glutKeyboardFunc": _glutKeyboardFunc, "_ungetc": _ungetc, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_glLinkProgram": _glLinkProgram, "_glColor3f": _glColor3f, "__reallyNegative": __reallyNegative, "_glutInitWindowSize": _glutInitWindowSize, "_glClear": _glClear, "_fileno": _fileno, "_glPopMatrix": _glPopMatrix, "_glMatrixMode": _glMatrixMode, "__exit": __exit, "_glBindAttribLocation": _glBindAttribLocation, "_emscripten_glColor4f": _emscripten_glColor4f, "_glVertex3f": _glVertex3f, "_pread": _pread, "_mkport": _mkport, "_glEnd": _glEnd, "_clGetDeviceInfo": _clGetDeviceInfo, "_fflush": _fflush, "_exit": _exit, "___errno_location": ___errno_location, "_fgetc": _fgetc, "__scanString": __scanString, "_glClientActiveTexture": _glClientActiveTexture, "_glutInit": _glutInit, "_glDisable": _glDisable, "_glTexParameteri": _glTexParameteri, "__formatString": __formatString, "_sqrt": _sqrt, "_glTexSubImage2D": _glTexSubImage2D, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "cttz_i8": cttz_i8, "ctlz_i8": ctlz_i8, "NaN": NaN, "Infinity": Infinity, "_stderr": _stderr }, buffer);
   var real__i64Subtract = asm["_i64Subtract"]; asm["_i64Subtract"] = function() {
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
@@ -25060,12 +24944,6 @@ var real__main = asm["_main"]; asm["_main"] = function() {
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
   return real__main.apply(null, arguments);
-};
-
-var real__rand_r = asm["_rand_r"]; asm["_rand_r"] = function() {
-  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
-  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
-  return real__rand_r.apply(null, arguments);
 };
 
 var real__i64Add = asm["_i64Add"]; asm["_i64Add"] = function() {
@@ -25086,12 +24964,6 @@ var real__bitshift64Lshr = asm["_bitshift64Lshr"]; asm["_bitshift64Lshr"] = func
   return real__bitshift64Lshr.apply(null, arguments);
 };
 
-var real__rand = asm["_rand"]; asm["_rand"] = function() {
-  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
-  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
-  return real__rand.apply(null, arguments);
-};
-
 var real__bitshift64Shl = asm["_bitshift64Shl"]; asm["_bitshift64Shl"] = function() {
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
@@ -25106,14 +24978,12 @@ var real_runPostSets = asm["runPostSets"]; asm["runPostSets"] = function() {
 var _i64Subtract = Module["_i64Subtract"] = asm["_i64Subtract"];
 var _free = Module["_free"] = asm["_free"];
 var _main = Module["_main"] = asm["_main"];
-var _rand_r = Module["_rand_r"] = asm["_rand_r"];
 var _i64Add = Module["_i64Add"] = asm["_i64Add"];
 var _strlen = Module["_strlen"] = asm["_strlen"];
 var _memset = Module["_memset"] = asm["_memset"];
 var _malloc = Module["_malloc"] = asm["_malloc"];
 var _memcpy = Module["_memcpy"] = asm["_memcpy"];
 var _bitshift64Lshr = Module["_bitshift64Lshr"] = asm["_bitshift64Lshr"];
-var _rand = Module["_rand"] = asm["_rand"];
 var _bitshift64Shl = Module["_bitshift64Shl"] = asm["_bitshift64Shl"];
 var runPostSets = Module["runPostSets"] = asm["runPostSets"];
 var dynCall_iiii = Module["dynCall_iiii"] = asm["dynCall_iiii"];
@@ -26742,7 +26612,9 @@ var i64Math = (function() { // Emscripten wrapper
 // === Auto-generated postamble setup entry stuff ===
 
 if (memoryInitializer) {
-  if (Module['memoryInitializerPrefixURL']) {
+  if (typeof Module['locateFile'] === 'function') {
+    memoryInitializer = Module['locateFile'](memoryInitializer);
+  } else if (Module['memoryInitializerPrefixURL']) {
     memoryInitializer = Module['memoryInitializerPrefixURL'] + memoryInitializer;
   }
   if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
@@ -26898,13 +26770,25 @@ function exit(status) {
   exitRuntime();
 
   if (ENVIRONMENT_IS_NODE) {
-    process['exit'](status);
-  } else if (ENVIRONMENT_IS_SHELL && typeof quit === 'function') {
+    // Work around a node.js bug where stdout buffer is not flushed at process exit:
+    // Instead of process.exit() directly, wait for stdout flush event.
+    // See https://github.com/joyent/node/issues/1669 and https://github.com/kripken/emscripten/issues/2582
+    // Workaround is based on https://github.com/RReverser/acorn/commit/50ab143cecc9ed71a2d66f78b4aec3bb2e9844f6
+    process['stdout']['once']('drain', function () {
+      process['exit'](status);
+    });
+    console.log(' '); // Make sure to print something to force the drain event to occur, in case the stdout buffer was empty.
+    // Work around another node bug where sometimes 'drain' is never fired - make another effort
+    // to emit the exit status, after a significant delay (if node hasn't fired drain by then, give up)
+    setTimeout(function() {
+      process['exit'](status);
+    }, 500);
+  } else
+  if (ENVIRONMENT_IS_SHELL && typeof quit === 'function') {
     quit(status);
-  } else {
-    // no proper way to exit with a return code, throw an exception to halt the current execution
-    throw new ExitStatus(status);
   }
+  // if we reach here, we must throw an exception to halt the current execution
+  throw new ExitStatus(status);
 }
 Module['exit'] = Module.exit = exit;
 
@@ -26952,4 +26836,3 @@ run();
 
 
 
-//# sourceMappingURL=val_smallptgpu1.js.map

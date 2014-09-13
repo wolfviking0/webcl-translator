@@ -66,10 +66,19 @@ if (ENVIRONMENT_IS_NODE) {
     globalEval(read(f));
   };
 
-  Module['thisProgram'] = process['argv'][1];
+  Module['thisProgram'] = process['argv'][1].replace(/\\/g, '/');
   Module['arguments'] = process['argv'].slice(2);
 
-  module['exports'] = Module;
+  if (typeof module !== 'undefined') {
+    module['exports'] = Module;
+  }
+
+  process['on']('uncaughtException', function(ex) {
+    // suppress ExitStatus exceptions from showing an error
+    if (!(ex instanceof ExitStatus)) {
+      throw ex;
+    }
+  });
 }
 else if (ENVIRONMENT_IS_SHELL) {
   if (!Module['print']) Module['print'] = print;
@@ -82,7 +91,12 @@ else if (ENVIRONMENT_IS_SHELL) {
   }
 
   Module['readBinary'] = function readBinary(f) {
-    return read(f, 'binary');
+    if (typeof readbuffer === 'function') {
+      return new Uint8Array(readbuffer(f));
+    }
+    var data = read(f, 'binary');
+    assert(typeof data === 'object');
+    return data;
   };
 
   if (typeof scriptArgs != 'undefined') {
@@ -137,7 +151,7 @@ else {
 function globalEval(x) {
   eval.call(null, x);
 }
-if (!Module['load'] == 'undefined' && Module['read']) {
+if (!Module['load'] && Module['read']) {
   Module['load'] = function load(f) {
     globalEval(Module['read'](f));
   };
@@ -174,7 +188,15 @@ for (var key in moduleOverrides) {
 
 
 
-// === Auto-generated preamble library stuff ===
+// === Preamble library stuff ===
+
+// Documentation for the public APIs defined in this file must be updated in: 
+//    site/source/docs/api_reference/preamble.js.rst
+// A prebuilt local version of the documentation is available at: 
+//    site/build/text/docs/api_reference/preamble.js.txt
+// You can also build docs locally as HTML or other formats in site/
+// An online HTML version (which may be of a different version of Emscripten)
+//    is up at http://kripken.github.io/emscripten-site/docs/api_reference/preamble.js.html
 
 //========================================
 // Runtime code shared with compiler
@@ -192,46 +214,6 @@ var Runtime = {
   },
   stackRestore: function (stackTop) {
     STACKTOP = stackTop;
-  },
-  forceAlign: function (target, quantum) {
-    quantum = quantum || 4;
-    if (quantum == 1) return target;
-    if (isNumber(target) && isNumber(quantum)) {
-      return Math.ceil(target/quantum)*quantum;
-    } else if (isNumber(quantum) && isPowerOfTwo(quantum)) {
-      return '(((' +target + ')+' + (quantum-1) + ')&' + -quantum + ')';
-    }
-    return 'Math.ceil((' + target + ')/' + quantum + ')*' + quantum;
-  },
-  isNumberType: function (type) {
-    return type in Runtime.INT_TYPES || type in Runtime.FLOAT_TYPES;
-  },
-  isPointerType: function isPointerType(type) {
-  return type[type.length-1] == '*';
-},
-  isStructType: function isStructType(type) {
-  if (isPointerType(type)) return false;
-  if (isArrayType(type)) return true;
-  if (/<?\{ ?[^}]* ?\}>?/.test(type)) return true; // { i32, i8 } etc. - anonymous struct types
-  // See comment in isStructPointerType()
-  return type[0] == '%';
-},
-  INT_TYPES: {"i1":0,"i8":0,"i16":0,"i32":0,"i64":0},
-  FLOAT_TYPES: {"float":0,"double":0},
-  or64: function (x, y) {
-    var l = (x | 0) | (y | 0);
-    var h = (Math.round(x / 4294967296) | Math.round(y / 4294967296)) * 4294967296;
-    return l + h;
-  },
-  and64: function (x, y) {
-    var l = (x | 0) & (y | 0);
-    var h = (Math.round(x / 4294967296) & Math.round(y / 4294967296)) * 4294967296;
-    return l + h;
-  },
-  xor64: function (x, y) {
-    var l = (x | 0) ^ (y | 0);
-    var h = (Math.round(x / 4294967296) ^ Math.round(y / 4294967296)) * 4294967296;
-    return l + h;
   },
   getNativeTypeSize: function (type) {
     switch (type) {
@@ -257,138 +239,12 @@ var Runtime = {
   getNativeFieldSize: function (type) {
     return Math.max(Runtime.getNativeTypeSize(type), Runtime.QUANTUM_SIZE);
   },
-  dedup: function dedup(items, ident) {
-  var seen = {};
-  if (ident) {
-    return items.filter(function(item) {
-      if (seen[item[ident]]) return false;
-      seen[item[ident]] = true;
-      return true;
-    });
-  } else {
-    return items.filter(function(item) {
-      if (seen[item]) return false;
-      seen[item] = true;
-      return true;
-    });
-  }
-},
-  set: function set() {
-  var args = typeof arguments[0] === 'object' ? arguments[0] : arguments;
-  var ret = {};
-  for (var i = 0; i < args.length; i++) {
-    ret[args[i]] = 0;
-  }
-  return ret;
-},
-  STACK_ALIGN: 8,
+  STACK_ALIGN: 16,
   getAlignSize: function (type, size, vararg) {
     // we align i64s and doubles on 64-bit boundaries, unlike x86
     if (!vararg && (type == 'i64' || type == 'double')) return 8;
     if (!type) return Math.min(size, 8); // align structures internally to 64 bits
     return Math.min(size || (type ? Runtime.getNativeFieldSize(type) : 0), Runtime.QUANTUM_SIZE);
-  },
-  calculateStructAlignment: function calculateStructAlignment(type) {
-    type.flatSize = 0;
-    type.alignSize = 0;
-    var diffs = [];
-    var prev = -1;
-    var index = 0;
-    type.flatIndexes = type.fields.map(function(field) {
-      index++;
-      var size, alignSize;
-      if (Runtime.isNumberType(field) || Runtime.isPointerType(field)) {
-        size = Runtime.getNativeTypeSize(field); // pack char; char; in structs, also char[X]s.
-        alignSize = Runtime.getAlignSize(field, size);
-      } else if (Runtime.isStructType(field)) {
-        if (field[1] === '0') {
-          // this is [0 x something]. When inside another structure like here, it must be at the end,
-          // and it adds no size
-          // XXX this happens in java-nbody for example... assert(index === type.fields.length, 'zero-length in the middle!');
-          size = 0;
-          if (Types.types[field]) {
-            alignSize = Runtime.getAlignSize(null, Types.types[field].alignSize);
-          } else {
-            alignSize = type.alignSize || QUANTUM_SIZE;
-          }
-        } else {
-          size = Types.types[field].flatSize;
-          alignSize = Runtime.getAlignSize(null, Types.types[field].alignSize);
-        }
-      } else if (field[0] == 'b') {
-        // bN, large number field, like a [N x i8]
-        size = field.substr(1)|0;
-        alignSize = 1;
-      } else if (field[0] === '<') {
-        // vector type
-        size = alignSize = Types.types[field].flatSize; // fully aligned
-      } else if (field[0] === 'i') {
-        // illegal integer field, that could not be legalized because it is an internal structure field
-        // it is ok to have such fields, if we just use them as markers of field size and nothing more complex
-        size = alignSize = parseInt(field.substr(1))/8;
-        assert(size % 1 === 0, 'cannot handle non-byte-size field ' + field);
-      } else {
-        assert(false, 'invalid type for calculateStructAlignment');
-      }
-      if (type.packed) alignSize = 1;
-      type.alignSize = Math.max(type.alignSize, alignSize);
-      var curr = Runtime.alignMemory(type.flatSize, alignSize); // if necessary, place this on aligned memory
-      type.flatSize = curr + size;
-      if (prev >= 0) {
-        diffs.push(curr-prev);
-      }
-      prev = curr;
-      return curr;
-    });
-    if (type.name_ && type.name_[0] === '[') {
-      // arrays have 2 elements, so we get the proper difference. then we scale here. that way we avoid
-      // allocating a potentially huge array for [999999 x i8] etc.
-      type.flatSize = parseInt(type.name_.substr(1))*type.flatSize/2;
-    }
-    type.flatSize = Runtime.alignMemory(type.flatSize, type.alignSize);
-    if (diffs.length == 0) {
-      type.flatFactor = type.flatSize;
-    } else if (Runtime.dedup(diffs).length == 1) {
-      type.flatFactor = diffs[0];
-    }
-    type.needsFlattening = (type.flatFactor != 1);
-    return type.flatIndexes;
-  },
-  generateStructInfo: function (struct, typeName, offset) {
-    var type, alignment;
-    if (typeName) {
-      offset = offset || 0;
-      type = (typeof Types === 'undefined' ? Runtime.typeInfo : Types.types)[typeName];
-      if (!type) return null;
-      if (type.fields.length != struct.length) {
-        printErr('Number of named fields must match the type for ' + typeName + ': possibly duplicate struct names. Cannot return structInfo');
-        return null;
-      }
-      alignment = type.flatIndexes;
-    } else {
-      var type = { fields: struct.map(function(item) { return item[0] }) };
-      alignment = Runtime.calculateStructAlignment(type);
-    }
-    var ret = {
-      __size__: type.flatSize
-    };
-    if (typeName) {
-      struct.forEach(function(item, i) {
-        if (typeof item === 'string') {
-          ret[item] = alignment[i] + offset;
-        } else {
-          // embedded struct
-          var key;
-          for (var k in item) key = k;
-          ret[key] = Runtime.generateStructInfo(item[key], type.fields[i], alignment[i]);
-        }
-      });
-    } else {
-      struct.forEach(function(item, i) {
-        ret[item[1]] = alignment[i];
-      });
-    }
-    return ret;
   },
   dynCall: function (sig, ptr, args) {
     if (args && args.length) {
@@ -436,7 +292,8 @@ var Runtime = {
       }
     }
     try {
-      var evalled = eval('(function(' + args.join(',') + '){ ' + source + ' })'); // new Function does not allow upvars in node
+      // Module is the only 'upvar', which we provide directly. We also provide FS for legacy support.
+      var evalled = eval('(function(Module, FS) { return function(' + args.join(',') + '){ ' + source + ' } })')(Module, typeof FS !== 'undefined' ? FS : null);
     } catch(e) {
       Module.printErr('error in executing inline EM_ASM code: ' + e + ' on: \n\n' + source + '\n\nwith args |' + args + '| (make sure to use the right one out of EM_ASM, EM_ASM_ARGS, etc.)');
       throw e;
@@ -505,7 +362,7 @@ var Runtime = {
         var codePoint = ((c1 & 0x07) << 18) | ((c2 & 0x3F) << 12) |
                         ((c3 & 0x3F) << 6)  | (c4 & 0x3F);
         ret = String.fromCharCode(
-          Math.floor((codePoint - 0x10000) / 0x400) + 0xD800,
+          (((codePoint - 0x10000) / 0x400)|0) + 0xD800,
           (codePoint - 0x10000) % 0x400 + 0xDC00);
       }
       buffer.length = 0;
@@ -528,10 +385,10 @@ var Runtime = {
   getCompilerSetting: function (name) {
     throw 'You must build with -s RETAIN_COMPILER_SETTINGS=1 for Runtime.getCompilerSetting or emscripten_get_compiler_setting to work';
   },
-  stackAlloc: function (size) { var ret = STACKTOP;STACKTOP = (STACKTOP + size)|0;STACKTOP = (((STACKTOP)+7)&-8);(assert((((STACKTOP|0) < (STACK_MAX|0))|0))|0); return ret; },
-  staticAlloc: function (size) { var ret = STATICTOP;STATICTOP = (STATICTOP + (assert(!staticSealed),size))|0;STATICTOP = (((STATICTOP)+7)&-8); return ret; },
-  dynamicAlloc: function (size) { var ret = DYNAMICTOP;DYNAMICTOP = (DYNAMICTOP + (assert(DYNAMICTOP > 0),size))|0;DYNAMICTOP = (((DYNAMICTOP)+7)&-8); if (DYNAMICTOP >= TOTAL_MEMORY) enlargeMemory();; return ret; },
-  alignMemory: function (size,quantum) { var ret = size = Math.ceil((size)/(quantum ? quantum : 8))*(quantum ? quantum : 8); return ret; },
+  stackAlloc: function (size) { var ret = STACKTOP;STACKTOP = (STACKTOP + size)|0;STACKTOP = (((STACKTOP)+15)&-16);(assert((((STACKTOP|0) < (STACK_MAX|0))|0))|0); return ret; },
+  staticAlloc: function (size) { var ret = STATICTOP;STATICTOP = (STATICTOP + (assert(!staticSealed),size))|0;STATICTOP = (((STATICTOP)+15)&-16); return ret; },
+  dynamicAlloc: function (size) { var ret = DYNAMICTOP;DYNAMICTOP = (DYNAMICTOP + (assert(DYNAMICTOP > 0),size))|0;DYNAMICTOP = (((DYNAMICTOP)+15)&-16); if (DYNAMICTOP >= TOTAL_MEMORY) enlargeMemory();; return ret; },
+  alignMemory: function (size,quantum) { var ret = size = Math.ceil((size)/(quantum ? quantum : 16))*(quantum ? quantum : 16); return ret; },
   makeBigInt: function (low,high,unsigned) { var ret = (unsigned ? ((+((low>>>0)))+((+((high>>>0)))*4294967296.0)) : ((+((low>>>0)))+((+((high|0)))*4294967296.0))); return ret; },
   GLOBAL_BASE: 8,
   QUANTUM_SIZE: 4,
@@ -604,7 +461,8 @@ var cwrap, ccall;
     'stringToC' : function(str) {
       var ret = 0;
       if (str !== null && str !== undefined && str !== 0) { // null string
-        ret = Runtime.stackAlloc(str.length + 1); // +1 for the trailing '\0'
+        // at most 4 bytes per UTF-8 code point, +1 for the trailing '\0'
+        ret = Runtime.stackAlloc((str.length << 2) + 1);
         writeStringToMemory(str, ret);
       }
       return ret;
@@ -613,30 +471,7 @@ var cwrap, ccall;
   // For fast lookup of conversion functions
   var toC = {'string' : JSfuncs['stringToC'], 'array' : JSfuncs['arrayToC']};
 
-  // C calling interface. A convenient way to call C functions (in C files, or
-  // defined with extern "C").
-  //
-  // Note: ccall/cwrap use the C stack for temporary values. If you pass a string
-  //       then it is only alive until the call is complete. If the code being
-  //       called saves the pointer to be used later, it may point to invalid
-  //       data. If you need a string to live forever, you can create it (and
-  //       must later delete it manually!) using malloc and writeStringToMemory,
-  //       for example.
-  //
-  // Note: LLVM optimizations can inline and remove functions, after which you will not be
-  //       able to call them. Closure can also do so. To avoid that, add your function to
-  //       the exports using something like
-  //
-  //         -s EXPORTED_FUNCTIONS='["_main", "_myfunc"]'
-  //
-  // @param ident      The name of the C function (note that C++ functions will be name-mangled - use extern "C")
-  // @param returnType The return type of the function, one of the JS types 'number', 'string' or 'array' (use 'number' for any C pointer, and
-  //                   'array' for JavaScript arrays and typed arrays; note that arrays are 8-bit).
-  // @param argTypes   An array of the types of arguments for the function (if there are no arguments, this can be ommitted). Types are as in returnType,
-  //                   except that 'array' is not possible (there is no way for us to know the length of the array)
-  // @param args       An array of the arguments to the function, as native JS values (as in returnType)
-  //                   Note that string arguments will be stored on the stack (the JS string will become a C string on the stack).
-  // @return           The return value, as a native JS value (as in returnType)
+  // C calling interface. 
   ccall = function ccallFunc(ident, returnType, argTypes, args) {
     var func = getCFunc(ident);
     var cArgs = [];
@@ -672,13 +507,8 @@ var cwrap, ccall;
       JSsource[fun] = parseJSFunc(JSfuncs[fun]);
     }
   }
-  // Returns a native JS wrapper for a C function. This is similar to ccall, but
-  // returns a function you can call repeatedly in a normal way. For example:
-  //
-  //   var my_function = cwrap('my_c_function', 'number', ['number', 'number']);
-  //   alert(my_function(5, 22));
-  //   alert(my_function(99, 12));
-  //
+
+  
   cwrap = function cwrap(ident, returnType, argTypes) {
     argTypes = argTypes || [];
     var cfunc = getCFunc(ident);
@@ -727,14 +557,7 @@ var cwrap, ccall;
 Module["cwrap"] = cwrap;
 Module["ccall"] = ccall;
 
-// Sets a value in memory in a dynamic way at run-time. Uses the
-// type data. This is the same as makeSetValue, except that
-// makeSetValue is done at compile-time and generates the needed
-// code then, whereas this function picks the right code at
-// run-time.
-// Note that setValue and getValue only do *aligned* writes and reads!
-// Note that ccall uses JS types as for defining types, while setValue and
-// getValue need LLVM types ('i8', 'i32') - this is a lower-level operation
+
 function setValue(ptr, value, type, noSafe) {
   type = type || 'i8';
   if (type.charAt(type.length-1) === '*') type = 'i32'; // pointers are 32-bit
@@ -751,7 +574,7 @@ function setValue(ptr, value, type, noSafe) {
 }
 Module['setValue'] = setValue;
 
-// Parallel to setValue.
+
 function getValue(ptr, type, noSafe) {
   type = type || 'i8';
   if (type.charAt(type.length-1) === '*') type = 'i32'; // pointers are 32-bit
@@ -906,8 +729,6 @@ function Pointer_stringify(ptr, /* optional */ length) {
 }
 Module['Pointer_stringify'] = Pointer_stringify;
 
-// Given a pointer 'ptr' to a null-terminated UTF16LE-encoded string in the emscripten HEAP, returns
-// a copy of that string as a Javascript String object.
 function UTF16ToString(ptr) {
   var i = 0;
 
@@ -923,8 +744,7 @@ function UTF16ToString(ptr) {
 }
 Module['UTF16ToString'] = UTF16ToString;
 
-// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr',
-// null-terminated and encoded in UTF16LE form. The copy will require at most (str.length*2+1)*2 bytes of space in the HEAP.
+
 function stringToUTF16(str, outPtr) {
   for(var i = 0; i < str.length; ++i) {
     // charCodeAt returns a UTF-16 encoded code unit, so it can be directly written to the HEAP.
@@ -936,8 +756,7 @@ function stringToUTF16(str, outPtr) {
 }
 Module['stringToUTF16'] = stringToUTF16;
 
-// Given a pointer 'ptr' to a null-terminated UTF32LE-encoded string in the emscripten HEAP, returns
-// a copy of that string as a Javascript String object.
+
 function UTF32ToString(ptr) {
   var i = 0;
 
@@ -958,9 +777,7 @@ function UTF32ToString(ptr) {
 }
 Module['UTF32ToString'] = UTF32ToString;
 
-// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr',
-// null-terminated and encoded in UTF32LE form. The copy will require at most (str.length+1)*4 bytes of space in the HEAP,
-// but can use less, since str.length does not return the number of characters in the string, but the number of UTF-16 code units in the string.
+
 function stringToUTF32(str, outPtr) {
   var iChar = 0;
   for(var iCodeUnit = 0; iCodeUnit < str.length; ++iCodeUnit) {
@@ -1201,7 +1018,7 @@ var TOTAL_STACK = Module['TOTAL_STACK'] || 5242880;
 var TOTAL_MEMORY = Module['TOTAL_MEMORY'] || 16777216;
 var FAST_MEMORY = Module['FAST_MEMORY'] || 2097152;
 
-var totalMemory = 4096;
+var totalMemory = 64*1024;
 while (totalMemory < TOTAL_MEMORY || totalMemory < 2*TOTAL_STACK) {
   if (totalMemory < 16*1024*1024) {
     totalMemory *= 2;
@@ -1339,8 +1156,7 @@ Module['addOnPostRun'] = Module.addOnPostRun = addOnPostRun;
 
 // Tools
 
-// This processes a JS string into a C-line array of numbers, 0-terminated.
-// For LLVM-originating strings, see parser.js:parseLLVMString function
+
 function intArrayFromString(stringy, dontAddNull, length /* optional */) {
   var ret = (new Runtime.UTF8Processor()).processJSString(stringy);
   if (length) {
@@ -1367,7 +1183,6 @@ function intArrayToString(array) {
 }
 Module['intArrayToString'] = intArrayToString;
 
-// Write a Javascript array to somewhere in the heap
 function writeStringToMemory(string, buffer, dontAddNull) {
   var array = intArrayFromString(string, dontAddNull);
   var i = 0;
@@ -2623,6 +2438,7 @@ function copyTempDouble(ptr) {
             return callback(new Error('node type not supported'));
           }
   
+          FS.chmod(path, entry.mode);
           FS.utime(path, entry.timestamp, entry.timestamp);
         } catch (e) {
           return callback(e);
@@ -3077,7 +2893,7 @@ function copyTempDouble(ptr) {
       },lookupNode:function (parent, name) {
         var err = FS.mayLookup(parent);
         if (err) {
-          throw new FS.ErrnoError(err);
+          throw new FS.ErrnoError(err, parent);
         }
         var hash = FS.hashName(parent.id, name);
         for (var node = FS.nameTable[hash]; node; node = node.name_next) {
@@ -3637,6 +3453,9 @@ function copyTempDouble(ptr) {
       },readlink:function (path) {
         var lookup = FS.lookupPath(path);
         var link = lookup.node;
+        if (!link) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
+        }
         if (!link.node_ops.readlink) {
           throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
         }
@@ -4023,7 +3842,7 @@ function copyTempDouble(ptr) {
           random_device = function() { return require('crypto').randomBytes(1)[0]; };
         } else {
           // default for ES5 platforms
-          random_device = function() { return Math.floor(Math.random()*256); };
+          random_device = function() { return (Math.random()*256)|0; };
         }
         FS.createDevice('/dev', 'random', random_device);
         FS.createDevice('/dev', 'urandom', random_device);
@@ -4070,14 +3889,18 @@ function copyTempDouble(ptr) {
         assert(stderr.fd === 2, 'invalid handle for stderr (' + stderr.fd + ')');
       },ensureErrnoError:function () {
         if (FS.ErrnoError) return;
-        FS.ErrnoError = function ErrnoError(errno) {
-          this.errno = errno;
-          for (var key in ERRNO_CODES) {
-            if (ERRNO_CODES[key] === errno) {
-              this.code = key;
-              break;
+        FS.ErrnoError = function ErrnoError(errno, node) {
+          this.node = node;
+          this.setErrno = function(errno) {
+            this.errno = errno;
+            for (var key in ERRNO_CODES) {
+              if (ERRNO_CODES[key] === errno) {
+                this.code = key;
+                break;
+              }
             }
-          }
+          };
+          this.setErrno(errno);
           this.message = ERRNO_MESSAGES[errno];
           if (this.stack) this.stack = demangleAll(this.stack);
         };
@@ -4294,7 +4117,7 @@ function copyTempDouble(ptr) {
             return undefined;
           }
           var chunkOffset = idx % this.chunkSize;
-          var chunkNum = Math.floor(idx / this.chunkSize);
+          var chunkNum = (idx / this.chunkSize)|0;
           return this.getter(chunkNum)[chunkOffset];
         }
         LazyUint8Array.prototype.setDataGetter = function LazyUint8Array_setDataGetter(getter) {
@@ -4678,7 +4501,8 @@ function copyTempDouble(ptr) {
               }
   
               if (url === 'ws://' || url === 'wss://') { // Is the supplied URL config just a prefix, if so complete it.
-                url = url + addr + ':' + port;
+                var parts = addr.split('/');
+                url = url + parts[0] + ":" + port + "/" + parts.slice(1).join('/');
               }
   
               // Make the WebSocket subprotocol (Sec-WebSocket-Protocol) default to binary if no configuration is set.
@@ -5175,7 +4999,7 @@ function copyTempDouble(ptr) {
         if (streamObj) streamObj.error = true;
         return 0;
       } else {
-        return Math.floor(bytesWritten / size);
+        return (bytesWritten / size)|0;
       }
     }
   
@@ -6083,7 +5907,7 @@ function copyTempDouble(ptr) {
     }
 
   function _time(ptr) {
-      var ret = Math.floor(Date.now()/1000);
+      var ret = (Date.now()/1000)|0;
       if (ptr) {
         HEAP32[((ptr)>>2)]=ret;
       }
@@ -6329,53 +6153,40 @@ function copyTempDouble(ptr) {
           }
         }
       },createContext:function (canvas, useWebGL, setInModule, webGLContextAttributes) {
-        if (useWebGL && Module.ctx) return Module.ctx; // no need to recreate singleton GL context
+        if (useWebGL && Module.ctx && canvas == Module.canvas) return Module.ctx; // no need to recreate GL context if it's already been created for this canvas.
   
         var ctx;
-        var errorInfo = '?';
-        function onContextCreationError(event) {
-          errorInfo = event.statusMessage || errorInfo;
-        }
-        try {
-          if (useWebGL) {
-            var contextAttributes = {
-              antialias: false,
-              alpha: false
-            };
-  
-            if (webGLContextAttributes) {
-              for (var attribute in webGLContextAttributes) {
-                contextAttributes[attribute] = webGLContextAttributes[attribute];
-              }
-            }
-  
-  
-            canvas.addEventListener('webglcontextcreationerror', onContextCreationError, false);
-            try {
-              ['experimental-webgl', 'webgl'].some(function(webglId) {
-                return ctx = canvas.getContext(webglId, contextAttributes);
-              });
-            } finally {
-              canvas.removeEventListener('webglcontextcreationerror', onContextCreationError, false);
-            }
-          } else {
-            ctx = canvas.getContext('2d');
-          }
-          if (!ctx) throw ':(';
-        } catch (e) {
-          Module.print('Could not create canvas: ' + [errorInfo, e]);
-          return null;
-        }
+        var contextHandle;
         if (useWebGL) {
-          // possible GL_DEBUG entry point: ctx = wrapDebugGL(ctx);
+          // For GLES2/desktop GL compatibility, adjust a few defaults to be different to WebGL defaults, so that they align better with the desktop defaults.
+          var contextAttributes = {
+            antialias: false,
+            alpha: false
+          };
   
+          if (webGLContextAttributes) {
+            for (var attribute in webGLContextAttributes) {
+              contextAttributes[attribute] = webGLContextAttributes[attribute];
+            }
+          }
+  
+          contextHandle = GL.createContext(canvas, contextAttributes);
+          if (contextHandle) {
+            ctx = GL.getContext(contextHandle).GLctx;
+          }
           // Set the background of the WebGL canvas to black
           canvas.style.backgroundColor = "black";
+        } else {
+          ctx = canvas.getContext('2d');
         }
+  
+        if (!ctx) return null;
+  
         if (setInModule) {
           if (!useWebGL) assert(typeof GLctx === 'undefined', 'cannot set in module if GLctx is used, but we are a non-GL context that would replace it');
+  
           Module.ctx = ctx;
-          if (useWebGL) GLctx = ctx;
+          if (useWebGL) GL.makeContextCurrent(contextHandle);
           Module.useWebGL = useWebGL;
           Browser.moduleContextCreatedCallbacks.forEach(function(callback) { callback() });
           Browser.init();
@@ -6514,15 +6325,15 @@ function copyTempDouble(ptr) {
             delta = event.detail;
             break;
           case 'mousewheel': 
-            delta = -event.wheelDelta;
+            delta = event.wheelDelta;
             break;
           case 'wheel': 
-            delta = event.deltaY;
+            delta = event['deltaY'];
             break;
           default:
             throw 'unrecognized mouse wheel event: ' + event.type;
         }
-        return Math.max(-1, Math.min(1, delta));
+        return delta;
       },mouseX:0,mouseY:0,mouseMovementX:0,mouseMovementY:0,touches:{},lastTouches:{},calculateMouseEvent:function (event) { // event should be mousemove, mousedown or mouseup
         if (Browser.pointerLock) {
           // When the pointer is locked, calculate the coordinates
@@ -6697,6 +6508,10 @@ function copyTempDouble(ptr) {
             }
           }
         }
+      },wgetRequests:{},nextWgetRequestHandle:0,getNextWgetRequestHandle:function () {
+        var handle = Browser.nextWgetRequestHandle;
+        Browser.nextWgetRequestHandle++;
+        return handle;
       }};
 
   function _cudaEventSynchronize(event) {
@@ -6754,12 +6569,6 @@ assert(DYNAMIC_BASE < TOTAL_MEMORY, "TOTAL_MEMORY not big enough for stack");
 
 
   var Math_min = Math.min;
-  function asmPrintInt(x, y) {
-    Module.print('int ' + x + ',' + y);// + ' ' + new Error().stack);
-  }
-  function asmPrintFloat(x, y) {
-    Module.print('float ' + x + ',' + y);// + ' ' + new Error().stack);
-  }
   // EMSCRIPTEN_START_ASM
   var asm = (function(global, env, buffer) {
     'almost asm';
@@ -6812,11 +6621,10 @@ assert(DYNAMIC_BASE < TOTAL_MEMORY, "TOTAL_MEMORY not big enough for stack");
   var Math_imul=global.Math.imul;
   var abort=env.abort;
   var assert=env.assert;
-  var asmPrintInt=env.asmPrintInt;
-  var asmPrintFloat=env.asmPrintFloat;
   var Math_min=env.min;
   var _fabs=env._fabs;
   var _send=env._send;
+  var _cudaEventSynchronize=env._cudaEventSynchronize;
   var _cudaEventElapsedTime=env._cudaEventElapsedTime;
   var __reallyNegative=env.__reallyNegative;
   var _cudaSetDevice=env._cudaSetDevice;
@@ -6850,7 +6658,6 @@ assert(DYNAMIC_BASE < TOTAL_MEMORY, "TOTAL_MEMORY not big enough for stack");
   var __formatString=env.__formatString;
   var _exit=env._exit;
   var _cudaMalloc=env._cudaMalloc;
-  var _cudaEventSynchronize=env._cudaEventSynchronize;
   var tempFloat = 0.0;
 
   // EMSCRIPTEN_START_FUNCS
@@ -6859,7 +6666,9 @@ assert(DYNAMIC_BASE < TOTAL_MEMORY, "TOTAL_MEMORY not big enough for stack");
     var ret = 0;
     ret = STACKTOP;
     STACKTOP = (STACKTOP + size)|0;
-  STACKTOP = (STACKTOP + 7)&-8;
+  STACKTOP = (STACKTOP + 15)&-16;
+if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
+
     return ret|0;
   }
   function stackSave() {
@@ -6910,7 +6719,7 @@ function __Z12constantInitPfif($data,$size,$val) {
  $val = +$val;
  var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $2 = 0.0, $3 = 0, $4 = 0, $5 = 0, $6 = 0.0, $7 = 0, $8 = 0, $9 = 0, $i = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0;
+ STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $0 = $data;
  $1 = $size;
  $2 = $val;
@@ -6959,7 +6768,7 @@ function __Z14matrixMultiplyiPPciR4dim3S2_($argc,$argv,$block_size,$dimsA,$dimsB
  var $vararg_buffer16 = 0, $vararg_buffer20 = 0, $vararg_buffer22 = 0, $vararg_buffer24 = 0, $vararg_buffer27 = 0, $vararg_buffer30 = 0, $vararg_buffer33 = 0, $vararg_buffer36 = 0, $vararg_buffer39 = 0, $vararg_buffer4 = 0, $vararg_buffer42 = 0, $vararg_buffer48 = 0, $vararg_buffer52 = 0, $vararg_buffer54 = 0, $vararg_buffer60 = 0, $vararg_buffer63 = 0, $vararg_buffer8 = 0, $vararg_ptr11 = 0, $vararg_ptr15 = 0, $vararg_ptr19 = 0;
  var $vararg_ptr3 = 0, $vararg_ptr45 = 0, $vararg_ptr46 = 0, $vararg_ptr47 = 0, $vararg_ptr51 = 0, $vararg_ptr57 = 0, $vararg_ptr58 = 0, $vararg_ptr59 = 0, $vararg_ptr7 = 0, dest = 0, label = 0, sp = 0, src = 0, stop = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 1040|0;
+ STACKTOP = STACKTOP + 1040|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $$byval_copy75 = sp + 424|0;
  $$byval_copy74 = sp + 700|0;
  $$byval_copy73 = sp + 556|0;
@@ -7544,7 +7353,7 @@ function __ZN4dim3C1Ejjj($this,$vx,$vy,$vz) {
  $vz = $vz|0;
  var $0 = 0, $1 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0;
+ STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $0 = $this;
  $1 = $vx;
  $2 = $vy;
@@ -7566,7 +7375,7 @@ function _main($argc,$argv) {
  var $81 = 0, $82 = 0, $83 = 0, $84 = 0, $85 = 0, $86 = 0, $87 = 0, $88 = 0, $89 = 0, $9 = 0, $block_size = 0, $devID = 0, $deviceProp = 0, $dimsA = 0, $dimsB = 0, $error = 0, $matrix_result = 0, $vararg_buffer = 0, $vararg_buffer1 = 0, $vararg_buffer12 = 0;
  var $vararg_buffer14 = 0, $vararg_buffer18 = 0, $vararg_buffer24 = 0, $vararg_buffer28 = 0, $vararg_buffer3 = 0, $vararg_buffer5 = 0, $vararg_buffer7 = 0, $vararg_buffer9 = 0, $vararg_ptr11 = 0, $vararg_ptr17 = 0, $vararg_ptr21 = 0, $vararg_ptr22 = 0, $vararg_ptr23 = 0, $vararg_ptr27 = 0, $vararg_ptr31 = 0, $vararg_ptr32 = 0, $vararg_ptr33 = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 736|0;
+ STACKTOP = STACKTOP + 736|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer28 = sp + 88|0;
  $vararg_buffer24 = sp + 64|0;
  $vararg_buffer18 = sp + 32|0;
@@ -7767,7 +7576,7 @@ function __Z16checkCmdLineFlagiPPKcS0_($argc,$argv,$string_ref) {
  var $27 = 0, $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $37 = 0, $38 = 0, $39 = 0, $4 = 0, $40 = 0, $41 = 0, $42 = 0, $43 = 0, $44 = 0;
  var $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $argv_length = 0, $bFound = 0, $equal_pos = 0, $i = 0, $length = 0, $string_argv = 0, $string_start = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 48|0;
+ STACKTOP = STACKTOP + 48|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $0 = $argc;
  $1 = $argv;
  $2 = $string_ref;
@@ -7857,7 +7666,7 @@ function __Z21getCmdLineArgumentIntiPPKcS0_($argc,$argv,$string_ref) {
  var $27 = 0, $28 = 0, $29 = 0, $3 = 0, $30 = 0, $31 = 0, $32 = 0, $33 = 0, $34 = 0, $35 = 0, $36 = 0, $37 = 0, $38 = 0, $39 = 0, $4 = 0, $40 = 0, $41 = 0, $42 = 0, $43 = 0, $44 = 0;
  var $45 = 0, $46 = 0, $47 = 0, $48 = 0, $49 = 0, $5 = 0, $50 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $auto_inc = 0, $bFound = 0, $i = 0, $length = 0, $string_argv = 0, $string_start = 0, $value = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 48|0;
+ STACKTOP = STACKTOP + 48|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $1 = $argc;
  $2 = $argv;
  $3 = $string_ref;
@@ -7948,7 +7757,7 @@ function __Z21stringRemoveDelimitercPKc($delimiter,$string) {
  var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0;
  var $string_start = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0;
+ STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $1 = $delimiter;
  $2 = $string;
  $string_start = 0;
@@ -7992,7 +7801,7 @@ function __ZN4dim3C2Ejjj($this,$vx,$vy,$vz) {
  $vz = $vz|0;
  var $0 = 0, $1 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0;
+ STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $0 = $this;
  $1 = $vx;
  $2 = $vy;
@@ -11490,11 +11299,11 @@ function _atoi($s) {
  }
  $5 = HEAP8[$$0>>0]|0;
  $6 = $5 << 24 >> 24;
- if ((($6|0) == 45)) {
-  $neg$0 = 1;
-  label = 5;
- } else if ((($6|0) == 43)) {
+ if ((($6|0) == 43)) {
   $neg$0 = 0;
+  label = 5;
+ } else if ((($6|0) == 45)) {
+  $neg$0 = 1;
   label = 5;
  } else {
   $$1$ph = $$0;$8 = $5;$neg$1$ph = 0;
@@ -11684,7 +11493,7 @@ function _memcpy(dest, src, num) {
     return { _strlen: _strlen, _free: _free, _main: _main, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, setThrew: setThrew, setTempRet0: setTempRet0, getTempRet0: getTempRet0 };
   })
   // EMSCRIPTEN_END_ASM
-  ({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "_fabs": _fabs, "_send": _send, "_cudaEventElapsedTime": _cudaEventElapsedTime, "__reallyNegative": __reallyNegative, "_cudaSetDevice": _cudaSetDevice, "_cudaMemcpy": _cudaMemcpy, "_cudaRunKernelDimFunc": _cudaRunKernelDimFunc, "_fflush": _fflush, "_pwrite": _pwrite, "_cudaGetErrorString": _cudaGetErrorString, "___setErrNo": ___setErrNo, "_sbrk": _sbrk, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_fileno": _fileno, "_sysconf": _sysconf, "_cudaGetDevice": _cudaGetDevice, "_cudaDeviceSynchronize": _cudaDeviceSynchronize, "_printf": _printf, "_cudaRunKernel": _cudaRunKernel, "_cudaDeviceReset": _cudaDeviceReset, "_write": _write, "_cudaFree": _cudaFree, "___errno_location": ___errno_location, "_cudaGetDeviceProperties": _cudaGetDeviceProperties, "_mkport": _mkport, "__exit": __exit, "_cudaEventCreate": _cudaEventCreate, "_abort": _abort, "_fwrite": _fwrite, "_time": _time, "_fprintf": _fprintf, "_cudaEventRecord": _cudaEventRecord, "__formatString": __formatString, "_exit": _exit, "_cudaMalloc": _cudaMalloc, "_cudaEventSynchronize": _cudaEventSynchronize, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "NaN": NaN, "Infinity": Infinity, "_stderr": _stderr }, buffer);
+  ({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "min": Math_min, "_fabs": _fabs, "_send": _send, "_cudaEventSynchronize": _cudaEventSynchronize, "_cudaEventElapsedTime": _cudaEventElapsedTime, "__reallyNegative": __reallyNegative, "_cudaSetDevice": _cudaSetDevice, "_cudaMemcpy": _cudaMemcpy, "_cudaRunKernelDimFunc": _cudaRunKernelDimFunc, "_fflush": _fflush, "_pwrite": _pwrite, "_cudaGetErrorString": _cudaGetErrorString, "___setErrNo": ___setErrNo, "_sbrk": _sbrk, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_fileno": _fileno, "_sysconf": _sysconf, "_cudaGetDevice": _cudaGetDevice, "_cudaDeviceSynchronize": _cudaDeviceSynchronize, "_printf": _printf, "_cudaRunKernel": _cudaRunKernel, "_cudaDeviceReset": _cudaDeviceReset, "_write": _write, "_cudaFree": _cudaFree, "___errno_location": ___errno_location, "_cudaGetDeviceProperties": _cudaGetDeviceProperties, "_mkport": _mkport, "__exit": __exit, "_cudaEventCreate": _cudaEventCreate, "_abort": _abort, "_fwrite": _fwrite, "_time": _time, "_fprintf": _fprintf, "_cudaEventRecord": _cudaEventRecord, "__formatString": __formatString, "_exit": _exit, "_cudaMalloc": _cudaMalloc, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "NaN": NaN, "Infinity": Infinity, "_stderr": _stderr }, buffer);
   var real__strlen = asm["_strlen"]; asm["_strlen"] = function() {
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
@@ -11723,7 +11532,9 @@ var i64Math = null;
 // === Auto-generated postamble setup entry stuff ===
 
 if (memoryInitializer) {
-  if (Module['memoryInitializerPrefixURL']) {
+  if (typeof Module['locateFile'] === 'function') {
+    memoryInitializer = Module['locateFile'](memoryInitializer);
+  } else if (Module['memoryInitializerPrefixURL']) {
     memoryInitializer = Module['memoryInitializerPrefixURL'] + memoryInitializer;
   }
   if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
@@ -11879,13 +11690,25 @@ function exit(status) {
   exitRuntime();
 
   if (ENVIRONMENT_IS_NODE) {
-    process['exit'](status);
-  } else if (ENVIRONMENT_IS_SHELL && typeof quit === 'function') {
+    // Work around a node.js bug where stdout buffer is not flushed at process exit:
+    // Instead of process.exit() directly, wait for stdout flush event.
+    // See https://github.com/joyent/node/issues/1669 and https://github.com/kripken/emscripten/issues/2582
+    // Workaround is based on https://github.com/RReverser/acorn/commit/50ab143cecc9ed71a2d66f78b4aec3bb2e9844f6
+    process['stdout']['once']('drain', function () {
+      process['exit'](status);
+    });
+    console.log(' '); // Make sure to print something to force the drain event to occur, in case the stdout buffer was empty.
+    // Work around another node bug where sometimes 'drain' is never fired - make another effort
+    // to emit the exit status, after a significant delay (if node hasn't fired drain by then, give up)
+    setTimeout(function() {
+      process['exit'](status);
+    }, 500);
+  } else
+  if (ENVIRONMENT_IS_SHELL && typeof quit === 'function') {
     quit(status);
-  } else {
-    // no proper way to exit with a return code, throw an exception to halt the current execution
-    throw new ExitStatus(status);
   }
+  // if we reach here, we must throw an exception to halt the current execution
+  throw new ExitStatus(status);
 }
 Module['exit'] = Module.exit = exit;
 
@@ -11933,4 +11756,3 @@ run();
 
 
 
-//# sourceMappingURL=val_matrixmul.js.map

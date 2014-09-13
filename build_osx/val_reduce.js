@@ -16,9 +16,16 @@ Module.expectedDataFileDownloads++;
       PACKAGE_PATH = encodeURIComponent(location.pathname.toString().substring(0, location.pathname.toString().lastIndexOf('/')) + '/');
     }
     var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-osx-sample/js/val_reduce.data';
-    var REMOTE_PACKAGE_NAME = (Module['filePackagePrefixURL'] || '') + 'val_reduce.data';
+    var REMOTE_PACKAGE_BASE = 'val_reduce.data';
+    if (typeof Module['locateFilePackage'] === 'function' && !Module['locateFile']) {
+      Module['locateFile'] = Module['locateFilePackage'];
+      Module.printErr('warning: you defined Module.locateFilePackage, that has been renamed to Module.locateFile (using your locateFilePackage for now)');
+    }
+    var REMOTE_PACKAGE_NAME = typeof Module['locateFile'] === 'function' ?
+                              Module['locateFile'](REMOTE_PACKAGE_BASE) :
+                              ((Module['filePackagePrefixURL'] || '') + REMOTE_PACKAGE_BASE);
     var REMOTE_PACKAGE_SIZE = 201117;
-    var PACKAGE_UUID = 'aa9917a3-3d17-46b2-a5ab-4dc54b2c48ba';
+    var PACKAGE_UUID = '4654a758-3d63-4b4a-86ed-6b9719ddc012';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -231,10 +238,19 @@ if (ENVIRONMENT_IS_NODE) {
     globalEval(read(f));
   };
 
-  Module['thisProgram'] = process['argv'][1];
+  Module['thisProgram'] = process['argv'][1].replace(/\\/g, '/');
   Module['arguments'] = process['argv'].slice(2);
 
-  module['exports'] = Module;
+  if (typeof module !== 'undefined') {
+    module['exports'] = Module;
+  }
+
+  process['on']('uncaughtException', function(ex) {
+    // suppress ExitStatus exceptions from showing an error
+    if (!(ex instanceof ExitStatus)) {
+      throw ex;
+    }
+  });
 }
 else if (ENVIRONMENT_IS_SHELL) {
   if (!Module['print']) Module['print'] = print;
@@ -247,7 +263,12 @@ else if (ENVIRONMENT_IS_SHELL) {
   }
 
   Module['readBinary'] = function readBinary(f) {
-    return read(f, 'binary');
+    if (typeof readbuffer === 'function') {
+      return new Uint8Array(readbuffer(f));
+    }
+    var data = read(f, 'binary');
+    assert(typeof data === 'object');
+    return data;
   };
 
   if (typeof scriptArgs != 'undefined') {
@@ -302,7 +323,7 @@ else {
 function globalEval(x) {
   eval.call(null, x);
 }
-if (!Module['load'] == 'undefined' && Module['read']) {
+if (!Module['load'] && Module['read']) {
   Module['load'] = function load(f) {
     globalEval(Module['read'](f));
   };
@@ -339,7 +360,15 @@ for (var key in moduleOverrides) {
 
 
 
-// === Auto-generated preamble library stuff ===
+// === Preamble library stuff ===
+
+// Documentation for the public APIs defined in this file must be updated in: 
+//    site/source/docs/api_reference/preamble.js.rst
+// A prebuilt local version of the documentation is available at: 
+//    site/build/text/docs/api_reference/preamble.js.txt
+// You can also build docs locally as HTML or other formats in site/
+// An online HTML version (which may be of a different version of Emscripten)
+//    is up at http://kripken.github.io/emscripten-site/docs/api_reference/preamble.js.html
 
 //========================================
 // Runtime code shared with compiler
@@ -357,46 +386,6 @@ var Runtime = {
   },
   stackRestore: function (stackTop) {
     STACKTOP = stackTop;
-  },
-  forceAlign: function (target, quantum) {
-    quantum = quantum || 4;
-    if (quantum == 1) return target;
-    if (isNumber(target) && isNumber(quantum)) {
-      return Math.ceil(target/quantum)*quantum;
-    } else if (isNumber(quantum) && isPowerOfTwo(quantum)) {
-      return '(((' +target + ')+' + (quantum-1) + ')&' + -quantum + ')';
-    }
-    return 'Math.ceil((' + target + ')/' + quantum + ')*' + quantum;
-  },
-  isNumberType: function (type) {
-    return type in Runtime.INT_TYPES || type in Runtime.FLOAT_TYPES;
-  },
-  isPointerType: function isPointerType(type) {
-  return type[type.length-1] == '*';
-},
-  isStructType: function isStructType(type) {
-  if (isPointerType(type)) return false;
-  if (isArrayType(type)) return true;
-  if (/<?\{ ?[^}]* ?\}>?/.test(type)) return true; // { i32, i8 } etc. - anonymous struct types
-  // See comment in isStructPointerType()
-  return type[0] == '%';
-},
-  INT_TYPES: {"i1":0,"i8":0,"i16":0,"i32":0,"i64":0},
-  FLOAT_TYPES: {"float":0,"double":0},
-  or64: function (x, y) {
-    var l = (x | 0) | (y | 0);
-    var h = (Math.round(x / 4294967296) | Math.round(y / 4294967296)) * 4294967296;
-    return l + h;
-  },
-  and64: function (x, y) {
-    var l = (x | 0) & (y | 0);
-    var h = (Math.round(x / 4294967296) & Math.round(y / 4294967296)) * 4294967296;
-    return l + h;
-  },
-  xor64: function (x, y) {
-    var l = (x | 0) ^ (y | 0);
-    var h = (Math.round(x / 4294967296) ^ Math.round(y / 4294967296)) * 4294967296;
-    return l + h;
   },
   getNativeTypeSize: function (type) {
     switch (type) {
@@ -422,138 +411,12 @@ var Runtime = {
   getNativeFieldSize: function (type) {
     return Math.max(Runtime.getNativeTypeSize(type), Runtime.QUANTUM_SIZE);
   },
-  dedup: function dedup(items, ident) {
-  var seen = {};
-  if (ident) {
-    return items.filter(function(item) {
-      if (seen[item[ident]]) return false;
-      seen[item[ident]] = true;
-      return true;
-    });
-  } else {
-    return items.filter(function(item) {
-      if (seen[item]) return false;
-      seen[item] = true;
-      return true;
-    });
-  }
-},
-  set: function set() {
-  var args = typeof arguments[0] === 'object' ? arguments[0] : arguments;
-  var ret = {};
-  for (var i = 0; i < args.length; i++) {
-    ret[args[i]] = 0;
-  }
-  return ret;
-},
-  STACK_ALIGN: 8,
+  STACK_ALIGN: 16,
   getAlignSize: function (type, size, vararg) {
     // we align i64s and doubles on 64-bit boundaries, unlike x86
     if (!vararg && (type == 'i64' || type == 'double')) return 8;
     if (!type) return Math.min(size, 8); // align structures internally to 64 bits
     return Math.min(size || (type ? Runtime.getNativeFieldSize(type) : 0), Runtime.QUANTUM_SIZE);
-  },
-  calculateStructAlignment: function calculateStructAlignment(type) {
-    type.flatSize = 0;
-    type.alignSize = 0;
-    var diffs = [];
-    var prev = -1;
-    var index = 0;
-    type.flatIndexes = type.fields.map(function(field) {
-      index++;
-      var size, alignSize;
-      if (Runtime.isNumberType(field) || Runtime.isPointerType(field)) {
-        size = Runtime.getNativeTypeSize(field); // pack char; char; in structs, also char[X]s.
-        alignSize = Runtime.getAlignSize(field, size);
-      } else if (Runtime.isStructType(field)) {
-        if (field[1] === '0') {
-          // this is [0 x something]. When inside another structure like here, it must be at the end,
-          // and it adds no size
-          // XXX this happens in java-nbody for example... assert(index === type.fields.length, 'zero-length in the middle!');
-          size = 0;
-          if (Types.types[field]) {
-            alignSize = Runtime.getAlignSize(null, Types.types[field].alignSize);
-          } else {
-            alignSize = type.alignSize || QUANTUM_SIZE;
-          }
-        } else {
-          size = Types.types[field].flatSize;
-          alignSize = Runtime.getAlignSize(null, Types.types[field].alignSize);
-        }
-      } else if (field[0] == 'b') {
-        // bN, large number field, like a [N x i8]
-        size = field.substr(1)|0;
-        alignSize = 1;
-      } else if (field[0] === '<') {
-        // vector type
-        size = alignSize = Types.types[field].flatSize; // fully aligned
-      } else if (field[0] === 'i') {
-        // illegal integer field, that could not be legalized because it is an internal structure field
-        // it is ok to have such fields, if we just use them as markers of field size and nothing more complex
-        size = alignSize = parseInt(field.substr(1))/8;
-        assert(size % 1 === 0, 'cannot handle non-byte-size field ' + field);
-      } else {
-        assert(false, 'invalid type for calculateStructAlignment');
-      }
-      if (type.packed) alignSize = 1;
-      type.alignSize = Math.max(type.alignSize, alignSize);
-      var curr = Runtime.alignMemory(type.flatSize, alignSize); // if necessary, place this on aligned memory
-      type.flatSize = curr + size;
-      if (prev >= 0) {
-        diffs.push(curr-prev);
-      }
-      prev = curr;
-      return curr;
-    });
-    if (type.name_ && type.name_[0] === '[') {
-      // arrays have 2 elements, so we get the proper difference. then we scale here. that way we avoid
-      // allocating a potentially huge array for [999999 x i8] etc.
-      type.flatSize = parseInt(type.name_.substr(1))*type.flatSize/2;
-    }
-    type.flatSize = Runtime.alignMemory(type.flatSize, type.alignSize);
-    if (diffs.length == 0) {
-      type.flatFactor = type.flatSize;
-    } else if (Runtime.dedup(diffs).length == 1) {
-      type.flatFactor = diffs[0];
-    }
-    type.needsFlattening = (type.flatFactor != 1);
-    return type.flatIndexes;
-  },
-  generateStructInfo: function (struct, typeName, offset) {
-    var type, alignment;
-    if (typeName) {
-      offset = offset || 0;
-      type = (typeof Types === 'undefined' ? Runtime.typeInfo : Types.types)[typeName];
-      if (!type) return null;
-      if (type.fields.length != struct.length) {
-        printErr('Number of named fields must match the type for ' + typeName + ': possibly duplicate struct names. Cannot return structInfo');
-        return null;
-      }
-      alignment = type.flatIndexes;
-    } else {
-      var type = { fields: struct.map(function(item) { return item[0] }) };
-      alignment = Runtime.calculateStructAlignment(type);
-    }
-    var ret = {
-      __size__: type.flatSize
-    };
-    if (typeName) {
-      struct.forEach(function(item, i) {
-        if (typeof item === 'string') {
-          ret[item] = alignment[i] + offset;
-        } else {
-          // embedded struct
-          var key;
-          for (var k in item) key = k;
-          ret[key] = Runtime.generateStructInfo(item[key], type.fields[i], alignment[i]);
-        }
-      });
-    } else {
-      struct.forEach(function(item, i) {
-        ret[item[1]] = alignment[i];
-      });
-    }
-    return ret;
   },
   dynCall: function (sig, ptr, args) {
     if (args && args.length) {
@@ -601,7 +464,8 @@ var Runtime = {
       }
     }
     try {
-      var evalled = eval('(function(' + args.join(',') + '){ ' + source + ' })'); // new Function does not allow upvars in node
+      // Module is the only 'upvar', which we provide directly. We also provide FS for legacy support.
+      var evalled = eval('(function(Module, FS) { return function(' + args.join(',') + '){ ' + source + ' } })')(Module, typeof FS !== 'undefined' ? FS : null);
     } catch(e) {
       Module.printErr('error in executing inline EM_ASM code: ' + e + ' on: \n\n' + source + '\n\nwith args |' + args + '| (make sure to use the right one out of EM_ASM, EM_ASM_ARGS, etc.)');
       throw e;
@@ -670,7 +534,7 @@ var Runtime = {
         var codePoint = ((c1 & 0x07) << 18) | ((c2 & 0x3F) << 12) |
                         ((c3 & 0x3F) << 6)  | (c4 & 0x3F);
         ret = String.fromCharCode(
-          Math.floor((codePoint - 0x10000) / 0x400) + 0xD800,
+          (((codePoint - 0x10000) / 0x400)|0) + 0xD800,
           (codePoint - 0x10000) % 0x400 + 0xDC00);
       }
       buffer.length = 0;
@@ -693,10 +557,10 @@ var Runtime = {
   getCompilerSetting: function (name) {
     throw 'You must build with -s RETAIN_COMPILER_SETTINGS=1 for Runtime.getCompilerSetting or emscripten_get_compiler_setting to work';
   },
-  stackAlloc: function (size) { var ret = STACKTOP;STACKTOP = (STACKTOP + size)|0;STACKTOP = (((STACKTOP)+7)&-8);(assert((((STACKTOP|0) < (STACK_MAX|0))|0))|0); return ret; },
-  staticAlloc: function (size) { var ret = STATICTOP;STATICTOP = (STATICTOP + (assert(!staticSealed),size))|0;STATICTOP = (((STATICTOP)+7)&-8); return ret; },
-  dynamicAlloc: function (size) { var ret = DYNAMICTOP;DYNAMICTOP = (DYNAMICTOP + (assert(DYNAMICTOP > 0),size))|0;DYNAMICTOP = (((DYNAMICTOP)+7)&-8); if (DYNAMICTOP >= TOTAL_MEMORY) enlargeMemory();; return ret; },
-  alignMemory: function (size,quantum) { var ret = size = Math.ceil((size)/(quantum ? quantum : 8))*(quantum ? quantum : 8); return ret; },
+  stackAlloc: function (size) { var ret = STACKTOP;STACKTOP = (STACKTOP + size)|0;STACKTOP = (((STACKTOP)+15)&-16);(assert((((STACKTOP|0) < (STACK_MAX|0))|0))|0); return ret; },
+  staticAlloc: function (size) { var ret = STATICTOP;STATICTOP = (STATICTOP + (assert(!staticSealed),size))|0;STATICTOP = (((STATICTOP)+15)&-16); return ret; },
+  dynamicAlloc: function (size) { var ret = DYNAMICTOP;DYNAMICTOP = (DYNAMICTOP + (assert(DYNAMICTOP > 0),size))|0;DYNAMICTOP = (((DYNAMICTOP)+15)&-16); if (DYNAMICTOP >= TOTAL_MEMORY) enlargeMemory();; return ret; },
+  alignMemory: function (size,quantum) { var ret = size = Math.ceil((size)/(quantum ? quantum : 16))*(quantum ? quantum : 16); return ret; },
   makeBigInt: function (low,high,unsigned) { var ret = (unsigned ? ((+((low>>>0)))+((+((high>>>0)))*4294967296.0)) : ((+((low>>>0)))+((+((high|0)))*4294967296.0))); return ret; },
   GLOBAL_BASE: 8,
   QUANTUM_SIZE: 4,
@@ -769,7 +633,8 @@ var cwrap, ccall;
     'stringToC' : function(str) {
       var ret = 0;
       if (str !== null && str !== undefined && str !== 0) { // null string
-        ret = Runtime.stackAlloc(str.length + 1); // +1 for the trailing '\0'
+        // at most 4 bytes per UTF-8 code point, +1 for the trailing '\0'
+        ret = Runtime.stackAlloc((str.length << 2) + 1);
         writeStringToMemory(str, ret);
       }
       return ret;
@@ -778,30 +643,7 @@ var cwrap, ccall;
   // For fast lookup of conversion functions
   var toC = {'string' : JSfuncs['stringToC'], 'array' : JSfuncs['arrayToC']};
 
-  // C calling interface. A convenient way to call C functions (in C files, or
-  // defined with extern "C").
-  //
-  // Note: ccall/cwrap use the C stack for temporary values. If you pass a string
-  //       then it is only alive until the call is complete. If the code being
-  //       called saves the pointer to be used later, it may point to invalid
-  //       data. If you need a string to live forever, you can create it (and
-  //       must later delete it manually!) using malloc and writeStringToMemory,
-  //       for example.
-  //
-  // Note: LLVM optimizations can inline and remove functions, after which you will not be
-  //       able to call them. Closure can also do so. To avoid that, add your function to
-  //       the exports using something like
-  //
-  //         -s EXPORTED_FUNCTIONS='["_main", "_myfunc"]'
-  //
-  // @param ident      The name of the C function (note that C++ functions will be name-mangled - use extern "C")
-  // @param returnType The return type of the function, one of the JS types 'number', 'string' or 'array' (use 'number' for any C pointer, and
-  //                   'array' for JavaScript arrays and typed arrays; note that arrays are 8-bit).
-  // @param argTypes   An array of the types of arguments for the function (if there are no arguments, this can be ommitted). Types are as in returnType,
-  //                   except that 'array' is not possible (there is no way for us to know the length of the array)
-  // @param args       An array of the arguments to the function, as native JS values (as in returnType)
-  //                   Note that string arguments will be stored on the stack (the JS string will become a C string on the stack).
-  // @return           The return value, as a native JS value (as in returnType)
+  // C calling interface. 
   ccall = function ccallFunc(ident, returnType, argTypes, args) {
     var func = getCFunc(ident);
     var cArgs = [];
@@ -837,13 +679,8 @@ var cwrap, ccall;
       JSsource[fun] = parseJSFunc(JSfuncs[fun]);
     }
   }
-  // Returns a native JS wrapper for a C function. This is similar to ccall, but
-  // returns a function you can call repeatedly in a normal way. For example:
-  //
-  //   var my_function = cwrap('my_c_function', 'number', ['number', 'number']);
-  //   alert(my_function(5, 22));
-  //   alert(my_function(99, 12));
-  //
+
+  
   cwrap = function cwrap(ident, returnType, argTypes) {
     argTypes = argTypes || [];
     var cfunc = getCFunc(ident);
@@ -892,14 +729,7 @@ var cwrap, ccall;
 Module["cwrap"] = cwrap;
 Module["ccall"] = ccall;
 
-// Sets a value in memory in a dynamic way at run-time. Uses the
-// type data. This is the same as makeSetValue, except that
-// makeSetValue is done at compile-time and generates the needed
-// code then, whereas this function picks the right code at
-// run-time.
-// Note that setValue and getValue only do *aligned* writes and reads!
-// Note that ccall uses JS types as for defining types, while setValue and
-// getValue need LLVM types ('i8', 'i32') - this is a lower-level operation
+
 function setValue(ptr, value, type, noSafe) {
   type = type || 'i8';
   if (type.charAt(type.length-1) === '*') type = 'i32'; // pointers are 32-bit
@@ -916,7 +746,7 @@ function setValue(ptr, value, type, noSafe) {
 }
 Module['setValue'] = setValue;
 
-// Parallel to setValue.
+
 function getValue(ptr, type, noSafe) {
   type = type || 'i8';
   if (type.charAt(type.length-1) === '*') type = 'i32'; // pointers are 32-bit
@@ -1071,8 +901,6 @@ function Pointer_stringify(ptr, /* optional */ length) {
 }
 Module['Pointer_stringify'] = Pointer_stringify;
 
-// Given a pointer 'ptr' to a null-terminated UTF16LE-encoded string in the emscripten HEAP, returns
-// a copy of that string as a Javascript String object.
 function UTF16ToString(ptr) {
   var i = 0;
 
@@ -1088,8 +916,7 @@ function UTF16ToString(ptr) {
 }
 Module['UTF16ToString'] = UTF16ToString;
 
-// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr',
-// null-terminated and encoded in UTF16LE form. The copy will require at most (str.length*2+1)*2 bytes of space in the HEAP.
+
 function stringToUTF16(str, outPtr) {
   for(var i = 0; i < str.length; ++i) {
     // charCodeAt returns a UTF-16 encoded code unit, so it can be directly written to the HEAP.
@@ -1101,8 +928,7 @@ function stringToUTF16(str, outPtr) {
 }
 Module['stringToUTF16'] = stringToUTF16;
 
-// Given a pointer 'ptr' to a null-terminated UTF32LE-encoded string in the emscripten HEAP, returns
-// a copy of that string as a Javascript String object.
+
 function UTF32ToString(ptr) {
   var i = 0;
 
@@ -1123,9 +949,7 @@ function UTF32ToString(ptr) {
 }
 Module['UTF32ToString'] = UTF32ToString;
 
-// Copies the given Javascript String object 'str' to the emscripten HEAP at address 'outPtr',
-// null-terminated and encoded in UTF32LE form. The copy will require at most (str.length+1)*4 bytes of space in the HEAP,
-// but can use less, since str.length does not return the number of characters in the string, but the number of UTF-16 code units in the string.
+
 function stringToUTF32(str, outPtr) {
   var iChar = 0;
   for(var iCodeUnit = 0; iCodeUnit < str.length; ++iCodeUnit) {
@@ -1366,7 +1190,7 @@ var TOTAL_STACK = Module['TOTAL_STACK'] || 5242880;
 var TOTAL_MEMORY = Module['TOTAL_MEMORY'] || 37273600;
 var FAST_MEMORY = Module['FAST_MEMORY'] || 2097152;
 
-var totalMemory = 4096;
+var totalMemory = 64*1024;
 while (totalMemory < TOTAL_MEMORY || totalMemory < 2*TOTAL_STACK) {
   if (totalMemory < 16*1024*1024) {
     totalMemory *= 2;
@@ -1504,8 +1328,7 @@ Module['addOnPostRun'] = Module.addOnPostRun = addOnPostRun;
 
 // Tools
 
-// This processes a JS string into a C-line array of numbers, 0-terminated.
-// For LLVM-originating strings, see parser.js:parseLLVMString function
+
 function intArrayFromString(stringy, dontAddNull, length /* optional */) {
   var ret = (new Runtime.UTF8Processor()).processJSString(stringy);
   if (length) {
@@ -1532,7 +1355,6 @@ function intArrayToString(array) {
 }
 Module['intArrayToString'] = intArrayToString;
 
-// Write a Javascript array to somewhere in the heap
 function writeStringToMemory(string, buffer, dontAddNull) {
   var array = intArrayFromString(string, dontAddNull);
   var i = 0;
@@ -1695,11 +1517,11 @@ var memoryInitializer = null;
 
 STATIC_BASE = 8;
 
-STATICTOP = STATIC_BASE + Runtime.alignMemory(2851);
+STATICTOP = STATIC_BASE + Runtime.alignMemory(2859);
   /* global initializers */ __ATINIT__.push();
   
 
-/* memory initializer */ allocate([99,112,117,0,0,0,0,0,103,112,117,0,0,0,0,0,102,108,111,97,116,50,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,102,108,111,97,116,52,0,0,102,108,111,97,116,0,0,0,105,110,116,50,0,0,0,0,105,110,116,52,0,0,0,0,105,110,116,0,0,0,0,0,0,0,16,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,108,111,99,97,116,101,32,97,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,33,10,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,100,101,118,105,99,101,32,105,110,102,111,33,10,0,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,10,0,67,111,110,110,101,99,116,105,110,103,32,116,111,32,37,115,32,37,115,46,46,46,10,0,114,101,100,117,99,101,95,105,110,116,52,95,107,101,114,110,101,108,46,99,108,0,0,0,114,101,100,117,99,101,95,102,108,111,97,116,52,95,107,101,114,110,101,108,46,99,108,0,114,101,100,117,99,101,95,105,110,116,50,95,107,101,114,110,101,108,46,99,108,0,0,0,114,101,100,117,99,101,95,102,108,111,97,116,50,95,107,101,114,110,101,108,46,99,108,0,114,101,100,117,99,101,95,105,110,116,95,107,101,114,110,101,108,46,99,108,0,0,0,0,114,101,100,117,99,101,95,102,108,111,97,116,95,107,101,114,110,101,108,46,99,108,0,0,73,110,118,97,108,105,100,32,99,104,97,110,110,101,108,32,99,111,117,110,116,32,115,112,101,99,105,102,105,101,100,33,10,0,0,0,0,0,0,0,76,111,97,100,105,110,103,32,112,114,111,103,114,97,109,32,39,37,115,39,46,46,46,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,108,111,97,100,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,32,102,114,111,109,32,102,105,108,101,33,10,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,112,117,116,101,32,99,111,110,116,101,120,116,33,10,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,109,97,110,100,32,99,111,109,109,97,110,100,115,33,10,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,105,110,112,117,116,32,98,117,102,102,101,114,32,111,110,32,100,101,118,105,99,101,33,10,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,119,114,105,116,101,32,116,111,32,115,111,117,114,99,101,32,97,114,114,97,121,33,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,112,97,114,116,105,97,108,32,115,117,109,32,98,117,102,102,101,114,32,111,110,32,100,101,118,105,99,101,33,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,114,101,115,117,108,116,32,98,117,102,102,101,114,32,111,110,32,100,101,118,105,99,101,33,10,0,0,0,0,0,35,100,101,102,105,110,101,32,71,82,79,85,80,95,83,73,90,69,0,0,0,0,0,0,35,100,101,102,105,110,101,32,79,80,69,82,65,84,73,79,78,83,0,0,0,0,0,0,37,115,32,40,37,100,41,32,10,37,115,32,40,37,100,41,10,10,37,115,10,0,0,0,37,115,10,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,33,10,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,98,117,105,108,100,32,112,114,111,103,114,97,109,32,101,120,101,99,117,116,97,98,108,101,33,10,0,0,0,0,0,114,101,100,117,99,101,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,107,101,114,110,101,108,33,10,0,0,0,0,0,0,0,0,80,97,115,115,91,37,52,100,93,32,71,108,111,98,97,108,91,37,52,100,93,32,76,111,99,97,108,91,37,52,100,93,32,71,114,111,117,112,115,91,37,52,100,93,32,87,111,114,107,73,116,101,109,115,91,37,52,100,93,32,79,112,101,114,97,116,105,111,110,115,91,37,100,93,32,69,110,116,114,105,101,115,91,37,100,93,10,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,115,101,116,32,107,101,114,110,101,108,32,97,114,103,117,109,101,110,116,115,33,10,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,101,120,101,99,117,116,101,32,107,101,114,110,101,108,33,10,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,119,97,105,116,32,102,111,114,32,99,111,109,109,97,110,100,32,113,117,101,117,101,32,116,111,32,102,105,110,105,115,104,33,32,37,100,10,0,0,84,105,109,105,110,103,32,37,100,32,105,116,101,114,97,116,105,111,110,115,32,111,102,32,114,101,100,117,99,116,105,111,110,32,119,105,116,104,32,37,100,32,101,108,101,109,101,110,116,115,32,111,102,32,116,121,112,101,32,37,115,37,115,46,46,46,10,0,0,0,0,0,232,3,0,0,0,0,0,0,32,0,0,0,0,0,0,0,50,0,0,0,0,0,0,0,52,0,0,0,0,0,0,0,69,120,101,99,32,84,105,109,101,58,32,32,37,46,50,102,32,109,115,10,0,0,0,0,84,104,114,111,117,103,104,112,117,116,58,32,37,46,50,102,32,71,66,47,115,101,99,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,98,97,99,107,32,114,101,115,117,108,116,115,32,102,114,111,109,32,116,104,101,32,100,101,118,105,99,101,33,10,0,0,0,0,82,101,115,117,108,116,91,37,100,93,32,37,100,32,33,61,32,37,100,10,0,0,0,0,69,114,114,111,114,58,32,32,73,110,99,111,114,114,101,99,116,32,114,101,115,117,108,116,115,32,111,98,116,97,105,110,101,100,33,32,77,97,120,32,101,114,114,111,114,32,61,32,37,102,10,0,0,0,0,0,82,101,115,117,108,116,115,32,86,97,108,105,100,97,116,101,100,33,10,0,0,0,0,0,82,101,115,117,108,116,91,37,100,93,32,37,102,32,33,61,32,37,102,10,0,0,0,0,114,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,0,10,0,17,17,17,0,0,0,0,5,0,0,0,0,0,0,9,0,0,0,0,11,0,0,0,0,0,0,0,0,17,0,15,10,17,17,17,3,10,7,0,1,19,9,11,11,0,0,9,6,11,0,0,11,0,6,17,0,0,0,17,17,17,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,11,0,0,0,0,0,0,0,0,17,0,10,10,17,17,17,0,10,0,0,2,0,9,11,0,0,0,9,0,11,0,0,11,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,12,0,0,0,0,9,12,0,0,0,0,0,12,0,0,12,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,14,0,0,0,0,0,0,0,0,0,0,0,13,0,0,0,4,13,0,0,0,0,9,14,0,0,0,0,0,14,0,0,14,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,16,0,0,0,0,0,0,0,0,0,0,0,15,0,0,0,0,15,0,0,0,0,9,16,0,0,0,0,0,16,0,0,16,0,0,18,0,0,0,18,18,18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,18,0,0,0,18,18,18,0,0,0,0,0,0,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,11,0,0,0,0,0,0,0,0,0,0,0,10,0,0,0,0,10,0,0,0,0,9,11,0,0,0,0,0,11,0,0,11,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,12,0,0,0,0,9,12,0,0,0,0,0,12,0,0,12,0,0,45,43,32,32,32,48,88,48,120,0,0,0,0,0,0,0,40,110,117,108,108,41,0,0,45,48,88,43,48,88,32,48,88,45,48,120,43,48,120,32,48,120,0,0,0,0,0,0,105,110,102,0,0,0,0,0,73,78,70,0,0,0,0,0,110,97,110,0,0,0,0,0,78,65,78,0,0,0,0,0,48,49,50,51,52,53,54,55,56,57,65,66,67,68,69,70,46,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,255,255,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], "i8", ALLOC_NONE, Runtime.GLOBAL_BASE);
+/* memory initializer */ allocate([99,112,117,0,0,0,0,0,103,112,117,0,0,0,0,0,102,108,111,97,116,50,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,102,108,111,97,116,52,0,0,102,108,111,97,116,0,0,0,105,110,116,50,0,0,0,0,105,110,116,52,0,0,0,0,105,110,116,0,0,0,0,0,0,0,16,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,108,111,99,97,116,101,32,97,32,99,111,109,112,117,116,101,32,100,101,118,105,99,101,33,10,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,116,114,105,101,118,101,32,100,101,118,105,99,101,32,105,110,102,111,33,10,0,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,10,0,67,111,110,110,101,99,116,105,110,103,32,116,111,32,37,115,32,37,115,46,46,46,10,0,114,101,100,117,99,101,95,105,110,116,52,95,107,101,114,110,101,108,46,99,108,0,0,0,114,101,100,117,99,101,95,102,108,111,97,116,52,95,107,101,114,110,101,108,46,99,108,0,114,101,100,117,99,101,95,105,110,116,50,95,107,101,114,110,101,108,46,99,108,0,0,0,114,101,100,117,99,101,95,102,108,111,97,116,50,95,107,101,114,110,101,108,46,99,108,0,114,101,100,117,99,101,95,105,110,116,95,107,101,114,110,101,108,46,99,108,0,0,0,0,114,101,100,117,99,101,95,102,108,111,97,116,95,107,101,114,110,101,108,46,99,108,0,0,73,110,118,97,108,105,100,32,99,104,97,110,110,101,108,32,99,111,117,110,116,32,115,112,101,99,105,102,105,101,100,33,10,0,0,0,0,0,0,0,76,111,97,100,105,110,103,32,112,114,111,103,114,97,109,32,39,37,115,39,46,46,46,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,108,111,97,100,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,32,102,114,111,109,32,102,105,108,101,33,10,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,112,117,116,101,32,99,111,110,116,101,120,116,33,10,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,97,32,99,111,109,109,97,110,100,32,99,111,109,109,97,110,100,115,33,10,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,105,110,112,117,116,32,98,117,102,102,101,114,32,111,110,32,100,101,118,105,99,101,33,10,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,119,114,105,116,101,32,116,111,32,115,111,117,114,99,101,32,97,114,114,97,121,33,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,112,97,114,116,105,97,108,32,115,117,109,32,98,117,102,102,101,114,32,111,110,32,100,101,118,105,99,101,33,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,97,108,108,111,99,97,116,101,32,114,101,115,117,108,116,32,98,117,102,102,101,114,32,111,110,32,100,101,118,105,99,101,33,10,0,0,0,0,0,35,100,101,102,105,110,101,32,71,82,79,85,80,95,83,73,90,69,0,0,0,0,0,0,35,100,101,102,105,110,101,32,79,80,69,82,65,84,73,79,78,83,0,0,0,0,0,0,37,115,32,40,37,100,41,32,10,37,115,32,40,37,100,41,10,10,37,115,10,0,0,0,37,115,10,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,112,114,111,103,114,97,109,33,10,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,98,117,105,108,100,32,112,114,111,103,114,97,109,32,101,120,101,99,117,116,97,98,108,101,33,10,0,0,0,0,0,114,101,100,117,99,101,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,99,114,101,97,116,101,32,99,111,109,112,117,116,101,32,107,101,114,110,101,108,33,10,0,0,0,0,0,0,0,0,80,97,115,115,91,37,52,100,93,32,71,108,111,98,97,108,91,37,52,100,93,32,76,111,99,97,108,91,37,52,100,93,32,71,114,111,117,112,115,91,37,52,100,93,32,87,111,114,107,73,116,101,109,115,91,37,52,100,93,32,79,112,101,114,97,116,105,111,110,115,91,37,100,93,32,69,110,116,114,105,101,115,91,37,100,93,10,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,115,101,116,32,107,101,114,110,101,108,32,97,114,103,117,109,101,110,116,115,33,10,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,101,120,101,99,117,116,101,32,107,101,114,110,101,108,33,10,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,119,97,105,116,32,102,111,114,32,99,111,109,109,97,110,100,32,113,117,101,117,101,32,116,111,32,102,105,110,105,115,104,33,32,37,100,10,0,0,84,105,109,105,110,103,32,37,100,32,105,116,101,114,97,116,105,111,110,115,32,111,102,32,114,101,100,117,99,116,105,111,110,32,119,105,116,104,32,37,100,32,101,108,101,109,101,110,116,115,32,111,102,32,116,121,112,101,32,37,115,37,115,46,46,46,10,0,0,0,0,0,232,3,0,0,0,0,0,0,32,0,0,0,0,0,0,0,50,0,0,0,0,0,0,0,52,0,0,0,0,0,0,0,69,120,101,99,32,84,105,109,101,58,32,32,37,46,50,102,32,109,115,10,0,0,0,0,84,104,114,111,117,103,104,112,117,116,58,32,37,46,50,102,32,71,66,47,115,101,99,10,0,0,0,0,0,0,0,0,69,114,114,111,114,58,32,70,97,105,108,101,100,32,116,111,32,114,101,97,100,32,98,97,99,107,32,114,101,115,117,108,116,115,32,102,114,111,109,32,116,104,101,32,100,101,118,105,99,101,33,10,0,0,0,0,82,101,115,117,108,116,91,37,100,93,32,37,100,32,33,61,32,37,100,10,0,0,0,0,69,114,114,111,114,58,32,32,73,110,99,111,114,114,101,99,116,32,114,101,115,117,108,116,115,32,111,98,116,97,105,110,101,100,33,32,77,97,120,32,101,114,114,111,114,32,61,32,37,102,10,0,0,0,0,0,82,101,115,117,108,116,115,32,86,97,108,105,100,97,116,101,100,33,10,0,0,0,0,0,82,101,115,117,108,116,91,37,100,93,32,37,102,32,33,61,32,37,102,10,0,0,0,0,114,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,0,10,0,17,17,17,0,0,0,0,5,0,0,0,0,0,0,9,0,0,0,0,11,0,0,0,0,0,0,0,0,17,0,15,10,17,17,17,3,10,7,0,1,19,9,11,11,0,0,9,6,11,0,0,11,0,6,17,0,0,0,17,17,17,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,11,0,0,0,0,0,0,0,0,17,0,10,10,17,17,17,0,10,0,0,2,0,9,11,0,0,0,9,0,11,0,0,11,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,12,0,0,0,0,9,12,0,0,0,0,0,12,0,0,12,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,14,0,0,0,0,0,0,0,0,0,0,0,13,0,0,0,4,13,0,0,0,0,9,14,0,0,0,0,0,14,0,0,14,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,16,0,0,0,0,0,0,0,0,0,0,0,15,0,0,0,0,15,0,0,0,0,9,16,0,0,0,0,0,16,0,0,16,0,0,18,0,0,0,18,18,18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,18,0,0,0,18,18,18,0,0,0,0,0,0,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,11,0,0,0,0,0,0,0,0,0,0,0,10,0,0,0,0,10,0,0,0,0,9,11,0,0,0,0,0,11,0,0,11,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,12,0,0,0,0,9,12,0,0,0,0,0,12,0,0,12,0,0,45,43,32,32,32,48,88,48,120,0,0,0,0,0,0,0,40,110,117,108,108,41,0,0,45,48,88,43,48,88,32,48,88,45,48,120,43,48,120,32,48,120,0,0,0,0,0,0,105,110,102,0,0,0,0,0,73,78,70,0,0,0,0,0,110,97,110,0,0,0,0,0,78,65,78,0,0,0,0,0,48,49,50,51,52,53,54,55,56,57,65,66,67,68,69,70,46,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,255,255,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], "i8", ALLOC_NONE, Runtime.GLOBAL_BASE);
 
 
 
@@ -1740,13 +1562,6 @@ function copyTempDouble(ptr) {
 
 }
 
-
-  
-   
-  Module["_rand_r"] = _rand_r;
-  
-  var ___rand_seed=allocate([0x0273459b, 0, 0, 0], "i32", ALLOC_STATIC); 
-  Module["_rand"] = _rand;
 
    
   Module["_i64Subtract"] = _i64Subtract;
@@ -1904,9 +1719,11 @@ function copyTempDouble(ptr) {
 
   
   
-  var GL={counter:1,lastError:0,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],vaos:[],byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],programInfos:{},stringCache:{},packAlignment:4,unpackAlignment:4,init:function () {
-        GL.createLog2ceilLookup(GL.MAX_TEMP_BUFFER_SIZE);
-        Browser.moduleContextCreatedCallbacks.push(GL.initExtensions);
+  var GL={counter:1,lastError:0,buffers:[],programs:[],framebuffers:[],renderbuffers:[],textures:[],uniforms:[],shaders:[],vaos:[],contexts:[],byteSizeByTypeRoot:5120,byteSizeByType:[1,1,2,2,4,4,4,2,3,4,8],programInfos:{},stringCache:{},packAlignment:4,unpackAlignment:4,init:function () {
+        GL.miniTempBuffer = new Float32Array(GL.MINI_TEMP_BUFFER_SIZE);
+        for (var i = 0; i < GL.MINI_TEMP_BUFFER_SIZE; i++) {
+          GL.miniTempBufferViews[i] = GL.miniTempBuffer.subarray(0, i+1);
+        }
       },recordError:function recordError(errorCode) {
         if (!GL.lastError) {
           GL.lastError = errorCode;
@@ -1917,101 +1734,7 @@ function copyTempDouble(ptr) {
           table[i] = null;
         }
         return ret;
-      },MINI_TEMP_BUFFER_SIZE:16,miniTempBuffer:null,miniTempBufferViews:[0],MAX_TEMP_BUFFER_SIZE:2097152,tempVertexBuffers1:[],tempVertexBufferCounters1:[],tempVertexBuffers2:[],tempVertexBufferCounters2:[],numTempVertexBuffersPerSize:64,tempIndexBuffers:[],tempQuadIndexBuffer:null,log2ceilLookup:null,createLog2ceilLookup:function (maxValue) {
-        GL.log2ceilLookup = new Uint8Array(maxValue+1);
-        var log2 = 0;
-        var pow2 = 1;
-        GL.log2ceilLookup[0] = 0;
-        for(var i = 1; i <= maxValue; ++i) {
-          if (i > pow2) {
-            pow2 <<= 1;
-            ++log2;
-          }
-          GL.log2ceilLookup[i] = log2;
-        }
-      },generateTempBuffers:function (quads) {
-        var largestIndex = GL.log2ceilLookup[GL.MAX_TEMP_BUFFER_SIZE];
-        GL.tempVertexBufferCounters1.length = GL.tempVertexBufferCounters2.length = largestIndex+1;
-        GL.tempVertexBuffers1.length = GL.tempVertexBuffers2.length = largestIndex+1;
-        GL.tempIndexBuffers.length = largestIndex+1;
-        for(var i = 0; i <= largestIndex; ++i) {
-          GL.tempIndexBuffers[i] = null; // Created on-demand
-          GL.tempVertexBufferCounters1[i] = GL.tempVertexBufferCounters2[i] = 0;
-          var ringbufferLength = GL.numTempVertexBuffersPerSize;
-          GL.tempVertexBuffers1[i] = [];
-          GL.tempVertexBuffers2[i] = [];
-          var ringbuffer1 = GL.tempVertexBuffers1[i];
-          var ringbuffer2 = GL.tempVertexBuffers2[i];
-          ringbuffer1.length = ringbuffer2.length = ringbufferLength;
-          for(var j = 0; j < ringbufferLength; ++j) {
-            ringbuffer1[j] = ringbuffer2[j] = null; // Created on-demand
-          }
-        }
-  
-        if (quads) {
-          // GL_QUAD indexes can be precalculated
-          GL.tempQuadIndexBuffer = GLctx.createBuffer();
-          GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, GL.tempQuadIndexBuffer);
-          var numIndexes = GL.MAX_TEMP_BUFFER_SIZE >> 1;
-          var quadIndexes = new Uint16Array(numIndexes);
-          var i = 0, v = 0;
-          while (1) {
-            quadIndexes[i++] = v;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v+1;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v+2;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v+2;
-            if (i >= numIndexes) break;
-            quadIndexes[i++] = v+3;
-            if (i >= numIndexes) break;
-            v += 4;
-          }
-          GLctx.bufferData(GLctx.ELEMENT_ARRAY_BUFFER, quadIndexes, GLctx.STATIC_DRAW);
-          GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, null);
-        }
-      },getTempVertexBuffer:function getTempVertexBuffer(sizeBytes) {
-        var idx = GL.log2ceilLookup[sizeBytes];
-        var ringbuffer = GL.tempVertexBuffers1[idx];
-        var nextFreeBufferIndex = GL.tempVertexBufferCounters1[idx];
-        GL.tempVertexBufferCounters1[idx] = (GL.tempVertexBufferCounters1[idx]+1) & (GL.numTempVertexBuffersPerSize-1);
-        var vbo = ringbuffer[nextFreeBufferIndex];
-        if (vbo) {
-          return vbo;
-        }
-        var prevVBO = GLctx.getParameter(GLctx.ARRAY_BUFFER_BINDING);
-        ringbuffer[nextFreeBufferIndex] = GLctx.createBuffer();
-        GLctx.bindBuffer(GLctx.ARRAY_BUFFER, ringbuffer[nextFreeBufferIndex]);
-        GLctx.bufferData(GLctx.ARRAY_BUFFER, 1 << idx, GLctx.DYNAMIC_DRAW);
-        GLctx.bindBuffer(GLctx.ARRAY_BUFFER, prevVBO);
-        return ringbuffer[nextFreeBufferIndex];
-      },getTempIndexBuffer:function getTempIndexBuffer(sizeBytes) {
-        var idx = GL.log2ceilLookup[sizeBytes];
-        var ibo = GL.tempIndexBuffers[idx];
-        if (ibo) {
-          return ibo;
-        }
-        var prevIBO = GLctx.getParameter(GLctx.ELEMENT_ARRAY_BUFFER_BINDING);
-        GL.tempIndexBuffers[idx] = GLctx.createBuffer();
-        GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, GL.tempIndexBuffers[idx]);
-        GLctx.bufferData(GLctx.ELEMENT_ARRAY_BUFFER, 1 << idx, GLctx.DYNAMIC_DRAW);
-        GLctx.bindBuffer(GLctx.ELEMENT_ARRAY_BUFFER, prevIBO);
-        return GL.tempIndexBuffers[idx];
-      },newRenderingFrameStarted:function newRenderingFrameStarted() {
-        var vb = GL.tempVertexBuffers1;
-        GL.tempVertexBuffers1 = GL.tempVertexBuffers2;
-        GL.tempVertexBuffers2 = vb;
-        vb = GL.tempVertexBufferCounters1;
-        GL.tempVertexBufferCounters1 = GL.tempVertexBufferCounters2;
-        GL.tempVertexBufferCounters2 = vb;
-        var largestIndex = GL.log2ceilLookup[GL.MAX_TEMP_BUFFER_SIZE];
-        for(var i = 0; i <= largestIndex; ++i) {
-          GL.tempVertexBufferCounters1[i] = 0;
-        }
-      },getSource:function (shader, count, string, length) {
+      },MINI_TEMP_BUFFER_SIZE:16,miniTempBuffer:null,miniTempBufferViews:[0],getSource:function (shader, count, string, length) {
         var source = '';
         for (var i = 0; i < count; ++i) {
           var frag;
@@ -2029,6 +1752,7 @@ function copyTempDouble(ptr) {
         }
         return source;
       },computeImageSize:function (width, height, sizePerPixel, alignment) {
+        // FIXME: possible bug with negative x
         function roundedToNextMultipleOf(x, y) {
           return Math.floor((x + y - 1) / y) * y
         }
@@ -2256,37 +1980,85 @@ function copyTempDouble(ptr) {
           pixels: pixels,
           internalFormat: internalFormat
         };
-      },initExtensions:function () {
-        if (GL.initExtensions.done) return;
-        GL.initExtensions.done = true;
-  
-        if (!Module.useWebGL) return; // an app might link both gl and 2d backends
-  
-        GL.miniTempBuffer = new Float32Array(GL.MINI_TEMP_BUFFER_SIZE);
-        for (var i = 0; i < GL.MINI_TEMP_BUFFER_SIZE; i++) {
-          GL.miniTempBufferViews[i] = GL.miniTempBuffer.subarray(0, i+1);
+      },createContext:function (canvas, webGLContextAttributes) {
+        // Default to creating a WebGL 1.0 context if nothing else is specified.
+        if (typeof webGLContextAttributes.majorVersion === 'undefined' && typeof webGLContextAttributes.minorVersion === 'undefined') {
+          webGLContextAttributes.majorVersion = 1;
+          webGLContextAttributes.minorVersion = 0;
         }
+        var ctx;
+        var errorInfo = '?';
+        function onContextCreationError(event) {
+          errorInfo = event.statusMessage || errorInfo;
+        }
+        try {
+          canvas.addEventListener('webglcontextcreationerror', onContextCreationError, false);
+          try {
+            if (webGLContextAttributes.majorVersion == 1 && webGLContextAttributes.minorVersion == 0) {
+              ctx = canvas.getContext("webgl", webGLContextAttributes) || canvas.getContext("experimental-webgl", webGLContextAttributes);
+            } else {
+              throw 'Unsupported WebGL context version ' + majorVersion + '.' + minorVersion + '!'
+            }
+          } finally {
+            canvas.removeEventListener('webglcontextcreationerror', onContextCreationError, false);
+          }
+          if (!ctx) throw ':(';
+        } catch (e) {
+          Module.print('Could not create canvas: ' + [errorInfo, e]);
+          return 0;
+        }
+        // possible GL_DEBUG entry point: ctx = wrapDebugGL(ctx);
   
-        GL.maxVertexAttribs = GLctx.getParameter(GLctx.MAX_VERTEX_ATTRIBS);
+        if (!ctx) return 0;
+        var handle = GL.getNewId(GL.contexts);
+        var context = { handle: handle };
+        context.GLctx = ctx;
+        GL.contexts[handle] = context;
+        if (typeof webGLContextAttributes['webGLContextAttributes'] === 'undefined' || webGLContextAttributes.enableExtensionsByDefault) {
+          GL.initExtensions(context);
+        }
+        return handle;
+      },makeContextCurrent:function (contextHandle) {
+        var context = GL.contexts[contextHandle];
+        if (!context) return false;
+        GLctx = Module.ctx = context.GLctx; // Active WebGL context object.
+        GL.currentContext = context; // Active Emscripten GL layer context object.
+        return true;
+      },getContext:function (contextHandle) {
+        return GL.contexts[contextHandle];
+      },deleteContext:function (contextHandle) {
+        if (GL.currentContext === GL.contexts[contextHandle]) GL.currentContext = 0;
+        GL.contexts[contextHandle] = null;
+      },initExtensions:function (context) {
+  
+        // If this function is called without a specific context object, init the extensions of the currently active context.
+        if (!context) context = GL.currentContext;
+  
+        if (context.initExtensionsDone) return;
+        context.initExtensionsDone = true;
+  
+        var GLctx = context.GLctx;
+  
+        context.maxVertexAttribs = GLctx.getParameter(GLctx.MAX_VERTEX_ATTRIBS);
   
         // Detect the presence of a few extensions manually, this GL interop layer itself will need to know if they exist. 
-        GL.compressionExt = GLctx.getExtension('WEBGL_compressed_texture_s3tc') ||
+        context.compressionExt = GLctx.getExtension('WEBGL_compressed_texture_s3tc') ||
                             GLctx.getExtension('MOZ_WEBGL_compressed_texture_s3tc') ||
                             GLctx.getExtension('WEBKIT_WEBGL_compressed_texture_s3tc');
   
-        GL.anisotropicExt = GLctx.getExtension('EXT_texture_filter_anisotropic') ||
+        context.anisotropicExt = GLctx.getExtension('EXT_texture_filter_anisotropic') ||
                             GLctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
                             GLctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
   
-        GL.floatExt = GLctx.getExtension('OES_texture_float');
+        context.floatExt = GLctx.getExtension('OES_texture_float');
   
         // Extension available from Firefox 26 and Google Chrome 30
-        GL.instancedArraysExt = GLctx.getExtension('ANGLE_instanced_arrays');
+        context.instancedArraysExt = GLctx.getExtension('ANGLE_instanced_arrays');
         
         // Extension available from Firefox 25 and WebKit
-        GL.vaoExt = Module.ctx.getExtension('OES_vertex_array_object');
+        context.vaoExt = GLctx.getExtension('OES_vertex_array_object');
   
-        GL.drawBuffersExt = Module.ctx.getExtension('WEBGL_draw_buffers');
+        context.drawBuffersExt = GLctx.getExtension('WEBGL_draw_buffers');
   
         // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
         // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
@@ -2878,6 +2650,9 @@ function copyTempDouble(ptr) {
             break;
           case webcl.FLOAT:
             _type = webcl.FLOAT;
+            break;
+          case webcl.HALF_FLOAT:
+            _type = webcl.HALF_FLOAT;
             break;
           default:
             console.error("getImageFormatType : This channel type is not yet implemented => "+_info.channelType);
@@ -4152,6 +3927,7 @@ function copyTempDouble(ptr) {
             return callback(new Error('node type not supported'));
           }
   
+          FS.chmod(path, entry.mode);
           FS.utime(path, entry.timestamp, entry.timestamp);
         } catch (e) {
           return callback(e);
@@ -4606,7 +4382,7 @@ function copyTempDouble(ptr) {
       },lookupNode:function (parent, name) {
         var err = FS.mayLookup(parent);
         if (err) {
-          throw new FS.ErrnoError(err);
+          throw new FS.ErrnoError(err, parent);
         }
         var hash = FS.hashName(parent.id, name);
         for (var node = FS.nameTable[hash]; node; node = node.name_next) {
@@ -5166,6 +4942,9 @@ function copyTempDouble(ptr) {
       },readlink:function (path) {
         var lookup = FS.lookupPath(path);
         var link = lookup.node;
+        if (!link) {
+          throw new FS.ErrnoError(ERRNO_CODES.ENOENT);
+        }
         if (!link.node_ops.readlink) {
           throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
         }
@@ -5552,7 +5331,7 @@ function copyTempDouble(ptr) {
           random_device = function() { return require('crypto').randomBytes(1)[0]; };
         } else {
           // default for ES5 platforms
-          random_device = function() { return Math.floor(Math.random()*256); };
+          random_device = function() { return (Math.random()*256)|0; };
         }
         FS.createDevice('/dev', 'random', random_device);
         FS.createDevice('/dev', 'urandom', random_device);
@@ -5599,14 +5378,18 @@ function copyTempDouble(ptr) {
         assert(stderr.fd === 2, 'invalid handle for stderr (' + stderr.fd + ')');
       },ensureErrnoError:function () {
         if (FS.ErrnoError) return;
-        FS.ErrnoError = function ErrnoError(errno) {
-          this.errno = errno;
-          for (var key in ERRNO_CODES) {
-            if (ERRNO_CODES[key] === errno) {
-              this.code = key;
-              break;
+        FS.ErrnoError = function ErrnoError(errno, node) {
+          this.node = node;
+          this.setErrno = function(errno) {
+            this.errno = errno;
+            for (var key in ERRNO_CODES) {
+              if (ERRNO_CODES[key] === errno) {
+                this.code = key;
+                break;
+              }
             }
-          }
+          };
+          this.setErrno(errno);
           this.message = ERRNO_MESSAGES[errno];
           if (this.stack) this.stack = demangleAll(this.stack);
         };
@@ -5823,7 +5606,7 @@ function copyTempDouble(ptr) {
             return undefined;
           }
           var chunkOffset = idx % this.chunkSize;
-          var chunkNum = Math.floor(idx / this.chunkSize);
+          var chunkNum = (idx / this.chunkSize)|0;
           return this.getter(chunkNum)[chunkOffset];
         }
         LazyUint8Array.prototype.setDataGetter = function LazyUint8Array_setDataGetter(getter) {
@@ -6207,7 +5990,8 @@ function copyTempDouble(ptr) {
               }
   
               if (url === 'ws://' || url === 'wss://') { // Is the supplied URL config just a prefix, if so complete it.
-                url = url + addr + ':' + port;
+                var parts = addr.split('/');
+                url = url + parts[0] + ":" + port + "/" + parts.slice(1).join('/');
               }
   
               // Make the WebSocket subprotocol (Sec-WebSocket-Protocol) default to binary if no configuration is set.
@@ -6704,7 +6488,7 @@ function copyTempDouble(ptr) {
         if (streamObj) streamObj.error = true;
         return 0;
       } else {
-        return Math.floor(bytesWritten / size);
+        return (bytesWritten / size)|0;
       }
     }
   
@@ -7694,53 +7478,40 @@ function copyTempDouble(ptr) {
           }
         }
       },createContext:function (canvas, useWebGL, setInModule, webGLContextAttributes) {
-        if (useWebGL && Module.ctx) return Module.ctx; // no need to recreate singleton GL context
+        if (useWebGL && Module.ctx && canvas == Module.canvas) return Module.ctx; // no need to recreate GL context if it's already been created for this canvas.
   
         var ctx;
-        var errorInfo = '?';
-        function onContextCreationError(event) {
-          errorInfo = event.statusMessage || errorInfo;
-        }
-        try {
-          if (useWebGL) {
-            var contextAttributes = {
-              antialias: false,
-              alpha: false
-            };
-  
-            if (webGLContextAttributes) {
-              for (var attribute in webGLContextAttributes) {
-                contextAttributes[attribute] = webGLContextAttributes[attribute];
-              }
-            }
-  
-  
-            canvas.addEventListener('webglcontextcreationerror', onContextCreationError, false);
-            try {
-              ['experimental-webgl', 'webgl'].some(function(webglId) {
-                return ctx = canvas.getContext(webglId, contextAttributes);
-              });
-            } finally {
-              canvas.removeEventListener('webglcontextcreationerror', onContextCreationError, false);
-            }
-          } else {
-            ctx = canvas.getContext('2d');
-          }
-          if (!ctx) throw ':(';
-        } catch (e) {
-          Module.print('Could not create canvas: ' + [errorInfo, e]);
-          return null;
-        }
+        var contextHandle;
         if (useWebGL) {
-          // possible GL_DEBUG entry point: ctx = wrapDebugGL(ctx);
+          // For GLES2/desktop GL compatibility, adjust a few defaults to be different to WebGL defaults, so that they align better with the desktop defaults.
+          var contextAttributes = {
+            antialias: false,
+            alpha: false
+          };
   
+          if (webGLContextAttributes) {
+            for (var attribute in webGLContextAttributes) {
+              contextAttributes[attribute] = webGLContextAttributes[attribute];
+            }
+          }
+  
+          contextHandle = GL.createContext(canvas, contextAttributes);
+          if (contextHandle) {
+            ctx = GL.getContext(contextHandle).GLctx;
+          }
           // Set the background of the WebGL canvas to black
           canvas.style.backgroundColor = "black";
+        } else {
+          ctx = canvas.getContext('2d');
         }
+  
+        if (!ctx) return null;
+  
         if (setInModule) {
           if (!useWebGL) assert(typeof GLctx === 'undefined', 'cannot set in module if GLctx is used, but we are a non-GL context that would replace it');
+  
           Module.ctx = ctx;
-          if (useWebGL) GLctx = ctx;
+          if (useWebGL) GL.makeContextCurrent(contextHandle);
           Module.useWebGL = useWebGL;
           Browser.moduleContextCreatedCallbacks.forEach(function(callback) { callback() });
           Browser.init();
@@ -7879,15 +7650,15 @@ function copyTempDouble(ptr) {
             delta = event.detail;
             break;
           case 'mousewheel': 
-            delta = -event.wheelDelta;
+            delta = event.wheelDelta;
             break;
           case 'wheel': 
-            delta = event.deltaY;
+            delta = event['deltaY'];
             break;
           default:
             throw 'unrecognized mouse wheel event: ' + event.type;
         }
-        return Math.max(-1, Math.min(1, delta));
+        return delta;
       },mouseX:0,mouseY:0,mouseMovementX:0,mouseMovementY:0,touches:{},lastTouches:{},calculateMouseEvent:function (event) { // event should be mousemove, mousedown or mouseup
         if (Browser.pointerLock) {
           // When the pointer is locked, calculate the coordinates
@@ -8062,6 +7833,10 @@ function copyTempDouble(ptr) {
             }
           }
         }
+      },wgetRequests:{},nextWgetRequestHandle:0,getNextWgetRequestHandle:function () {
+        var handle = Browser.nextWgetRequestHandle;
+        Browser.nextWgetRequestHandle++;
+        return handle;
       }};
 
   function _emscripten_get_now() {
@@ -8102,15 +7877,19 @@ function copyTempDouble(ptr) {
         HEAP32[(((buf)+(36))>>2)]=stat.size;
         HEAP32[(((buf)+(40))>>2)]=4096;
         HEAP32[(((buf)+(44))>>2)]=stat.blocks;
-        HEAP32[(((buf)+(48))>>2)]=Math.floor(stat.atime.getTime() / 1000);
+        HEAP32[(((buf)+(48))>>2)]=(stat.atime.getTime() / 1000)|0;
         HEAP32[(((buf)+(52))>>2)]=0;
-        HEAP32[(((buf)+(56))>>2)]=Math.floor(stat.mtime.getTime() / 1000);
+        HEAP32[(((buf)+(56))>>2)]=(stat.mtime.getTime() / 1000)|0;
         HEAP32[(((buf)+(60))>>2)]=0;
-        HEAP32[(((buf)+(64))>>2)]=Math.floor(stat.ctime.getTime() / 1000);
+        HEAP32[(((buf)+(64))>>2)]=(stat.ctime.getTime() / 1000)|0;
         HEAP32[(((buf)+(68))>>2)]=0;
         HEAP32[(((buf)+(72))>>2)]=stat.ino;
         return 0;
       } catch (e) {
+        if (e.node && PATH.normalize(path) !== PATH.normalize(FS.getPath(e.node))) {
+          // an error occurred while trying to look up the path; we should just report ENOTDIR
+          e.setErrno(ERRNO_CODES.ENOTDIR);
+        }
         FS.handleFSError(e);
         return -1;
       }
@@ -8188,7 +7967,7 @@ function copyTempDouble(ptr) {
       }
       bytesRead += err;
       if (bytesRead < bytesToRead) streamObj.eof = true;
-      return Math.floor(bytesRead / size);
+      return (bytesRead / size)|0;
     }
 
   function _clCreateKernel(program,kernel_name,cl_errcode_ret) {
@@ -8642,7 +8421,7 @@ function copyTempDouble(ptr) {
     }
 
   function _time(ptr) {
-      var ret = Math.floor(Date.now()/1000);
+      var ret = (Date.now()/1000)|0;
       if (ptr) {
         HEAP32[((ptr)>>2)]=ret;
       }
@@ -8685,12 +8464,6 @@ function invoke_iiii(index,a1,a2,a3) {
   }
 }
 
-  function asmPrintInt(x, y) {
-    Module.print('int ' + x + ',' + y);// + ' ' + new Error().stack);
-  }
-  function asmPrintFloat(x, y) {
-    Module.print('float ' + x + ',' + y);// + ' ' + new Error().stack);
-  }
   // EMSCRIPTEN_START_ASM
   var asm = (function(global, env, buffer) {
     'almost asm';
@@ -8709,7 +8482,6 @@ function invoke_iiii(index,a1,a2,a3) {
   var ABORT=env.ABORT|0;
   var cttz_i8=env.cttz_i8|0;
   var ctlz_i8=env.ctlz_i8|0;
-  var ___rand_seed=env.___rand_seed|0;
 
     var __THREW__ = 0;
     var threwValue = 0;
@@ -8745,8 +8517,6 @@ function invoke_iiii(index,a1,a2,a3) {
   var Math_imul=global.Math.imul;
   var abort=env.abort;
   var assert=env.assert;
-  var asmPrintInt=env.asmPrintInt;
-  var asmPrintFloat=env.asmPrintFloat;
   var Math_min=env.min;
   var nullFunc_iiii=env.nullFunc_iiii;
   var invoke_iiii=env.invoke_iiii;
@@ -8762,42 +8532,42 @@ function invoke_iiii(index,a1,a2,a3) {
   var _clEnqueueWriteBuffer=env._clEnqueueWriteBuffer;
   var _clCreateProgramWithSource=env._clCreateProgramWithSource;
   var _clGetProgramBuildInfo=env._clGetProgramBuildInfo;
-  var _time=env._time;
+  var _clBuildProgram=env._clBuildProgram;
   var _pwrite=env._pwrite;
   var _strerror_r=env._strerror_r;
   var _open=env._open;
   var _sbrk=env._sbrk;
-  var _clReleaseMemObject=env._clReleaseMemObject;
+  var ___errno_location=env.___errno_location;
   var _emscripten_memcpy_big=env._emscripten_memcpy_big;
   var _fileno=env._fileno;
   var _sysconf=env._sysconf;
+  var __formatString=env.__formatString;
   var _clFinish=env._clFinish;
-  var _clGetDeviceInfo=env._clGetDeviceInfo;
   var _clCreateCommandQueue=env._clCreateCommandQueue;
-  var _printf=env._printf;
+  var _mkport=env._mkport;
   var _clReleaseCommandQueue=env._clReleaseCommandQueue;
   var __reallyNegative=env.__reallyNegative;
-  var _fflush=env._fflush;
+  var _clGetDeviceInfo=env._clGetDeviceInfo;
   var _write=env._write;
-  var _pread=env._pread;
-  var ___errno_location=env.___errno_location;
+  var _fflush=env._fflush;
+  var _clReleaseMemObject=env._clReleaseMemObject;
   var _clCreateBuffer=env._clCreateBuffer;
   var _stat=env._stat;
   var _recv=env._recv;
   var _clGetDeviceIDs=env._clGetDeviceIDs;
-  var _mkport=env._mkport;
-  var _clCreateKernel=env._clCreateKernel;
+  var _read=env._read;
   var _clSetKernelArg=env._clSetKernelArg;
   var _abort=env._abort;
   var _fwrite=env._fwrite;
   var _emscripten_get_now=env._emscripten_get_now;
-  var _clBuildProgram=env._clBuildProgram;
+  var _time=env._time;
   var _fprintf=env._fprintf;
   var _strerror=env._strerror;
-  var __formatString=env.__formatString;
+  var _pread=env._pread;
+  var _printf=env._printf;
   var _fopen=env._fopen;
   var _clEnqueueReadBuffer=env._clEnqueueReadBuffer;
-  var _read=env._read;
+  var _clCreateKernel=env._clCreateKernel;
   var tempFloat = 0.0;
 
   // EMSCRIPTEN_START_FUNCS
@@ -8806,7 +8576,9 @@ function invoke_iiii(index,a1,a2,a3) {
     var ret = 0;
     ret = STACKTOP;
     STACKTOP = (STACKTOP + size)|0;
-  STACKTOP = (STACKTOP + 7)&-8;
+  STACKTOP = (STACKTOP + 15)&-16;
+if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
+
     return ret|0;
   }
   function stackSave() {
@@ -8858,7 +8630,7 @@ function _reduce_validate_float($data,$size,$result) {
  var $0 = 0, $1 = 0, $10 = 0, $11 = 0.0, $12 = 0.0, $13 = 0.0, $14 = 0.0, $15 = 0.0, $16 = 0.0, $17 = 0.0, $18 = 0.0, $19 = 0.0, $2 = 0, $20 = 0.0, $21 = 0.0, $22 = 0.0, $23 = 0, $24 = 0, $25 = 0.0, $26 = 0;
  var $3 = 0, $4 = 0.0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $c = 0.0, $i = 0, $sum = 0.0, $t = 0.0, $y = 0.0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 32|0;
+ STACKTOP = STACKTOP + 32|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $0 = $data;
  $1 = $size;
  $2 = $result;
@@ -8911,7 +8683,7 @@ function _reduce_validate_float2($data,$size,$result) {
  var $45 = 0.0, $46 = 0.0, $47 = 0.0, $48 = 0.0, $49 = 0, $5 = 0, $50 = 0.0, $51 = 0, $52 = 0, $53 = 0.0, $54 = 0.0, $55 = 0, $56 = 0.0, $57 = 0.0, $58 = 0, $59 = 0.0, $6 = 0, $60 = 0, $61 = 0, $62 = 0.0;
  var $63 = 0, $64 = 0, $65 = 0, $66 = 0, $7 = 0, $8 = 0.0, $9 = 0, $c = 0, $i = 0, $t = 0, $y = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 48|0;
+ STACKTOP = STACKTOP + 48|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $c = sp + 8|0;
  $y = sp;
  $t = sp + 24|0;
@@ -9015,7 +8787,7 @@ function _reduce_validate_float4($data,$size,$result) {
  var $82 = 0, $83 = 0.0, $84 = 0, $85 = 0.0, $86 = 0.0, $87 = 0.0, $88 = 0, $89 = 0.0, $9 = 0, $90 = 0.0, $91 = 0.0, $92 = 0.0, $93 = 0, $94 = 0.0, $95 = 0, $96 = 0, $97 = 0.0, $98 = 0.0, $99 = 0, $c = 0;
  var $i = 0, $t = 0, $y = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 80|0;
+ STACKTOP = STACKTOP + 80|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $c = sp + 16|0;
  $y = sp;
  $t = sp + 40|0;
@@ -9195,7 +8967,7 @@ function _reduce_validate_int($data,$size,$result) {
  var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $21 = 0, $22 = 0, $23 = 0, $24 = 0, $25 = 0, $26 = 0;
  var $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $c = 0, $i = 0, $sum = 0, $t = 0, $y = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 32|0;
+ STACKTOP = STACKTOP + 32|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $0 = $data;
  $1 = $size;
  $2 = $result;
@@ -9248,7 +9020,7 @@ function _reduce_validate_int2($data,$size,$result) {
  var $45 = 0, $46 = 0, $47 = 0, $48 = 0, $49 = 0, $5 = 0, $50 = 0, $51 = 0, $52 = 0, $53 = 0, $54 = 0, $55 = 0, $56 = 0, $57 = 0, $58 = 0, $59 = 0, $6 = 0, $60 = 0, $61 = 0, $62 = 0;
  var $63 = 0, $64 = 0, $65 = 0, $66 = 0, $7 = 0, $8 = 0, $9 = 0, $c = 0, $i = 0, $t = 0, $y = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 48|0;
+ STACKTOP = STACKTOP + 48|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $c = sp + 8|0;
  $y = sp;
  $t = sp + 24|0;
@@ -9352,7 +9124,7 @@ function _reduce_validate_int4($data,$size,$result) {
  var $82 = 0, $83 = 0, $84 = 0, $85 = 0, $86 = 0, $87 = 0, $88 = 0, $89 = 0, $9 = 0, $90 = 0, $91 = 0, $92 = 0, $93 = 0, $94 = 0, $95 = 0, $96 = 0, $97 = 0, $98 = 0, $99 = 0, $c = 0;
  var $i = 0, $t = 0, $y = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 80|0;
+ STACKTOP = STACKTOP + 80|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $c = sp + 16|0;
  $y = sp;
  $t = sp + 40|0;
@@ -9544,7 +9316,7 @@ function _create_reduction_pass_counts($count,$max_group_size,$max_groups,$max_w
  var $79 = 0, $8 = 0, $80 = 0, $81 = 0, $82 = 0, $83 = 0, $84 = 0, $85 = 0, $86 = 0, $87 = 0, $88 = 0, $89 = 0, $9 = 0, $90 = 0, $91 = 0, $92 = 0, $93 = 0, $94 = 0, $95 = 0, $96 = 0;
  var $97 = 0, $98 = 0, $99 = 0, $groups = 0, $groups3 = 0, $level = 0, $max_levels = 0, $s = 0, $work_items = 0, $work_items1 = 0, $work_items2 = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 80|0;
+ STACKTOP = STACKTOP + 80|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $0 = $count;
  $1 = $max_group_size;
  $2 = $max_groups;
@@ -9799,7 +9571,7 @@ function _main($argc,$argv) {
  var $vararg_buffer81 = 0, $vararg_buffer83 = 0, $vararg_buffer86 = 0, $vararg_buffer89 = 0, $vararg_buffer92 = 0, $vararg_buffer94 = 0, $vararg_buffer96 = 0, $vararg_buffer98 = 0, $vararg_ptr101 = 0, $vararg_ptr102 = 0, $vararg_ptr115 = 0, $vararg_ptr116 = 0, $vararg_ptr36 = 0, $vararg_ptr37 = 0, $vararg_ptr38 = 0, $vararg_ptr39 = 0, $vararg_ptr58 = 0, $vararg_ptr59 = 0, $vararg_ptr60 = 0, $vararg_ptr61 = 0;
  var $vararg_ptr62 = 0, $vararg_ptr63 = 0, $vararg_ptr76 = 0, $vararg_ptr77 = 0, $vararg_ptr78 = 0, $vararg_ptr9 = 0, $vendor_name = 0, $work_item_counts = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 4816|0;
+ STACKTOP = STACKTOP + 4816|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $vararg_buffer122 = sp;
  $vararg_buffer120 = sp + 56|0;
  $vararg_buffer117 = sp + 192|0;
@@ -11003,7 +10775,7 @@ function _load_program_source($filename) {
  var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $20 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0;
  var $9 = 0, $fh = 0, $source = 0, $statbuf = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 96|0;
+ STACKTOP = STACKTOP + 96|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $statbuf = sp + 8|0;
  $1 = $filename;
  $2 = $1;
@@ -11045,7 +10817,7 @@ function _subtract_time_in_seconds($endtime,$starttime) {
  $starttime = +$starttime;
  var $0 = 0.0, $1 = 0.0, $2 = 0.0, $3 = 0.0, $4 = 0.0, $5 = 0.0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0;
+ STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $0 = $endtime;
  $1 = $starttime;
  $2 = $0;
@@ -11204,7 +10976,7 @@ function _strstr($h,$n) {
  var $ip$0$ph81$i = 0, $ip$1$ip$0$$i = 0, $ip$1$ip$0$i = 0, $ip$1$ph58$i = 0, $ip$1$ph61$i = 0, $jp$0$ph22$ph72$i = 0, $jp$0$ph2266$i = 0, $jp$0$ph82$i = 0, $jp$1$ph11$ph52$i = 0, $jp$1$ph1146$i = 0, $jp$1$ph62$i = 0, $k$030$i = 0, $k$117$i = 0, $k$2$us$i = 0, $k$37$i = 0, $k$37$us$i = 0, $k$4$i = 0, $k$4$us$i = 0, $l$039$i = 0, $mem$0$us$i = 0;
  var $notlhs$i = 0, $notrhs$us$i = 0, $or$cond$i = 0, $or$cond$i12 = 0, $or$cond3$us$i = 0, $p$0$ph$ph70$i = 0, $p$0$ph$ph70150$i = 0, $p$0$ph$ph73$i = 0, $p$1$p$0$i = 0, $p$1$ph$ph50$i = 0, $p$1$ph$ph53$i = 0, $p$3155$i = 0, $shift$i = 0, $z$0$i = 0, $z$0$us$i = 0, $z$1$i = 0, $z$1$us$i = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 1056|0;
+ STACKTOP = STACKTOP + 1056|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $byteset$i = sp + 1024|0;
  $shift$i = sp;
  $0 = HEAP8[$n>>0]|0;
@@ -12429,7 +12201,7 @@ function _malloc($bytes) {
      $276 = ((1680 + ($idx$0$i<<2)|0) + 304|0);
      $277 = HEAP32[$276>>2]|0;
      $278 = ($277|0)==(0|0);
-     L9: do {
+     L126: do {
       if ($278) {
        $rsize$2$i = $250;$t$1$i = 0;$v$2$i = 0;
       } else {
@@ -12453,7 +12225,7 @@ function _malloc($bytes) {
          $289 = ($286|0)==($247|0);
          if ($289) {
           $rsize$2$i = $287;$t$1$i = $t$0$i14;$v$2$i = $t$0$i14;
-          break L9;
+          break L126;
          } else {
           $rsize$1$i = $287;$v$1$i = $t$0$i14;
          }
@@ -12738,7 +12510,7 @@ function _malloc($bytes) {
         }
        } while(0);
        $412 = ($rsize$3$lcssa$i>>>0)<(16);
-       L87: do {
+       L204: do {
         if ($412) {
          $413 = (($rsize$3$lcssa$i) + ($247))|0;
          $414 = $413 | 3;
@@ -12877,7 +12649,7 @@ function _malloc($bytes) {
          $482 = HEAP32[$481>>2]|0;
          $483 = $482 & -8;
          $484 = ($483|0)==($rsize$3$lcssa$i|0);
-         L108: do {
+         L225: do {
           if ($484) {
            $T$0$lcssa$i = $477;
           } else {
@@ -12898,7 +12670,7 @@ function _malloc($bytes) {
             $492 = ($491|0)==($rsize$3$lcssa$i|0);
             if ($492) {
              $T$0$lcssa$i = $489;
-             break L108;
+             break L225;
             } else {
              $K12$025$i = $487;$T$024$i = $489;
             }
@@ -12919,7 +12691,7 @@ function _malloc($bytes) {
             $$sum13$i = (($247) + 8)|0;
             $500 = (($v$3$lcssa$i) + ($$sum13$i)|0);
             HEAP32[$500>>2] = $349;
-            break L87;
+            break L204;
            }
           }
          } while(0);
@@ -15265,6 +15037,29 @@ function _wcrtomb($s,$wc,$st) {
  }
  return 0|0;
 }
+function _rand() {
+ var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, label = 0, sp = 0;
+ sp = STACKTOP;
+ $0 = 2176;
+ $1 = $0;
+ $2 = HEAP32[$1>>2]|0;
+ $3 = (($0) + 4)|0;
+ $4 = $3;
+ $5 = HEAP32[$4>>2]|0;
+ $6 = (___muldi3(($2|0),($5|0),1284865837,1481765933)|0);
+ $7 = tempRet0;
+ $8 = (_i64Add(($6|0),($7|0),1,0)|0);
+ $9 = tempRet0;
+ $10 = 2176;
+ $11 = $10;
+ HEAP32[$11>>2] = $8;
+ $12 = (($10) + 4)|0;
+ $13 = $12;
+ HEAP32[$13>>2] = $9;
+ $14 = (_bitshift64Lshr(($8|0),($9|0),33)|0);
+ $15 = tempRet0;
+ STACKTOP = sp;return ($14|0);
+}
 function ___towrite($f) {
  $f = $f|0;
  var $$0 = 0, $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0;
@@ -15400,7 +15195,7 @@ function _sprintf($s,$fmt,$varargs) {
  $varargs = $varargs|0;
  var $0 = 0, $ap = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 16|0;
+ STACKTOP = STACKTOP + 16|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $ap = sp;
  HEAP32[$ap>>2] = $varargs;
  $0 = (_vsprintf($s,$fmt,$ap)|0);
@@ -15413,7 +15208,7 @@ function _MUSL_vfprintf($f,$fmt,$ap) {
  var $$ = 0, $$0 = 0, $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0;
  var $ap2 = 0, $internal_buf = 0, $nl_arg = 0, $nl_type = 0, $ret$1 = 0, $vacopy_currentptr = 0, dest = 0, label = 0, sp = 0, stop = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 224|0;
+ STACKTOP = STACKTOP + 224|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $ap2 = sp + 120|0;
  $nl_type = sp + 80|0;
  $nl_arg = sp;
@@ -15546,7 +15341,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
  var $y$03$i$i = 0, $y$03$i109$i = 0, $y$03$i118$i = 0, $y$03$i133$i = 0, $y$03$i86$i = 0, $z$0$i = 0, $z$0$lcssa = 0, $z$093 = 0, $z$1$lcssa$i = 0, $z$1262$i = 0, $z$2 = 0, $z$2$i = 0, $z$3$lcssa$i = 0, $z$3248$i = 0, $z$3248$us$i = 0, $z$4$i = 0, $z$4$us$i = 0, $z$5$i = 0, $z$6$$i = 0, $z$6$i = 0;
  var $z$6$ph$i = 0, label = 0, sp = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 864|0;
+ STACKTOP = STACKTOP + 864|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $big$i = sp + 16|0;
  $e2$i = sp + 8|0;
  $buf$i = sp + 560|0;
@@ -15888,7 +15683,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     break L1;
    }
    $139 = (($135) + 1|0);
-   $140 = ((2176 + (($st$0*58)|0)|0) + ($137)|0);
+   $140 = ((2184 + (($st$0*58)|0)|0) + ($137)|0);
    $141 = HEAP8[$140>>0]|0;
    $142 = $141&255;
    $143 = (($142) + -1)|0;
@@ -15967,6 +15762,18 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $197 = $195;
        $1049 = $196;$1050 = $197;
        label = 63;
+       break L65;
+       break;
+      }
+      case 16:  {
+       $arglist_current26 = HEAP32[$ap>>2]|0;
+       $188 = HEAP32[$arglist_current26>>2]|0;
+       $arglist_next27 = (($arglist_current26) + 4|0);
+       HEAP32[$ap>>2] = $arglist_next27;
+       $$mask$i30 = $188 & 255;
+       $189 = $$mask$i30;
+       $1051 = $189;$1052 = 0;
+       label = 64;
        break L65;
        break;
       }
@@ -16066,18 +15873,6 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        break L65;
        break;
       }
-      case 16:  {
-       $arglist_current26 = HEAP32[$ap>>2]|0;
-       $188 = HEAP32[$arglist_current26>>2]|0;
-       $arglist_next27 = (($arglist_current26) + 4|0);
-       HEAP32[$ap>>2] = $arglist_next27;
-       $$mask$i30 = $188 & 255;
-       $189 = $$mask$i30;
-       $1051 = $189;$1052 = 0;
-       label = 64;
-       break L65;
-       break;
-      }
       default: {
        $1051 = $1046;$1052 = $1045;
        label = 64;
@@ -16120,6 +15915,86 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
   $fl$1$ = $205 ? $fl$1 : $206;
   L92: do {
    switch ($t$0|0) {
+   case 112:  {
+    $222 = ($p$0>>>0)>(8);
+    $223 = $222 ? $p$0 : 8;
+    $224 = $fl$1$ | 8;
+    $fl$3 = $224;$p$1 = $223;$t$1 = 120;
+    label = 77;
+    break;
+   }
+   case 88: case 120:  {
+    $fl$3 = $fl$1$;$p$1 = $p$0;$t$1 = $t$0;
+    label = 77;
+    break;
+   }
+   case 110:  {
+    switch ($st$0|0) {
+    case 2:  {
+     $208 = ($cnt$1|0)<(0);
+     $209 = $208 << 31 >> 31;
+     $210 = $207;
+     $211 = $210;
+     HEAP32[$211>>2] = $cnt$1;
+     $212 = (($210) + 4)|0;
+     $213 = $212;
+     HEAP32[$213>>2] = $209;
+     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    case 3:  {
+     $214 = $cnt$1&65535;
+     HEAP16[$207>>1] = $214;
+     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    case 4:  {
+     $215 = $cnt$1&255;
+     HEAP8[$207>>0] = $215;
+     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    case 6:  {
+     HEAP32[$207>>2] = $cnt$1;
+     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    case 7:  {
+     $216 = ($cnt$1|0)<(0);
+     $217 = $216 << 31 >> 31;
+     $218 = $207;
+     $219 = $218;
+     HEAP32[$219>>2] = $cnt$1;
+     $220 = (($218) + 4)|0;
+     $221 = $220;
+     HEAP32[$221>>2] = $217;
+     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    case 0:  {
+     HEAP32[$207>>2] = $cnt$1;
+     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    case 1:  {
+     HEAP32[$207>>2] = $cnt$1;
+     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+     break;
+    }
+    default: {
+     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
+     continue L1;
+    }
+    }
+    break;
+   }
    case 65: case 71: case 70: case 69: case 97: case 103: case 102: case 101:  {
     $368 = $207;
     HEAP32[tempDoublePtr>>2] = $368;HEAP32[tempDoublePtr+4>>2] = $229;$369 = +HEAPF64[tempDoublePtr>>3];
@@ -16127,17 +16002,17 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     $370 = ($229|0)<(0);
     if ($370) {
      $371 = -$369;
-     $$07$i = $371;$pl$0$i = 1;$prefix$0$i = 2664;
+     $$07$i = $371;$pl$0$i = 1;$prefix$0$i = 2672;
     } else {
      $372 = $fl$1$ & 2048;
      $373 = ($372|0)==(0);
      if ($373) {
       $374 = $fl$1$ & 1;
       $375 = ($374|0)==(0);
-      $$$i = $375 ? ((2664 + 1|0)) : ((2664 + 6|0));
+      $$$i = $375 ? ((2672 + 1|0)) : ((2672 + 6|0));
       $$07$i = $369;$pl$0$i = $374;$prefix$0$i = $$$i;
      } else {
-      $$07$i = $369;$pl$0$i = 1;$prefix$0$i = ((2664 + 3|0));
+      $$07$i = $369;$pl$0$i = 1;$prefix$0$i = ((2672 + 3|0));
      }
     }
     HEAPF64[tempDoublePtr>>3] = $$07$i;$376 = HEAP32[tempDoublePtr>>2]|0;
@@ -16151,10 +16026,10 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     if (!($383)) {
      $384 = $t$0 & 32;
      $385 = ($384|0)!=(0);
-     $386 = $385 ? 2688 : 2696;
+     $386 = $385 ? 2696 : 2704;
      $387 = ($$07$i != $$07$i) | (0.0 != 0.0);
      if ($387) {
-      $388 = $385 ? 2704 : 2712;
+      $388 = $385 ? 2712 : 2720;
       $pl$1$i = 0;$s1$0$i = $388;
      } else {
       $pl$1$i = $pl$0$i;$s1$0$i = $386;
@@ -16353,7 +16228,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $$2$us$us$i = $$1$i;$s$0$us$us$i = $buf$i;
        while(1) {
         $473 = (~~(($$2$us$us$i)));
-        $474 = (2720 + ($473)|0);
+        $474 = (2728 + ($473)|0);
         $475 = HEAP8[$474>>0]|0;
         $476 = $475&255;
         $477 = $476 | $414;
@@ -16385,7 +16260,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $$2$us$i = $$1$i;$s$0$us$i = $buf$i;
        while(1) {
         $488 = (~~(($$2$us$i)));
-        $489 = (2720 + ($488)|0);
+        $489 = (2728 + ($488)|0);
         $490 = HEAP8[$489>>0]|0;
         $491 = $490&255;
         $492 = $491 | $414;
@@ -16419,7 +16294,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $$2$us159$i = $$1$i;$s$0$us158$i = $buf$i;
        while(1) {
         $503 = (~~(($$2$us159$i)));
-        $504 = (2720 + ($503)|0);
+        $504 = (2728 + ($503)|0);
         $505 = HEAP8[$504>>0]|0;
         $506 = $505&255;
         $507 = $506 | $414;
@@ -16452,7 +16327,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $$2$i = $$1$i;$s$0$i = $buf$i;
        while(1) {
         $518 = (~~(($$2$i)));
-        $519 = (2720 + ($518)|0);
+        $519 = (2728 + ($518)|0);
         $520 = HEAP8[$519>>0]|0;
         $521 = $520&255;
         $522 = $521 | $414;
@@ -16726,7 +16601,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
      $$pr146$i = $$pr$i;$a$1$lcssa$i = $$31$i;$z$1$lcssa$i = $584;
     }
     $613 = ($$pr146$i|0)<(0);
-    L228: do {
+    L238: do {
      if ($613) {
       $614 = (($$p$i) + 25)|0;
       $615 = (($614|0) / 9)&-1;
@@ -16795,7 +16670,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
          $621 = $638;$a$3249$us$i = $$a$3$us323$i;$z$3248$us$i = $$z$4$us$i;
         } else {
          $a$3$lcssa$i = $$a$3$us323$i;$z$3$lcssa$i = $$z$4$us$i;
-         break L228;
+         break L238;
         }
        }
       } else {
@@ -17411,7 +17286,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
         break;
        }
       }
-      (___fwritex(2736,1,$f)|0);
+      (___fwritex(2744,1,$f)|0);
       $877 = ($873>>>0)<($z$6$i>>>0);
       $878 = ($$311$i|0)>(0);
       $or$cond28173$i = $877 & $878;
@@ -17558,7 +17433,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
             $s9$2$i = $918;
             break;
            }
-           (___fwritex(2736,1,$f)|0);
+           (___fwritex(2744,1,$f)|0);
            $s9$2$i = $918;
           } else {
            $915 = ($s9$0$i>>>0)>($buf$i>>>0);
@@ -17660,17 +17535,50 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     continue L1;
     break;
    }
-   case 112:  {
-    $222 = ($p$0>>>0)>(8);
-    $223 = $222 ? $p$0 : 8;
-    $224 = $fl$1$ | 8;
-    $fl$3 = $224;$p$1 = $223;$t$1 = 120;
-    label = 77;
+   case 67:  {
+    $331 = $207;
+    HEAP32[$wc>>2] = $331;
+    HEAP32[$5>>2] = 0;
+    $1055 = $wc;$1056 = $wc;$p$4296 = -1;
+    label = 104;
     break;
    }
-   case 88: case 120:  {
-    $fl$3 = $fl$1$;$p$1 = $p$0;$t$1 = $t$0;
-    label = 77;
+   case 83:  {
+    $332 = ($p$0|0)==(0);
+    if ($332) {
+     $1057 = $207;$1058 = $207;$i$0166 = 0;
+     label = 110;
+    } else {
+     $1055 = $207;$1056 = $207;$p$4296 = $p$0;
+     label = 104;
+    }
+    break;
+   }
+   case 99:  {
+    $319 = $207;
+    $320 = $319&255;
+    HEAP8[$4>>0] = $320;
+    $1053 = $229;$1054 = $207;$a$2 = $4;$fl$6 = $206;$p$5 = 1;$pl$2 = 0;$prefix$2 = 2648;$z$2 = $2;
+    break;
+   }
+   case 109:  {
+    $321 = (___errno_location()|0);
+    $322 = HEAP32[$321>>2]|0;
+    $323 = (_strerror(($322|0))|0);
+    $a$1 = $323;
+    label = 99;
+    break;
+   }
+   case 115:  {
+    $324 = ($207|0)==(0|0);
+    $$17 = $324 ? 2664 : $207;
+    $a$1 = $$17;
+    label = 99;
+    break;
+   }
+   case 117:  {
+    $277 = $207;$279 = $229;$pl$0 = 0;$prefix$0 = 2648;
+    label = 89;
     break;
    }
    case 111:  {
@@ -17704,10 +17612,10 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     $264 = $fl$1$ & 8;
     $265 = ($264|0)==(0);
     if ($265) {
-     $308 = $207;$311 = $229;$a$0 = $$0$lcssa$i43;$fl$4 = $fl$1$;$p$2 = $p$0;$pl$1 = 0;$prefix$1 = 2640;
+     $308 = $207;$311 = $229;$a$0 = $$0$lcssa$i43;$fl$4 = $fl$1$;$p$2 = $p$0;$pl$1 = 0;$prefix$1 = 2648;
      label = 94;
     } else {
-     $$13 = $252 ? 2640 : ((2640 + 5|0));
+     $$13 = $252 ? 2648 : ((2648 + 5|0));
      $266 = $252&1;
      $$14 = $266 ^ 1;
      $308 = $207;$311 = $229;$a$0 = $$0$lcssa$i43;$fl$4 = $fl$1$;$p$2 = $p$0;$pl$1 = $$14;$prefix$1 = $$13;
@@ -17722,7 +17630,7 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
      $269 = (_i64Subtract(0,0,($267|0),($229|0))|0);
      $270 = tempRet0;
      $271 = $269;
-     $277 = $271;$279 = $270;$pl$0 = 1;$prefix$0 = 2640;
+     $277 = $271;$279 = $270;$pl$0 = 1;$prefix$0 = 2648;
      label = 89;
      break L92;
     }
@@ -17731,130 +17639,17 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     if ($273) {
      $274 = $fl$1$ & 1;
      $275 = ($274|0)==(0);
-     $$15 = $275 ? 2640 : ((2640 + 2|0));
+     $$15 = $275 ? 2648 : ((2648 + 2|0));
      $277 = $207;$279 = $229;$pl$0 = $274;$prefix$0 = $$15;
      label = 89;
     } else {
-     $277 = $207;$279 = $229;$pl$0 = 1;$prefix$0 = ((2640 + 1|0));
+     $277 = $207;$279 = $229;$pl$0 = 1;$prefix$0 = ((2648 + 1|0));
      label = 89;
-    }
-    break;
-   }
-   case 117:  {
-    $277 = $207;$279 = $229;$pl$0 = 0;$prefix$0 = 2640;
-    label = 89;
-    break;
-   }
-   case 99:  {
-    $319 = $207;
-    $320 = $319&255;
-    HEAP8[$4>>0] = $320;
-    $1053 = $229;$1054 = $207;$a$2 = $4;$fl$6 = $206;$p$5 = 1;$pl$2 = 0;$prefix$2 = 2640;$z$2 = $2;
-    break;
-   }
-   case 109:  {
-    $321 = (___errno_location()|0);
-    $322 = HEAP32[$321>>2]|0;
-    $323 = (_strerror(($322|0))|0);
-    $a$1 = $323;
-    label = 99;
-    break;
-   }
-   case 115:  {
-    $324 = ($207|0)==(0|0);
-    $$17 = $324 ? 2656 : $207;
-    $a$1 = $$17;
-    label = 99;
-    break;
-   }
-   case 67:  {
-    $331 = $207;
-    HEAP32[$wc>>2] = $331;
-    HEAP32[$5>>2] = 0;
-    $1055 = $wc;$1056 = $wc;$p$4296 = -1;
-    label = 104;
-    break;
-   }
-   case 83:  {
-    $332 = ($p$0|0)==(0);
-    if ($332) {
-     $1057 = $207;$1058 = $207;$i$0166 = 0;
-     label = 110;
-    } else {
-     $1055 = $207;$1056 = $207;$p$4296 = $p$0;
-     label = 104;
-    }
-    break;
-   }
-   case 110:  {
-    switch ($st$0|0) {
-    case 6:  {
-     HEAP32[$207>>2] = $cnt$1;
-     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    case 7:  {
-     $216 = ($cnt$1|0)<(0);
-     $217 = $216 << 31 >> 31;
-     $218 = $207;
-     $219 = $218;
-     HEAP32[$219>>2] = $cnt$1;
-     $220 = (($218) + 4)|0;
-     $221 = $220;
-     HEAP32[$221>>2] = $217;
-     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    case 0:  {
-     HEAP32[$207>>2] = $cnt$1;
-     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    case 1:  {
-     HEAP32[$207>>2] = $cnt$1;
-     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    case 2:  {
-     $208 = ($cnt$1|0)<(0);
-     $209 = $208 << 31 >> 31;
-     $210 = $207;
-     $211 = $210;
-     HEAP32[$211>>2] = $cnt$1;
-     $212 = (($210) + 4)|0;
-     $213 = $212;
-     HEAP32[$213>>2] = $209;
-     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    case 3:  {
-     $214 = $cnt$1&65535;
-     HEAP16[$207>>1] = $214;
-     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    case 4:  {
-     $215 = $cnt$1&255;
-     HEAP8[$207>>0] = $215;
-     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-     break;
-    }
-    default: {
-     $1045 = $229;$1046 = $207;$22 = $139;$cnt$0 = $cnt$1;$l$0 = $36;$l10n$0 = $l10n$3;
-     continue L1;
-    }
     }
     break;
    }
    default: {
-    $1053 = $229;$1054 = $207;$a$2 = $22;$fl$6 = $fl$1$;$p$5 = $p$0;$pl$2 = 0;$prefix$2 = 2640;$z$2 = $2;
+    $1053 = $229;$1054 = $207;$a$2 = $22;$fl$6 = $fl$1$;$p$5 = $p$0;$pl$2 = 0;$prefix$2 = 2648;$z$2 = $2;
    }
    }
   } while(0);
@@ -17867,13 +17662,13 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     $228 = ($229|0)==(0);
     $230 = $227 & $228;
     if ($230) {
-     $308 = $207;$311 = $229;$a$0 = $2;$fl$4 = $fl$3;$p$2 = $p$1;$pl$1 = 0;$prefix$1 = 2640;
+     $308 = $207;$311 = $229;$a$0 = $2;$fl$4 = $fl$3;$p$2 = $p$1;$pl$1 = 0;$prefix$1 = 2648;
      label = 94;
     } else {
      $$012$i = $2;$232 = $225;$239 = $229;
      while(1) {
       $231 = $232 & 15;
-      $233 = (2720 + ($231)|0);
+      $233 = (2728 + ($231)|0);
       $234 = HEAP8[$233>>0]|0;
       $235 = $234&255;
       $236 = $235 | $226;
@@ -17894,11 +17689,11 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
      $245 = $fl$3 & 8;
      $246 = ($245|0)==(0);
      if ($246) {
-      $308 = $207;$311 = $229;$a$0 = $238;$fl$4 = $fl$3;$p$2 = $p$1;$pl$1 = 0;$prefix$1 = 2640;
+      $308 = $207;$311 = $229;$a$0 = $238;$fl$4 = $fl$3;$p$2 = $p$1;$pl$1 = 0;$prefix$1 = 2648;
       label = 94;
      } else {
       $247 = $t$1 >> 4;
-      $248 = (2640 + ($247)|0);
+      $248 = (2648 + ($247)|0);
       $308 = $207;$311 = $229;$a$0 = $238;$fl$4 = $fl$3;$p$2 = $p$1;$pl$1 = 2;$prefix$1 = $248;
       label = 94;
      }
@@ -17968,13 +17763,13 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     $326 = ($325|0)==(0|0);
     if ($326) {
      $327 = (($a$1) + ($p$0)|0);
-     $1053 = $229;$1054 = $207;$a$2 = $a$1;$fl$6 = $206;$p$5 = $p$0;$pl$2 = 0;$prefix$2 = 2640;$z$2 = $327;
+     $1053 = $229;$1054 = $207;$a$2 = $a$1;$fl$6 = $206;$p$5 = $p$0;$pl$2 = 0;$prefix$2 = 2648;$z$2 = $327;
      break;
     } else {
      $328 = $325;
      $329 = $a$1;
      $330 = (($328) - ($329))|0;
-     $1053 = $229;$1054 = $207;$a$2 = $a$1;$fl$6 = $206;$p$5 = $330;$pl$2 = 0;$prefix$2 = 2640;$z$2 = $325;
+     $1053 = $229;$1054 = $207;$a$2 = $a$1;$fl$6 = $206;$p$5 = $330;$pl$2 = 0;$prefix$2 = 2648;$z$2 = $325;
      break;
     }
    }
@@ -18077,20 +17872,20 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     (___fwritex($pad$i,$$0$lcssa$i59,$f)|0);
    }
    $352 = ($i$0166|0)==(0);
-   L481: do {
+   L479: do {
     if (!($352)) {
      $i$1174 = 0;$ws$1175 = $1057;
      while(1) {
       $353 = HEAP32[$ws$1175>>2]|0;
       $354 = ($353|0)==(0);
       if ($354) {
-       break L481;
+       break L479;
       }
       $355 = (_wctomb($mb,$353)|0);
       $356 = (($355) + ($i$1174))|0;
       $357 = ($356|0)>($i$0166|0);
       if ($357) {
-       break L481;
+       break L479;
       }
       $358 = (($ws$1175) + 4|0);
       (___fwritex($mb,$355,$f)|0);
@@ -18477,10 +18272,10 @@ function _vsnprintf($s,$n,$fmt,$ap) {
  var $$$02 = 0, $$0 = 0, $$01 = 0, $$02 = 0, $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $15 = 0, $16 = 0, $17 = 0, $18 = 0, $19 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0;
  var $6 = 0, $7 = 0, $8 = 0, $9 = 0, $b = 0, $f = 0, dest = 0, label = 0, sp = 0, src = 0, stop = 0;
  sp = STACKTOP;
- STACKTOP = STACKTOP + 128|0;
+ STACKTOP = STACKTOP + 128|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
  $b = sp + 112|0;
  $f = sp;
- dest=$f+0|0; src=2744+0|0; stop=dest+112|0; do { HEAP32[dest>>2]=HEAP32[src>>2]|0; dest=dest+4|0; src=src+4|0; } while ((dest|0) < (stop|0));
+ dest=$f+0|0; src=2752+0|0; stop=dest+112|0; do { HEAP32[dest>>2]=HEAP32[src>>2]|0; dest=dest+4|0; src=src+4|0; } while ((dest|0) < (stop|0));
  $0 = (($n) + -1)|0;
  $1 = ($0>>>0)>(2147483646);
  if ($1) {
@@ -18719,16 +18514,6 @@ function _memcmp($vl,$vr,$n) {
 }
 function runPostSets() {
  
-}
-function _rand_r(seedp) {
-    seedp = seedp|0; 
-    var val = 0;
-    val = ((Math_imul(((HEAP32[((seedp)>>2)])|0), 31010991)|0) + 0x676e6177 ) & 2147483647; // assumes RAND_MAX is in bit mask form (power of 2 minus 1)
-    HEAP32[((seedp)>>2)]=val;
-    return val|0;
-}
-function _rand() {
-    return _rand_r(___rand_seed)|0;
 }
 function _i64Subtract(a, b, c, d) {
     a = a|0; b = b|0; c = c|0; d = d|0;
@@ -19187,10 +18972,10 @@ function b0(p0,p1,p2) { p0 = p0|0;p1 = p1|0;p2 = p2|0; nullFunc_iiii(0);return 0
   // EMSCRIPTEN_END_FUNCS
   var FUNCTION_TABLE_iiii = [b0,_sn_write];
 
-    return { _i64Subtract: _i64Subtract, _free: _free, _main: _main, _rand_r: _rand_r, _i64Add: _i64Add, _strlen: _strlen, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, _bitshift64Lshr: _bitshift64Lshr, _bitshift64Shl: _bitshift64Shl, _rand: _rand, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, setThrew: setThrew, setTempRet0: setTempRet0, getTempRet0: getTempRet0, dynCall_iiii: dynCall_iiii };
+    return { _i64Subtract: _i64Subtract, _free: _free, _main: _main, _i64Add: _i64Add, _strlen: _strlen, _memset: _memset, _malloc: _malloc, _memcpy: _memcpy, _bitshift64Lshr: _bitshift64Lshr, _bitshift64Shl: _bitshift64Shl, runPostSets: runPostSets, stackAlloc: stackAlloc, stackSave: stackSave, stackRestore: stackRestore, setThrew: setThrew, setTempRet0: setTempRet0, getTempRet0: getTempRet0, dynCall_iiii: dynCall_iiii };
   })
   // EMSCRIPTEN_END_ASM
-  ({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "asmPrintInt": asmPrintInt, "asmPrintFloat": asmPrintFloat, "min": Math_min, "nullFunc_iiii": nullFunc_iiii, "invoke_iiii": invoke_iiii, "_fabs": _fabs, "_clReleaseProgram": _clReleaseProgram, "_send": _send, "_fread": _fread, "_clReleaseKernel": _clReleaseKernel, "_clReleaseContext": _clReleaseContext, "___setErrNo": ___setErrNo, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_clCreateContext": _clCreateContext, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_clCreateProgramWithSource": _clCreateProgramWithSource, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "_time": _time, "_pwrite": _pwrite, "_strerror_r": _strerror_r, "_open": _open, "_sbrk": _sbrk, "_clReleaseMemObject": _clReleaseMemObject, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_fileno": _fileno, "_sysconf": _sysconf, "_clFinish": _clFinish, "_clGetDeviceInfo": _clGetDeviceInfo, "_clCreateCommandQueue": _clCreateCommandQueue, "_printf": _printf, "_clReleaseCommandQueue": _clReleaseCommandQueue, "__reallyNegative": __reallyNegative, "_fflush": _fflush, "_write": _write, "_pread": _pread, "___errno_location": ___errno_location, "_clCreateBuffer": _clCreateBuffer, "_stat": _stat, "_recv": _recv, "_clGetDeviceIDs": _clGetDeviceIDs, "_mkport": _mkport, "_clCreateKernel": _clCreateKernel, "_clSetKernelArg": _clSetKernelArg, "_abort": _abort, "_fwrite": _fwrite, "_emscripten_get_now": _emscripten_get_now, "_clBuildProgram": _clBuildProgram, "_fprintf": _fprintf, "_strerror": _strerror, "__formatString": __formatString, "_fopen": _fopen, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_read": _read, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "cttz_i8": cttz_i8, "ctlz_i8": ctlz_i8, "___rand_seed": ___rand_seed, "NaN": NaN, "Infinity": Infinity }, buffer);
+  ({ "Math": Math, "Int8Array": Int8Array, "Int16Array": Int16Array, "Int32Array": Int32Array, "Uint8Array": Uint8Array, "Uint16Array": Uint16Array, "Uint32Array": Uint32Array, "Float32Array": Float32Array, "Float64Array": Float64Array }, { "abort": abort, "assert": assert, "min": Math_min, "nullFunc_iiii": nullFunc_iiii, "invoke_iiii": invoke_iiii, "_fabs": _fabs, "_clReleaseProgram": _clReleaseProgram, "_send": _send, "_fread": _fread, "_clReleaseKernel": _clReleaseKernel, "_clReleaseContext": _clReleaseContext, "___setErrNo": ___setErrNo, "_clEnqueueNDRangeKernel": _clEnqueueNDRangeKernel, "_clCreateContext": _clCreateContext, "_clEnqueueWriteBuffer": _clEnqueueWriteBuffer, "_clCreateProgramWithSource": _clCreateProgramWithSource, "_clGetProgramBuildInfo": _clGetProgramBuildInfo, "_clBuildProgram": _clBuildProgram, "_pwrite": _pwrite, "_strerror_r": _strerror_r, "_open": _open, "_sbrk": _sbrk, "___errno_location": ___errno_location, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_fileno": _fileno, "_sysconf": _sysconf, "__formatString": __formatString, "_clFinish": _clFinish, "_clCreateCommandQueue": _clCreateCommandQueue, "_mkport": _mkport, "_clReleaseCommandQueue": _clReleaseCommandQueue, "__reallyNegative": __reallyNegative, "_clGetDeviceInfo": _clGetDeviceInfo, "_write": _write, "_fflush": _fflush, "_clReleaseMemObject": _clReleaseMemObject, "_clCreateBuffer": _clCreateBuffer, "_stat": _stat, "_recv": _recv, "_clGetDeviceIDs": _clGetDeviceIDs, "_read": _read, "_clSetKernelArg": _clSetKernelArg, "_abort": _abort, "_fwrite": _fwrite, "_emscripten_get_now": _emscripten_get_now, "_time": _time, "_fprintf": _fprintf, "_strerror": _strerror, "_pread": _pread, "_printf": _printf, "_fopen": _fopen, "_clEnqueueReadBuffer": _clEnqueueReadBuffer, "_clCreateKernel": _clCreateKernel, "STACKTOP": STACKTOP, "STACK_MAX": STACK_MAX, "tempDoublePtr": tempDoublePtr, "ABORT": ABORT, "cttz_i8": cttz_i8, "ctlz_i8": ctlz_i8, "NaN": NaN, "Infinity": Infinity }, buffer);
   var real__i64Subtract = asm["_i64Subtract"]; asm["_i64Subtract"] = function() {
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
@@ -19201,12 +18986,6 @@ var real__main = asm["_main"]; asm["_main"] = function() {
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
   return real__main.apply(null, arguments);
-};
-
-var real__rand_r = asm["_rand_r"]; asm["_rand_r"] = function() {
-  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
-  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
-  return real__rand_r.apply(null, arguments);
 };
 
 var real__i64Add = asm["_i64Add"]; asm["_i64Add"] = function() {
@@ -19233,12 +19012,6 @@ var real__bitshift64Shl = asm["_bitshift64Shl"]; asm["_bitshift64Shl"] = functio
   return real__bitshift64Shl.apply(null, arguments);
 };
 
-var real__rand = asm["_rand"]; asm["_rand"] = function() {
-  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
-  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
-  return real__rand.apply(null, arguments);
-};
-
 var real_runPostSets = asm["runPostSets"]; asm["runPostSets"] = function() {
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
@@ -19247,7 +19020,6 @@ var real_runPostSets = asm["runPostSets"]; asm["runPostSets"] = function() {
 var _i64Subtract = Module["_i64Subtract"] = asm["_i64Subtract"];
 var _free = Module["_free"] = asm["_free"];
 var _main = Module["_main"] = asm["_main"];
-var _rand_r = Module["_rand_r"] = asm["_rand_r"];
 var _i64Add = Module["_i64Add"] = asm["_i64Add"];
 var _strlen = Module["_strlen"] = asm["_strlen"];
 var _memset = Module["_memset"] = asm["_memset"];
@@ -19255,7 +19027,6 @@ var _malloc = Module["_malloc"] = asm["_malloc"];
 var _memcpy = Module["_memcpy"] = asm["_memcpy"];
 var _bitshift64Lshr = Module["_bitshift64Lshr"] = asm["_bitshift64Lshr"];
 var _bitshift64Shl = Module["_bitshift64Shl"] = asm["_bitshift64Shl"];
-var _rand = Module["_rand"] = asm["_rand"];
 var runPostSets = Module["runPostSets"] = asm["runPostSets"];
 var dynCall_iiii = Module["dynCall_iiii"] = asm["dynCall_iiii"];
   
@@ -20880,7 +20651,9 @@ var i64Math = (function() { // Emscripten wrapper
 // === Auto-generated postamble setup entry stuff ===
 
 if (memoryInitializer) {
-  if (Module['memoryInitializerPrefixURL']) {
+  if (typeof Module['locateFile'] === 'function') {
+    memoryInitializer = Module['locateFile'](memoryInitializer);
+  } else if (Module['memoryInitializerPrefixURL']) {
     memoryInitializer = Module['memoryInitializerPrefixURL'] + memoryInitializer;
   }
   if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
@@ -21036,13 +20809,25 @@ function exit(status) {
   exitRuntime();
 
   if (ENVIRONMENT_IS_NODE) {
-    process['exit'](status);
-  } else if (ENVIRONMENT_IS_SHELL && typeof quit === 'function') {
+    // Work around a node.js bug where stdout buffer is not flushed at process exit:
+    // Instead of process.exit() directly, wait for stdout flush event.
+    // See https://github.com/joyent/node/issues/1669 and https://github.com/kripken/emscripten/issues/2582
+    // Workaround is based on https://github.com/RReverser/acorn/commit/50ab143cecc9ed71a2d66f78b4aec3bb2e9844f6
+    process['stdout']['once']('drain', function () {
+      process['exit'](status);
+    });
+    console.log(' '); // Make sure to print something to force the drain event to occur, in case the stdout buffer was empty.
+    // Work around another node bug where sometimes 'drain' is never fired - make another effort
+    // to emit the exit status, after a significant delay (if node hasn't fired drain by then, give up)
+    setTimeout(function() {
+      process['exit'](status);
+    }, 500);
+  } else
+  if (ENVIRONMENT_IS_SHELL && typeof quit === 'function') {
     quit(status);
-  } else {
-    // no proper way to exit with a return code, throw an exception to halt the current execution
-    throw new ExitStatus(status);
   }
+  // if we reach here, we must throw an exception to halt the current execution
+  throw new ExitStatus(status);
 }
 Module['exit'] = Module.exit = exit;
 
@@ -21090,4 +20875,3 @@ run();
 
 
 
-//# sourceMappingURL=val_reduce.js.map
