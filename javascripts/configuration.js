@@ -339,7 +339,7 @@ var configuration_pages = {
     },
     {
       "title"         : "QJulia",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_davibu/",
       "id"            : 1,
       "gl"            : "on",
@@ -350,7 +350,7 @@ var configuration_pages = {
     },
     {
       "title"         : "Mandelbulb",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_davibu/",
       "id"            : 2,
       "gl"            : "on",
@@ -411,7 +411,7 @@ var configuration_pages = {
     },
     {
       "title"         : "Mandel",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_toys/",
       "id"            : 1,
       "gl"            : "on",
@@ -456,7 +456,7 @@ var configuration_pages = {
     },
     {
       "title"         : "Julia GPU",
-      "compatibility" : "[Webkit]",
+      "compatibility" : "[Webkit/Firefox]",
       "pages"         : "build_toys/",
       "id"            : 3,
       "gl"            : "on",
