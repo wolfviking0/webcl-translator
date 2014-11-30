@@ -25,7 +25,7 @@ Module.expectedDataFileDownloads++;
                               Module['locateFile'](REMOTE_PACKAGE_BASE) :
                               ((Module['filePackagePrefixURL'] || '') + REMOTE_PACKAGE_BASE);
     var REMOTE_PACKAGE_SIZE = 15054;
-    var PACKAGE_UUID = '43a1aede-e5fc-4d4c-bbdc-bd7206e8678f';
+    var PACKAGE_UUID = 'b0830c2e-bdaf-4e43-bc4d-b2959a5f37cc';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -14818,7 +14818,10 @@ function _frexp($x,$e) {
  $2 = (_bitshift64Lshr(($0|0),($1|0),52)|0);
  $3 = tempRet0;
  $4 = $2 & 2047;
- if ((($4|0) == 0)) {
+ if ((($4|0) == 2047)) {
+  $$0 = $x;
+  STACKTOP = sp;return (+$$0);
+ } else if ((($4|0) == 0)) {
   $5 = $x != 0.0;
   if ($5) {
    $6 = $x * 1.8446744073709552E+19;
@@ -14831,9 +14834,6 @@ function _frexp($x,$e) {
   }
   HEAP32[$e>>2] = $storemerge;
   $$0 = $$01;
-  STACKTOP = sp;return (+$$0);
- } else if ((($4|0) == 2047)) {
-  $$0 = $x;
   STACKTOP = sp;return (+$$0);
  } else {
   $10 = (($4) + -1022)|0;

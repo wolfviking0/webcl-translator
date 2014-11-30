@@ -25,7 +25,7 @@ Module.expectedDataFileDownloads++;
                               Module['locateFile'](REMOTE_PACKAGE_BASE) :
                               ((Module['filePackagePrefixURL'] || '') + REMOTE_PACKAGE_BASE);
     var REMOTE_PACKAGE_SIZE = 3507;
-    var PACKAGE_UUID = '0420f941-0e52-407d-bdfa-3cf3cb53d843';
+    var PACKAGE_UUID = '4dabbb1d-ccdc-4816-8a85-8b7a42069f96';
   
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
       var xhr = new XMLHttpRequest();
@@ -14517,33 +14517,33 @@ function _SetUpOpenCL() {
  var $vararg_buffer62 = 0, $vararg_buffer65 = 0, $vararg_buffer68 = 0, $vararg_buffer71 = 0, $vararg_buffer8 = 0, $vararg_ptr25 = 0, $vararg_ptr32 = 0, $vararg_ptr39 = 0, $vararg_ptr46 = 0, $vararg_ptr7 = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 656|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abort();
- $vararg_buffer71 = sp + 16|0;
+ $vararg_buffer71 = sp + 32|0;
  $vararg_buffer68 = sp + 184|0;
- $vararg_buffer65 = sp + 64|0;
- $vararg_buffer62 = sp + 72|0;
+ $vararg_buffer65 = sp + 88|0;
+ $vararg_buffer62 = sp + 96|0;
  $vararg_buffer59 = sp + 168|0;
  $vararg_buffer56 = sp + 216|0;
- $vararg_buffer53 = sp + 24|0;
- $vararg_buffer50 = sp + 112|0;
- $vararg_buffer47 = sp + 32|0;
+ $vararg_buffer53 = sp + 40|0;
+ $vararg_buffer50 = sp + 48|0;
+ $vararg_buffer47 = sp + 56|0;
  $vararg_buffer43 = sp + 144|0;
  $vararg_buffer40 = sp + 160|0;
  $vararg_buffer36 = sp + 176|0;
  $vararg_buffer33 = sp + 192|0;
  $vararg_buffer29 = sp + 208|0;
- $vararg_buffer26 = sp + 80|0;
- $vararg_buffer22 = sp + 104|0;
- $vararg_buffer19 = sp + 88|0;
- $vararg_buffer16 = sp + 96|0;
- $vararg_buffer13 = sp + 120|0;
- $vararg_buffer10 = sp + 8|0;
+ $vararg_buffer26 = sp + 104|0;
+ $vararg_buffer22 = sp + 112|0;
+ $vararg_buffer19 = sp + 120|0;
+ $vararg_buffer16 = sp + 128|0;
+ $vararg_buffer13 = sp + 16|0;
+ $vararg_buffer10 = sp + 24|0;
  $vararg_buffer8 = sp + 136|0;
- $vararg_buffer5 = sp + 40|0;
- $vararg_buffer3 = sp + 48|0;
+ $vararg_buffer5 = sp + 64|0;
+ $vararg_buffer3 = sp + 72|0;
  $vararg_buffer1 = sp + 152|0;
- $vararg_buffer = sp + 128|0;
- $dType = sp;
- $numPlatforms = sp + 232|0;
+ $vararg_buffer = sp;
+ $dType = sp + 8|0;
+ $numPlatforms = sp + 240|0;
  $status = sp + 244|0;
  $pbuf = sp + 292|0;
  $cps = sp + 252|0;
@@ -14551,11 +14551,11 @@ function _SetUpOpenCL() {
  $type = sp + 200|0;
  $buf = sp + 392|0;
  $units = sp + 248|0;
- $gsize = sp + 240|0;
- $sources = sp + 228|0;
+ $gsize = sp + 220|0;
+ $sources = sp + 236|0;
  $retValSize = sp + 264|0;
- $gsize2 = sp + 224|0;
- $prop = sp + 56|0;
+ $gsize2 = sp + 232|0;
+ $prop = sp + 80|0;
  $0 = HEAP32[568>>2]|0;
  $1 = ($0|0)!=(0);
  if ($1) {
@@ -15360,12 +15360,17 @@ function _keyFunc($key,$x,$y) {
   $needRedisplay = 0;
   break;
  }
- case 104:  {
-  $47 = HEAP32[2344>>2]|0;
-  $48 = ($47|0)!=(0);
-  $49 = $48 ^ 1;
-  $50 = $49&1;
-  HEAP32[2344>>2] = $50;
+ case 81: case 113: case 27:  {
+  $42 = HEAP32[_stderr>>2]|0;
+  (_fprintf(($42|0),(2448|0),($vararg_buffer10|0))|0);
+  _exit(0);
+  // unreachable;
+  break;
+ }
+ case 43:  {
+  $43 = HEAP32[1928>>2]|0;
+  $44 = (($43) + 32)|0;
+  HEAP32[1928>>2] = $44;
   break;
  }
  case 45:  {
@@ -15377,17 +15382,12 @@ function _keyFunc($key,$x,$y) {
  case 32:  {
   break;
  }
- case 43:  {
-  $43 = HEAP32[1928>>2]|0;
-  $44 = (($43) + 32)|0;
-  HEAP32[1928>>2] = $44;
-  break;
- }
- case 81: case 113: case 27:  {
-  $42 = HEAP32[_stderr>>2]|0;
-  (_fprintf(($42|0),(2448|0),($vararg_buffer10|0))|0);
-  _exit(0);
-  // unreachable;
+ case 104:  {
+  $47 = HEAP32[2344>>2]|0;
+  $48 = ($47|0)!=(0);
+  $49 = $48 ^ 1;
+  $50 = $49&1;
+  HEAP32[2344>>2] = $50;
   break;
  }
  default: {
@@ -15417,34 +15417,12 @@ function _specialFunc($key,$x,$y) {
  $needRedisplay = 1;
  $3 = $0;
  switch ($3|0) {
- case 100:  {
-  $12 = +HEAPF32[1904>>2];
-  $13 = $12 * 0.02500000037252903;
-  $14 = +HEAPF32[1912>>2];
-  $15 = $14 - $13;
-  HEAPF32[1912>>2] = $15;
-  break;
- }
  case 101:  {
   $4 = +HEAPF32[1904>>2];
   $5 = $4 * 0.02500000037252903;
   $6 = +HEAPF32[1920>>2];
   $7 = $6 + $5;
   HEAPF32[1920>>2] = $7;
-  break;
- }
- case 102:  {
-  $16 = +HEAPF32[1904>>2];
-  $17 = $16 * 0.02500000037252903;
-  $18 = +HEAPF32[1912>>2];
-  $19 = $18 + $17;
-  HEAPF32[1912>>2] = $19;
-  break;
- }
- case 105:  {
-  $22 = +HEAPF32[1904>>2];
-  $23 = $22 * 1.1000000238418579;
-  HEAPF32[1904>>2] = $23;
   break;
  }
  case 103:  {
@@ -15455,10 +15433,32 @@ function _specialFunc($key,$x,$y) {
   HEAPF32[1920>>2] = $11;
   break;
  }
+ case 100:  {
+  $12 = +HEAPF32[1904>>2];
+  $13 = $12 * 0.02500000037252903;
+  $14 = +HEAPF32[1912>>2];
+  $15 = $14 - $13;
+  HEAPF32[1912>>2] = $15;
+  break;
+ }
+ case 102:  {
+  $16 = +HEAPF32[1904>>2];
+  $17 = $16 * 0.02500000037252903;
+  $18 = +HEAPF32[1912>>2];
+  $19 = $18 + $17;
+  HEAPF32[1912>>2] = $19;
+  break;
+ }
  case 104:  {
   $20 = +HEAPF32[1904>>2];
   $21 = $20 * 0.89999997615814208;
   HEAPF32[1904>>2] = $21;
+  break;
+ }
+ case 105:  {
+  $22 = +HEAPF32[1904>>2];
+  $23 = $22 * 1.1000000238418579;
+  HEAPF32[1904>>2] = $23;
   break;
  }
  default: {
@@ -19507,11 +19507,11 @@ function _atoi($s) {
  }
  $5 = HEAP8[$$0>>0]|0;
  $6 = $5 << 24 >> 24;
- if ((($6|0) == 45)) {
-  $neg$0 = 1;
-  label = 5;
- } else if ((($6|0) == 43)) {
+ if ((($6|0) == 43)) {
   $neg$0 = 0;
+  label = 5;
+ } else if ((($6|0) == 45)) {
+  $neg$0 = 1;
   label = 5;
  } else {
   $$1$ph = $$0;$8 = $5;$neg$1$ph = 0;

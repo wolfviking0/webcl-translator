@@ -1,3 +1,165 @@
+
+var Module;
+if (typeof Module === 'undefined') Module = eval('(function() { try { return Module || {} } catch(e) { return {} } })()');
+if (!Module.expectedDataFileDownloads) {
+  Module.expectedDataFileDownloads = 0;
+  Module.finishedDataFileDownloads = 0;
+}
+Module.expectedDataFileDownloads++;
+(function() {
+
+    var PACKAGE_PATH;
+    if (typeof window === 'object') {
+      PACKAGE_PATH = window['encodeURIComponent'](window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf('/')) + '/');
+    } else {
+      // worker
+      PACKAGE_PATH = encodeURIComponent(location.pathname.toString().substring(0, location.pathname.toString().lastIndexOf('/')) + '/');
+    }
+    var PACKAGE_NAME = '/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-davibu/js/val_mandelbulbgpu.data';
+    var REMOTE_PACKAGE_BASE = 'val_mandelbulbgpu.data';
+    if (typeof Module['locateFilePackage'] === 'function' && !Module['locateFile']) {
+      Module['locateFile'] = Module['locateFilePackage'];
+      Module.printErr('warning: you defined Module.locateFilePackage, that has been renamed to Module.locateFile (using your locateFilePackage for now)');
+    }
+    var REMOTE_PACKAGE_NAME = typeof Module['locateFile'] === 'function' ?
+                              Module['locateFile'](REMOTE_PACKAGE_BASE) :
+                              ((Module['filePackagePrefixURL'] || '') + REMOTE_PACKAGE_BASE);
+    var REMOTE_PACKAGE_SIZE = 35933;
+    var PACKAGE_UUID = 'e24c9024-b490-4450-9d3c-7aa187b743e9';
+  
+    function fetchRemotePackage(packageName, packageSize, callback, errback) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', packageName, true);
+      xhr.responseType = 'arraybuffer';
+      xhr.onprogress = function(event) {
+        var url = packageName;
+        var size = packageSize;
+        if (event.total) size = event.total;
+        if (event.loaded) {
+          if (!xhr.addedTotal) {
+            xhr.addedTotal = true;
+            if (!Module.dataFileDownloads) Module.dataFileDownloads = {};
+            Module.dataFileDownloads[url] = {
+              loaded: event.loaded,
+              total: size
+            };
+          } else {
+            Module.dataFileDownloads[url].loaded = event.loaded;
+          }
+          var total = 0;
+          var loaded = 0;
+          var num = 0;
+          for (var download in Module.dataFileDownloads) {
+          var data = Module.dataFileDownloads[download];
+            total += data.total;
+            loaded += data.loaded;
+            num++;
+          }
+          total = Math.ceil(total * Module.expectedDataFileDownloads/num);
+          if (Module['setStatus']) Module['setStatus']('Downloading data... (' + loaded + '/' + total + ')');
+        } else if (!Module.dataFileDownloads) {
+          if (Module['setStatus']) Module['setStatus']('Downloading data...');
+        }
+      };
+      xhr.onload = function(event) {
+        var packageData = xhr.response;
+        callback(packageData);
+      };
+      xhr.send(null);
+    };
+
+    function handleError(error) {
+      console.error('package error:', error);
+    };
+  
+      var fetched = null, fetchedCallback = null;
+      fetchRemotePackage(REMOTE_PACKAGE_NAME, REMOTE_PACKAGE_SIZE, function(data) {
+        if (fetchedCallback) {
+          fetchedCallback(data);
+          fetchedCallback = null;
+        } else {
+          fetched = data;
+        }
+      }, handleError);
+    
+  function runWithFS() {
+
+function assert(check, msg) {
+  if (!check) throw msg + new Error().stack;
+}
+
+    function DataRequest(start, end, crunched, audio) {
+      this.start = start;
+      this.end = end;
+      this.crunched = crunched;
+      this.audio = audio;
+    }
+    DataRequest.prototype = {
+      requests: {},
+      open: function(mode, name) {
+        this.name = name;
+        this.requests[name] = this;
+        Module['addRunDependency']('fp ' + this.name);
+      },
+      send: function() {},
+      onload: function() {
+        var byteArray = this.byteArray.subarray(this.start, this.end);
+
+          this.finish(byteArray);
+
+      },
+      finish: function(byteArray) {
+        var that = this;
+        Module['FS_createPreloadedFile'](this.name, null, byteArray, true, true, function() {
+          Module['removeRunDependency']('fp ' + that.name);
+        }, function() {
+          if (that.audio) {
+            Module['removeRunDependency']('fp ' + that.name); // workaround for chromium bug 124926 (still no audio with this, but at least we don't hang)
+          } else {
+            Module.printErr('Preloading file ' + that.name + ' failed');
+          }
+        }, false, true); // canOwn this data in the filesystem, it is a slide into the heap that will never change
+        this.requests[this.name] = null;
+      },
+    };
+      new DataRequest(0, 35933, 0, 0).open('GET', '/preprocessed_rendering_kernel_mandelbulb.cl');
+
+    function processPackageData(arrayBuffer) {
+      Module.finishedDataFileDownloads++;
+      assert(arrayBuffer, 'Loading data file failed.');
+      var byteArray = new Uint8Array(arrayBuffer);
+      var curr;
+      
+      // copy the entire loaded file into a spot in the heap. Files will refer to slices in that. They cannot be freed though.
+      var ptr = Module['_malloc'](byteArray.length);
+      Module['HEAPU8'].set(byteArray, ptr);
+      DataRequest.prototype.byteArray = Module['HEAPU8'].subarray(ptr, ptr+byteArray.length);
+          DataRequest.prototype.requests["/preprocessed_rendering_kernel_mandelbulb.cl"].onload();
+          Module['removeRunDependency']('datafile_/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-davibu/js/val_mandelbulbgpu.data');
+
+    };
+    Module['addRunDependency']('datafile_/Volumes/APPLE_MEDIA/WORKSPACE/webcl/webcl-davibu/js/val_mandelbulbgpu.data');
+  
+    if (!Module.preloadResults) Module.preloadResults = {};
+  
+      Module.preloadResults[PACKAGE_NAME] = {fromCache: false};
+      if (fetched) {
+        processPackageData(fetched);
+        fetched = null;
+      } else {
+        fetchedCallback = processPackageData;
+      }
+    
+  }
+  if (Module['calledRun']) {
+    runWithFS();
+  } else {
+    if (!Module['preRun']) Module['preRun'] = [];
+    Module["preRun"].push(runWithFS); // FS is not initialized yet, wait for it
+  }
+
+})();
+
 // The Module object: Our interface to the outside world. We import
 // and export values on it, and do the work to get that through
 // closure compiler if necessary. There are various ways Module can be used:
@@ -15873,113 +16035,6 @@ function _keyFunc($key,$x,$y) {
  $4 = $3&255;
  do {
   switch ($4|0) {
-  case 27:  {
-   $96 = HEAP32[_stderr>>2]|0;
-   (_fprintf(($96|0),(3000|0),($vararg_buffer10|0))|0);
-   _exit(0);
-   // unreachable;
-   break;
-  }
-  case 32:  {
-   _ReInit(0);
-   _glutPostRedisplay();
-   $347 = (+_WallClockTime());
-   HEAPF64[3008>>3] = $347;
-   STACKTOP = sp;return;
-   break;
-  }
-  case 97:  {
-   ;HEAP32[$dir+0>>2]=HEAP32[((2240 + 92|0))+0>>2]|0;HEAP32[$dir+4>>2]=HEAP32[((2240 + 92|0))+4>>2]|0;HEAP32[$dir+8>>2]=HEAP32[((2240 + 92|0))+8>>2]|0;
-   $97 = +HEAPF32[$dir>>2];
-   $98 = +HEAPF32[$dir>>2];
-   $99 = $97 * $98;
-   $100 = (($dir) + 4|0);
-   $101 = +HEAPF32[$100>>2];
-   $102 = (($dir) + 4|0);
-   $103 = +HEAPF32[$102>>2];
-   $104 = $101 * $103;
-   $105 = $99 + $104;
-   $106 = (($dir) + 8|0);
-   $107 = +HEAPF32[$106>>2];
-   $108 = (($dir) + 8|0);
-   $109 = +HEAPF32[$108>>2];
-   $110 = $107 * $109;
-   $111 = $105 + $110;
-   $112 = $111;
-   $113 = (+Math_sqrt((+$112)));
-   $114 = 1.0 / $113;
-   $115 = $114;
-   $l = $115;
-   $116 = $l;
-   $k = $116;
-   $117 = $k;
-   $118 = +HEAPF32[$dir>>2];
-   $119 = $117 * $118;
-   HEAPF32[$dir>>2] = $119;
-   $120 = $k;
-   $121 = (($dir) + 4|0);
-   $122 = +HEAPF32[$121>>2];
-   $123 = $120 * $122;
-   $124 = (($dir) + 4|0);
-   HEAPF32[$124>>2] = $123;
-   $125 = $k;
-   $126 = (($dir) + 8|0);
-   $127 = +HEAPF32[$126>>2];
-   $128 = $125 * $127;
-   $129 = (($dir) + 8|0);
-   HEAPF32[$129>>2] = $128;
-   $k3 = -0.5;
-   $130 = $k3;
-   $131 = +HEAPF32[$dir>>2];
-   $132 = $130 * $131;
-   HEAPF32[$dir>>2] = $132;
-   $133 = $k3;
-   $134 = (($dir) + 4|0);
-   $135 = +HEAPF32[$134>>2];
-   $136 = $133 * $135;
-   $137 = (($dir) + 4|0);
-   HEAPF32[$137>>2] = $136;
-   $138 = $k3;
-   $139 = (($dir) + 8|0);
-   $140 = +HEAPF32[$139>>2];
-   $141 = $138 * $140;
-   $142 = (($dir) + 8|0);
-   HEAPF32[$142>>2] = $141;
-   $143 = +HEAPF32[((2240 + 56|0))>>2];
-   $144 = +HEAPF32[$dir>>2];
-   $145 = $143 + $144;
-   HEAPF32[((2240 + 56|0))>>2] = $145;
-   $146 = +HEAPF32[((2240 + 60|0))>>2];
-   $147 = (($dir) + 4|0);
-   $148 = +HEAPF32[$147>>2];
-   $149 = $146 + $148;
-   HEAPF32[((2240 + 60|0))>>2] = $149;
-   $150 = +HEAPF32[((2240 + 64|0))>>2];
-   $151 = (($dir) + 8|0);
-   $152 = +HEAPF32[$151>>2];
-   $153 = $150 + $152;
-   HEAPF32[((2240 + 64|0))>>2] = $153;
-   $154 = +HEAPF32[((2240 + 68|0))>>2];
-   $155 = +HEAPF32[$dir>>2];
-   $156 = $154 + $155;
-   HEAPF32[((2240 + 68|0))>>2] = $156;
-   $157 = +HEAPF32[((2240 + 72|0))>>2];
-   $158 = (($dir) + 4|0);
-   $159 = +HEAPF32[$158>>2];
-   $160 = $157 + $159;
-   HEAPF32[((2240 + 72|0))>>2] = $160;
-   $161 = +HEAPF32[((2240 + 76|0))>>2];
-   $162 = (($dir) + 8|0);
-   $163 = +HEAPF32[$162>>2];
-   $164 = $161 + $163;
-   HEAPF32[((2240 + 76|0))>>2] = $164;
-   _ReInit(0);
-   _glutPostRedisplay();
-   $347 = (+_WallClockTime());
-   HEAPF64[3008>>3] = $347;
-   STACKTOP = sp;return;
-   break;
-  }
   case 112:  {
    $5 = (_fopen((2904|0),(2920|0))|0);
    $f = $5;
@@ -16135,6 +16190,113 @@ function _keyFunc($key,$x,$y) {
     $8 = HEAP32[_stderr>>2]|0;
     (_fprintf(($8|0),(2928|0),($vararg_buffer|0))|0);
    }
+   _ReInit(0);
+   _glutPostRedisplay();
+   $347 = (+_WallClockTime());
+   HEAPF64[3008>>3] = $347;
+   STACKTOP = sp;return;
+   break;
+  }
+  case 27:  {
+   $96 = HEAP32[_stderr>>2]|0;
+   (_fprintf(($96|0),(3000|0),($vararg_buffer10|0))|0);
+   _exit(0);
+   // unreachable;
+   break;
+  }
+  case 32:  {
+   _ReInit(0);
+   _glutPostRedisplay();
+   $347 = (+_WallClockTime());
+   HEAPF64[3008>>3] = $347;
+   STACKTOP = sp;return;
+   break;
+  }
+  case 97:  {
+   ;HEAP32[$dir+0>>2]=HEAP32[((2240 + 92|0))+0>>2]|0;HEAP32[$dir+4>>2]=HEAP32[((2240 + 92|0))+4>>2]|0;HEAP32[$dir+8>>2]=HEAP32[((2240 + 92|0))+8>>2]|0;
+   $97 = +HEAPF32[$dir>>2];
+   $98 = +HEAPF32[$dir>>2];
+   $99 = $97 * $98;
+   $100 = (($dir) + 4|0);
+   $101 = +HEAPF32[$100>>2];
+   $102 = (($dir) + 4|0);
+   $103 = +HEAPF32[$102>>2];
+   $104 = $101 * $103;
+   $105 = $99 + $104;
+   $106 = (($dir) + 8|0);
+   $107 = +HEAPF32[$106>>2];
+   $108 = (($dir) + 8|0);
+   $109 = +HEAPF32[$108>>2];
+   $110 = $107 * $109;
+   $111 = $105 + $110;
+   $112 = $111;
+   $113 = (+Math_sqrt((+$112)));
+   $114 = 1.0 / $113;
+   $115 = $114;
+   $l = $115;
+   $116 = $l;
+   $k = $116;
+   $117 = $k;
+   $118 = +HEAPF32[$dir>>2];
+   $119 = $117 * $118;
+   HEAPF32[$dir>>2] = $119;
+   $120 = $k;
+   $121 = (($dir) + 4|0);
+   $122 = +HEAPF32[$121>>2];
+   $123 = $120 * $122;
+   $124 = (($dir) + 4|0);
+   HEAPF32[$124>>2] = $123;
+   $125 = $k;
+   $126 = (($dir) + 8|0);
+   $127 = +HEAPF32[$126>>2];
+   $128 = $125 * $127;
+   $129 = (($dir) + 8|0);
+   HEAPF32[$129>>2] = $128;
+   $k3 = -0.5;
+   $130 = $k3;
+   $131 = +HEAPF32[$dir>>2];
+   $132 = $130 * $131;
+   HEAPF32[$dir>>2] = $132;
+   $133 = $k3;
+   $134 = (($dir) + 4|0);
+   $135 = +HEAPF32[$134>>2];
+   $136 = $133 * $135;
+   $137 = (($dir) + 4|0);
+   HEAPF32[$137>>2] = $136;
+   $138 = $k3;
+   $139 = (($dir) + 8|0);
+   $140 = +HEAPF32[$139>>2];
+   $141 = $138 * $140;
+   $142 = (($dir) + 8|0);
+   HEAPF32[$142>>2] = $141;
+   $143 = +HEAPF32[((2240 + 56|0))>>2];
+   $144 = +HEAPF32[$dir>>2];
+   $145 = $143 + $144;
+   HEAPF32[((2240 + 56|0))>>2] = $145;
+   $146 = +HEAPF32[((2240 + 60|0))>>2];
+   $147 = (($dir) + 4|0);
+   $148 = +HEAPF32[$147>>2];
+   $149 = $146 + $148;
+   HEAPF32[((2240 + 60|0))>>2] = $149;
+   $150 = +HEAPF32[((2240 + 64|0))>>2];
+   $151 = (($dir) + 8|0);
+   $152 = +HEAPF32[$151>>2];
+   $153 = $150 + $152;
+   HEAPF32[((2240 + 64|0))>>2] = $153;
+   $154 = +HEAPF32[((2240 + 68|0))>>2];
+   $155 = +HEAPF32[$dir>>2];
+   $156 = $154 + $155;
+   HEAPF32[((2240 + 68|0))>>2] = $156;
+   $157 = +HEAPF32[((2240 + 72|0))>>2];
+   $158 = (($dir) + 4|0);
+   $159 = +HEAPF32[$158>>2];
+   $160 = $157 + $159;
+   HEAPF32[((2240 + 72|0))>>2] = $160;
+   $161 = +HEAPF32[((2240 + 76|0))>>2];
+   $162 = (($dir) + 8|0);
+   $163 = +HEAPF32[$162>>2];
+   $164 = $161 + $163;
+   HEAPF32[((2240 + 76|0))>>2] = $164;
    _ReInit(0);
    _glutPostRedisplay();
    $347 = (+_WallClockTime());
@@ -16516,16 +16678,24 @@ function _specialFunc($key,$x,$y) {
  $2 = $y;
  $3 = $0;
  switch ($3|0) {
+ case 104:  {
+  $4 = +HEAPF32[((2240 + 72|0))>>2];
+  $5 = $4 + 0.5;
+  HEAPF32[((2240 + 72|0))>>2] = $5;
+  break;
+ }
+ case 103:  {
+  _rotateCameraX(0.034906584769487381);
+  break;
+ }
  case 105:  {
   $6 = +HEAPF32[((2240 + 72|0))>>2];
   $7 = $6 - 0.5;
   HEAPF32[((2240 + 72|0))>>2] = $7;
   break;
  }
- case 104:  {
-  $4 = +HEAPF32[((2240 + 72|0))>>2];
-  $5 = $4 + 0.5;
-  HEAPF32[((2240 + 72|0))>>2] = $5;
+ case 101:  {
+  _rotateCameraX(-0.034906584769487381);
   break;
  }
  case 100:  {
@@ -16534,14 +16704,6 @@ function _specialFunc($key,$x,$y) {
  }
  case 102:  {
   _rotateCameraY(0.034906584769487381);
-  break;
- }
- case 101:  {
-  _rotateCameraX(-0.034906584769487381);
-  break;
- }
- case 103:  {
-  _rotateCameraX(0.034906584769487381);
   break;
  }
  default: {
@@ -21016,10 +21178,7 @@ function _frexp($x,$e) {
  $2 = (_bitshift64Lshr(($0|0),($1|0),52)|0);
  $3 = tempRet0;
  $4 = $2 & 2047;
- if ((($4|0) == 2047)) {
-  $$0 = $x;
-  STACKTOP = sp;return (+$$0);
- } else if ((($4|0) == 0)) {
+ if ((($4|0) == 0)) {
   $5 = $x != 0.0;
   if ($5) {
    $6 = $x * 1.8446744073709552E+19;
@@ -21032,6 +21191,9 @@ function _frexp($x,$e) {
   }
   HEAP32[$e>>2] = $storemerge;
   $$0 = $$01;
+  STACKTOP = sp;return (+$$0);
+ } else if ((($4|0) == 2047)) {
+  $$0 = $x;
   STACKTOP = sp;return (+$$0);
  } else {
   $10 = (($4) + -1022)|0;
@@ -22110,6 +22272,29 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
     } else {
      do {
       switch ($134|0) {
+      case 9:  {
+       $arglist_current5 = HEAP32[$ap>>2]|0;
+       $149 = HEAP32[$arglist_current5>>2]|0;
+       $arglist_next6 = (($arglist_current5) + 4|0);
+       HEAP32[$ap>>2] = $arglist_next6;
+       $150 = $149;
+       $1034 = $1030;$1035 = $150;
+       label = 64;
+       break L65;
+       break;
+      }
+      case 10:  {
+       $arglist_current8 = HEAP32[$ap>>2]|0;
+       $151 = HEAP32[$arglist_current8>>2]|0;
+       $arglist_next9 = (($arglist_current8) + 4|0);
+       HEAP32[$ap>>2] = $arglist_next9;
+       $152 = ($151|0)<(0);
+       $153 = $152 << 31 >> 31;
+       $1034 = $153;$1035 = $151;
+       label = 64;
+       break L65;
+       break;
+      }
       case 11:  {
        $arglist_current11 = HEAP32[$ap>>2]|0;
        $154 = HEAP32[$arglist_current11>>2]|0;
@@ -22210,29 +22395,6 @@ function _printf_core($f,$fmt,$ap,$nl_arg,$nl_type) {
        $180 = HEAP32[tempDoublePtr+4>>2]|0;
        $1032 = $179;$1033 = $180;
        label = 63;
-       break L65;
-       break;
-      }
-      case 9:  {
-       $arglist_current5 = HEAP32[$ap>>2]|0;
-       $149 = HEAP32[$arglist_current5>>2]|0;
-       $arglist_next6 = (($arglist_current5) + 4|0);
-       HEAP32[$ap>>2] = $arglist_next6;
-       $150 = $149;
-       $1034 = $1030;$1035 = $150;
-       label = 64;
-       break L65;
-       break;
-      }
-      case 10:  {
-       $arglist_current8 = HEAP32[$ap>>2]|0;
-       $151 = HEAP32[$arglist_current8>>2]|0;
-       $arglist_next9 = (($arglist_current8) + 4|0);
-       HEAP32[$ap>>2] = $arglist_next9;
-       $152 = ($151|0)<(0);
-       $153 = $152 << 31 >> 31;
-       $1034 = $153;$1035 = $151;
-       label = 64;
        break L65;
        break;
       }
