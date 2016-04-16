@@ -40,6 +40,7 @@
 
 #include "cl-helper.h"
 #include "timing.h"
+#include <string.h>
 
 //#include <OpenGL/glut.h>
 
