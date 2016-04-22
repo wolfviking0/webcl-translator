@@ -74,7 +74,7 @@ os.chdir("../");
 root_repositories = os.getcwd() + "/"
 
 # Grab the website folder
-page_repositories=os.getcwd() + "/webcl-website/"
+page_repositories=os.getcwd() + "/webcl-translator-website/"
 
 def worker_update(online,local,option):
     """thread worker_update function"""
