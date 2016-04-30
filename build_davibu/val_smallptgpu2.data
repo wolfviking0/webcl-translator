@@ -1,3 +1,831 @@
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "RadianceGPU" :
+                {
+                    "colors" :
+                        {
+                            "index" : 0,
+                            "type" : "struct _WclStruct *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_colors_size"
+                        },
+                    "_wcl_colors_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "seedsInput" :
+                        {
+                            "index" : 2,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_seedsInput_size"
+                        },
+                    "_wcl_seedsInput_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "sphere" :
+                        {
+                            "index" : 4,
+                            "type" : "struct _Wcl4Struct *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_sphere_size"
+                        },
+                    "_wcl_sphere_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "camera" :
+                        {
+                            "index" : 6,
+                            "type" : "struct _Wcl2Struct *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_camera_size"
+                        },
+                    "_wcl_camera_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        },
+                    "sphereCount" :
+                        {
+                            "index" : 8,
+                            "type" : "uint"
+                        },
+                    "width" :
+                        {
+                            "index" : 9,
+                            "type" : "uint"
+                        },
+                    "height" :
+                        {
+                            "index" : 10,
+                            "type" : "uint"
+                        },
+                    "currentSample" :
+                        {
+                            "index" : 11,
+                            "type" : "uint"
+                        },
+                    "pixels" :
+                        {
+                            "index" : 12,
+                            "type" : "int *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_pixels_size"
+                        },
+                    "_wcl_pixels_size" :
+                        {
+                            "index" : 13,
+                            "type" : "ulong"
+                        },
+                    "workOffset" :
+                        {
+                            "index" : 14,
+                            "type" : "uint"
+                        },
+                    "workAmount" :
+                        {
+                            "index" : 15,
+                            "type" : "uint"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((192 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (128/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((352 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (256/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (8/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+typedef struct _WclStruct {
+ float x, y, z; // position, also color (r,g,b)
+} Vec;
+
+typedef struct _Wcl2Struct {
+ /* User defined values */
+ Vec orig, target;
+ /* Calculated values */
+ Vec dir, x, y;
+} Camera;
+
+typedef struct _Wcl3Struct {
+ Vec o, d;
+} Ray;
+
+typedef struct _Wcl4Struct {
+ float rad; /* radius */
+ Vec p, e, c; /* position, emission, color */
+ enum Refl refl; /* reflection type (DIFFuse, SPECular, REFRactive) */
+} Sphere;
+
+union _Wcl5Struct {
+  float f;
+  unsigned int ui;
+ };
+
+typedef struct {
+    union _Wcl5Struct _wcl_res;
+    Vec _wcl_op;
+    unsigned int _wcl_i;
+    const __global Sphere *_wcl_light;
+    Ray _wcl_shadowRay;
+    Vec _wcl_unitSpherePoint;
+    Vec _wcl_spherePoint;
+    Vec _wcl_c;
+    Ray _wcl_currentRay;
+    Vec _wcl_rad;
+    Vec _wcl_throughput;
+    float _wcl_t;
+    unsigned int _wcl_id;
+    const __global Sphere *_wcl_obj;
+    Vec _wcl_hitPoint;
+    Vec _wcl_normal;
+    Vec _wcl_nl;
+    Vec _wcl_eCol;
+    Vec _wcl_Ld;
+    Vec _wcl_w;
+    Vec _wcl_u;
+    Vec _wcl_a;
+    Vec _wcl_v;
+    Vec _wcl_newDir;
+    Vec _wcl_2_newDir;
+    Vec _wcl_3_newDir;
+    Ray _wcl_reflRay;
+    Vec _wcl_nkk;
+    Vec _wcl_transDir;
+    Vec _wcl_rdir;
+    Vec _wcl_rorig;
+    unsigned int _wcl_seed0;
+    unsigned int _wcl_seed1;
+    Ray _wcl_ray;
+    Vec _wcl_r;
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
+
+typedef struct {
+    __global Vec *RadianceGPU__colors_min;
+    __global Vec *RadianceGPU__colors_max;
+    __global unsigned int *RadianceGPU__seedsInput_min;
+    __global unsigned int *RadianceGPU__seedsInput_max;
+    const __global Sphere *RadianceGPU__sphere_min;
+    const __global Sphere *RadianceGPU__sphere_max;
+    const __global Camera *RadianceGPU__camera_min;
+    const __global Camera *RadianceGPU__camera_max;
+    __global int *RadianceGPU__pixels_min;
+    __global int *RadianceGPU__pixels_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+    _WclPrivates pa;
+    __private uint *pn;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+// be careful to edit this, this has been carefully tuned to work on every OpenCL driver
+// e.g. % item_count was added to start[(items_offset+i)] = _WCL_FILLCHAR;
+// to prevent compiler crash on Apple GeForce 640M
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[(items_offset+i) % item_count] = _WCL_FILLCHAR;           \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+constant int hd4k_workaround_constant = 0;
+
+// <= General code that doesn't depend on input.
+
+bool _wcl_addr_check_private_1_Ray__Ptr(Ray *addr, unsigned size, Ray * min0, Ray * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(Ray *, max0)) );
+}
+Ray *_wcl_addr_clamp_private_1_Ray__Ptr(Ray *addr, unsigned size, Ray * min0, Ray * max0, Ray * asnull)
+{
+     return _wcl_addr_check_private_1_Ray__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_private_1_Vec__Ptr(Vec *addr, unsigned size, Vec * min0, Vec * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(Vec *, max0)) );
+}
+Vec *_wcl_addr_clamp_private_1_Vec__Ptr(Vec *addr, unsigned size, Vec * min0, Vec * max0, Vec * asnull)
+{
+     return _wcl_addr_check_private_1_Vec__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_private_1_const__Ray__Ptr(const Ray *addr, unsigned size, const Ray * min0, const Ray * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(const Ray *, max0)) );
+}
+const Ray *_wcl_addr_clamp_private_1_const__Ray__Ptr(const Ray *addr, unsigned size, const Ray * min0, const Ray * max0, const Ray * asnull)
+{
+     return _wcl_addr_check_private_1_const__Ray__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_private_1_const__Vec__Ptr(const Vec *addr, unsigned size, const Vec * min0, const Vec * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(const Vec *, max0)) );
+}
+const Vec *_wcl_addr_clamp_private_1_const__Vec__Ptr(const Vec *addr, unsigned size, const Vec * min0, const Vec * max0, const Vec * asnull)
+{
+     return _wcl_addr_check_private_1_const__Vec__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_private_1_float__Ptr(float *addr, unsigned size, float * min0, float * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(float *, max0)) );
+}
+float *_wcl_addr_clamp_private_1_float__Ptr(float *addr, unsigned size, float * min0, float * max0, float * asnull)
+{
+     return _wcl_addr_check_private_1_float__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_private_1_unsigned__int__Ptr(unsigned int *addr, unsigned size, unsigned int * min0, unsigned int * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(unsigned int *, max0)) );
+}
+unsigned int *_wcl_addr_clamp_private_1_unsigned__int__Ptr(unsigned int *addr, unsigned size, unsigned int * min0, unsigned int * max0, unsigned int * asnull)
+{
+     return _wcl_addr_check_private_1_unsigned__int__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_5__u_uglobal__Vec__Ptr(__global Vec *addr, unsigned size, __global Vec * min0, __global Vec * max0, __global Vec * min1, __global Vec * max1, __global Vec * min2, __global Vec * max2, __global Vec * min3, __global Vec * max3, __global Vec * min4, __global Vec * max4)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global Vec *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global Vec *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global Vec *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__global Vec *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(__global Vec *, max4)) );
+}
+__global Vec *_wcl_addr_clamp_global_5__u_uglobal__Vec__Ptr(__global Vec *addr, unsigned size, __global Vec * min0, __global Vec * max0, __global Vec * min1, __global Vec * max1, __global Vec * min2, __global Vec * max2, __global Vec * min3, __global Vec * max3, __global Vec * min4, __global Vec * max4, __global Vec * asnull)
+{
+     return _wcl_addr_check_global_5__u_uglobal__Vec__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_5__u_uglobal__int__Ptr(__global int *addr, unsigned size, __global int * min0, __global int * max0, __global int * min1, __global int * max1, __global int * min2, __global int * max2, __global int * min3, __global int * max3, __global int * min4, __global int * max4)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global int *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global int *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global int *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__global int *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(__global int *, max4)) );
+}
+__global int *_wcl_addr_clamp_global_5__u_uglobal__int__Ptr(__global int *addr, unsigned size, __global int * min0, __global int * max0, __global int * min1, __global int * max1, __global int * min2, __global int * max2, __global int * min3, __global int * max3, __global int * min4, __global int * max4, __global int * asnull)
+{
+     return _wcl_addr_check_global_5__u_uglobal__int__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_5__u_uglobal__unsigned__int__Ptr(__global unsigned int *addr, unsigned size, __global unsigned int * min0, __global unsigned int * max0, __global unsigned int * min1, __global unsigned int * max1, __global unsigned int * min2, __global unsigned int * max2, __global unsigned int * min3, __global unsigned int * max3, __global unsigned int * min4, __global unsigned int * max4)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global unsigned int *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global unsigned int *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global unsigned int *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__global unsigned int *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(__global unsigned int *, max4)) );
+}
+__global unsigned int *_wcl_addr_clamp_global_5__u_uglobal__unsigned__int__Ptr(__global unsigned int *addr, unsigned size, __global unsigned int * min0, __global unsigned int * max0, __global unsigned int * min1, __global unsigned int * max1, __global unsigned int * min2, __global unsigned int * max2, __global unsigned int * min3, __global unsigned int * max3, __global unsigned int * min4, __global unsigned int * max4, __global unsigned int * asnull)
+{
+     return _wcl_addr_check_global_5__u_uglobal__unsigned__int__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_5_const___u_uglobal__Camera__Ptr(const __global Camera *addr, unsigned size, const __global Camera * min0, const __global Camera * max0, const __global Camera * min1, const __global Camera * max1, const __global Camera * min2, const __global Camera * max2, const __global Camera * min3, const __global Camera * max3, const __global Camera * min4, const __global Camera * max4)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(const __global Camera *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(const __global Camera *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(const __global Camera *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(const __global Camera *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(const __global Camera *, max4)) );
+}
+const __global Camera *_wcl_addr_clamp_global_5_const___u_uglobal__Camera__Ptr(const __global Camera *addr, unsigned size, const __global Camera * min0, const __global Camera * max0, const __global Camera * min1, const __global Camera * max1, const __global Camera * min2, const __global Camera * max2, const __global Camera * min3, const __global Camera * max3, const __global Camera * min4, const __global Camera * max4, const __global Camera * asnull)
+{
+     return _wcl_addr_check_global_5_const___u_uglobal__Camera__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_5_const___u_uglobal__Sphere__Ptr(const __global Sphere *addr, unsigned size, const __global Sphere * min0, const __global Sphere * max0, const __global Sphere * min1, const __global Sphere * max1, const __global Sphere * min2, const __global Sphere * max2, const __global Sphere * min3, const __global Sphere * max3, const __global Sphere * min4, const __global Sphere * max4)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(const __global Sphere *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(const __global Sphere *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(const __global Sphere *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(const __global Sphere *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(const __global Sphere *, max4)) );
+}
+const __global Sphere *_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr(const __global Sphere *addr, unsigned size, const __global Sphere * min0, const __global Sphere * max0, const __global Sphere * min1, const __global Sphere * max1, const __global Sphere * min2, const __global Sphere * max2, const __global Sphere * min3, const __global Sphere * max3, const __global Sphere * min4, const __global Sphere * max4, const __global Sphere * asnull)
+{
+     return _wcl_addr_check_global_5_const___u_uglobal__Sphere__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4) ? addr : asnull;
+}
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+/*
+	Copyright (c) 2009 David Bucciarelli (davibu@interfree.it)
+
+	Permission is hereby granted, free of charge, to any person obtaining
+	a copy of this software and associated documentation files (the
+	"Software"), to deal in the Software without restriction, including
+	without limitation the rights to use, copy, modify, merge, publish,
+	distribute, sublicense, and/or sell copies of the Software, and to
+	permit persons to whom the Software is furnished to do so, subject to
+	the following conditions:
+
+	The above copyright notice and this permission notice shall be included
+	in all copies or substantial portions of the Software.
+
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+	IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+	CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+	TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
+// NOTE: workaround for an Apple OpenCL compiler bug
+
+
+
+
+
+
+//------------------------------------------------------------------------------
+// vec.h
+
+;
+//------------------------------------------------------------------------------
+// camera.h
+;
+
+//------------------------------------------------------------------------------
+// geom.h
+
+
+
+
+;
+
+
+
+
+enum Refl {
+ DIFF, SPEC, REFR
+}; /* material types, used in radiance() */
+
+;
+
+//------------------------------------------------------------------------------
+// simplernd.h
+
+ float GetRandom(_WclProgramAllocations *_wcl_allocs, unsigned int *seed0, unsigned int *seed1) {
+ (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((seed0), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) = 36969 * (((*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((seed0), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn)))) & 65535) + (((*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((seed0), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn)))) >> 16);
+ (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((seed1), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) = 18000 * (((*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((seed1), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn)))) & 65535) + (((*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((seed1), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn)))) >> 16);
+
+ unsigned int ires = (((*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((seed0), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn)))) << 16) + ((*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((seed1), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))));
+
+ /* Convert to float */
+ ; union _Wcl5Struct res;
+ _wcl_allocs->pa._wcl_res.ui = (ires & 0x007fffff) | 0x40000000;
+
+ return (_wcl_allocs->pa._wcl_res.f - 2.f) / 2.f;
+}
+
+//------------------------------------------------------------------------------
+
+ float SphereIntersect(_WclProgramAllocations *_wcl_allocs, 
+ __global const Sphere *s,
+ const Ray *r) { /* returns distance, 0 if nohit */
+ Vec op; /* Solve t^2*d.d + 2*t*(o-p).d + (o-p).(o-p)-R^2 = 0 */
+ { (_wcl_allocs->pa._wcl_op).x = ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((s), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).p).x - ((*(_wcl_addr_clamp_private_1_const__Ray__Ptr((r), 1, (const Ray *)&_wcl_allocs->pa, (const Ray *)(&_wcl_allocs->pa + 1), (const Ray *)_wcl_allocs->pn))).o).x; (_wcl_allocs->pa._wcl_op).y = ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((s), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).p).y - ((*(_wcl_addr_clamp_private_1_const__Ray__Ptr((r), 1, (const Ray *)&_wcl_allocs->pa, (const Ray *)(&_wcl_allocs->pa + 1), (const Ray *)_wcl_allocs->pn))).o).y; (_wcl_allocs->pa._wcl_op).z = ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((s), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).p).z - ((*(_wcl_addr_clamp_private_1_const__Ray__Ptr((r), 1, (const Ray *)&_wcl_allocs->pa, (const Ray *)(&_wcl_allocs->pa + 1), (const Ray *)_wcl_allocs->pn))).o).z; };
+
+ float b = ((_wcl_allocs->pa._wcl_op).x * ((*(_wcl_addr_clamp_private_1_const__Ray__Ptr((r), 1, (const Ray *)&_wcl_allocs->pa, (const Ray *)(&_wcl_allocs->pa + 1), (const Ray *)_wcl_allocs->pn))).d).x + (_wcl_allocs->pa._wcl_op).y * ((*(_wcl_addr_clamp_private_1_const__Ray__Ptr((r), 1, (const Ray *)&_wcl_allocs->pa, (const Ray *)(&_wcl_allocs->pa + 1), (const Ray *)_wcl_allocs->pn))).d).y + (_wcl_allocs->pa._wcl_op).z * ((*(_wcl_addr_clamp_private_1_const__Ray__Ptr((r), 1, (const Ray *)&_wcl_allocs->pa, (const Ray *)(&_wcl_allocs->pa + 1), (const Ray *)_wcl_allocs->pn))).d).z);
+ float det = b * b - ((_wcl_allocs->pa._wcl_op).x * (_wcl_allocs->pa._wcl_op).x + (_wcl_allocs->pa._wcl_op).y * (_wcl_allocs->pa._wcl_op).y + (_wcl_allocs->pa._wcl_op).z * (_wcl_allocs->pa._wcl_op).z) + (*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((s), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).rad * (*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((s), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).rad;
+ if (det < 0.f)
+  return 0.f;
+ else
+  det = sqrt(det);
+
+ float t = b - det;
+ if (t > 0.01f)
+  return t;
+ else {
+  t = b + det;
+
+  if (t > 0.01f)
+   return t;
+  else
+   return 0.f;
+ }
+}
+
+ void UniformSampleSphere(_WclProgramAllocations *_wcl_allocs, const float u1, const float u2, Vec *v) {
+ const float zz = 1.f - 2.f * u1;
+ const float r = sqrt(max(0.f, 1.f - zz * zz));
+ const float phi = 2.f * 3.14159265358979323846f * u2;
+ const float xx = r * cos(phi);
+ const float yy = r * sin(phi);
+
+ { ((*(_wcl_addr_clamp_private_1_Vec__Ptr((v), 1, (Vec *)&_wcl_allocs->pa, (Vec *)(&_wcl_allocs->pa + 1), (Vec *)_wcl_allocs->pn)))).x = xx; ((*(_wcl_addr_clamp_private_1_Vec__Ptr((v), 1, (Vec *)&_wcl_allocs->pa, (Vec *)(&_wcl_allocs->pa + 1), (Vec *)_wcl_allocs->pn)))).y = yy; ((*(_wcl_addr_clamp_private_1_Vec__Ptr((v), 1, (Vec *)&_wcl_allocs->pa, (Vec *)(&_wcl_allocs->pa + 1), (Vec *)_wcl_allocs->pn)))).z = zz; };
+}
+
+ int Intersect(_WclProgramAllocations *_wcl_allocs, 
+ __global const Sphere *spheres,
+ const unsigned int sphereCount,
+ const Ray *r,
+ float *t,
+ unsigned int *id) {
+ float inf = ((*(_wcl_addr_clamp_private_1_float__Ptr((t), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn)))) = 1e20f;
+
+ unsigned int i = sphereCount;
+ for (; i--;) {
+  const float d = SphereIntersect(_wcl_allocs, &(*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((spheres)+(i), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))), r);
+  if ((d != 0.f) && (d < (*(_wcl_addr_clamp_private_1_float__Ptr((t), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))))) {
+   (*(_wcl_addr_clamp_private_1_float__Ptr((t), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) = d;
+   (*(_wcl_addr_clamp_private_1_unsigned__int__Ptr((id), 1, (unsigned int *)&_wcl_allocs->pa, (unsigned int *)(&_wcl_allocs->pa + 1), (unsigned int *)_wcl_allocs->pn))) = i;
+  }
+ }
+
+ return ((*(_wcl_addr_clamp_private_1_float__Ptr((t), 1, (float *)&_wcl_allocs->pa, (float *)(&_wcl_allocs->pa + 1), (float *)_wcl_allocs->pn))) < inf);
+}
+
+ int IntersectP(_WclProgramAllocations *_wcl_allocs, 
+ __global const Sphere *spheres,
+ const unsigned int sphereCount,
+ const Ray *r,
+ const float maxt) {
+ unsigned int i = sphereCount;
+ for (; i--;) {
+  const float d = SphereIntersect(_wcl_allocs, &(*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((spheres)+(i), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))), r);
+  if ((d != 0.f) && (d < maxt))
+   return 1;
+ }
+
+ return 0;
+}
+
+ void SampleLights(_WclProgramAllocations *_wcl_allocs, 
+ __global const Sphere *spheres,
+ const unsigned int sphereCount,
+ unsigned int *seed0, unsigned int *seed1,
+ const Vec *hitPoint,
+ const Vec *normal,
+ Vec *result) {
+ { ((*(_wcl_addr_clamp_private_1_Vec__Ptr((result), 1, (Vec *)&_wcl_allocs->pa, (Vec *)(&_wcl_allocs->pa + 1), (Vec *)_wcl_allocs->pn)))).x = 0.f; ((*(_wcl_addr_clamp_private_1_Vec__Ptr((result), 1, (Vec *)&_wcl_allocs->pa, (Vec *)(&_wcl_allocs->pa + 1), (Vec *)_wcl_allocs->pn)))).y = 0.f; ((*(_wcl_addr_clamp_private_1_Vec__Ptr((result), 1, (Vec *)&_wcl_allocs->pa, (Vec *)(&_wcl_allocs->pa + 1), (Vec *)_wcl_allocs->pn)))).z = 0.f; };
+
+ /* For each light */
+ unsigned int i;
+ for (_wcl_allocs->pa._wcl_i = 0; _wcl_allocs->pa._wcl_i < sphereCount; _wcl_allocs->pa._wcl_i++) {
+  __global const Sphere *light = &(*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((spheres)+(_wcl_allocs->pa._wcl_i), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn)));;_wcl_allocs->pa._wcl_light = light;
+  if (!((((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_light), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).e).x == 0.f) && (((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_light), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).e).x == 0.f) && (((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_light), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).e).z == 0.f))) {
+   /* It is a light source */
+   Ray shadowRay;
+   _wcl_allocs->pa._wcl_shadowRay.o = (*(_wcl_addr_clamp_private_1_const__Vec__Ptr((hitPoint), 1, (const Vec *)&_wcl_allocs->pa, (const Vec *)(&_wcl_allocs->pa + 1), (const Vec *)_wcl_allocs->pn)));
+
+   /* Choose a point over the light source */
+   Vec unitSpherePoint;
+   UniformSampleSphere(_wcl_allocs, GetRandom(_wcl_allocs, seed0, seed1), GetRandom(_wcl_allocs, seed0, seed1), &_wcl_allocs->pa._wcl_unitSpherePoint);
+   Vec spherePoint;
+   { float k = ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_light), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).rad); { (_wcl_allocs->pa._wcl_spherePoint).x = k * (_wcl_allocs->pa._wcl_unitSpherePoint).x; (_wcl_allocs->pa._wcl_spherePoint).y = k * (_wcl_allocs->pa._wcl_unitSpherePoint).y; (_wcl_allocs->pa._wcl_spherePoint).z = k * (_wcl_allocs->pa._wcl_unitSpherePoint).z; } };
+   { (_wcl_allocs->pa._wcl_spherePoint).x = (_wcl_allocs->pa._wcl_spherePoint).x + ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_light), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).p).x; (_wcl_allocs->pa._wcl_spherePoint).y = (_wcl_allocs->pa._wcl_spherePoint).y + ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_light), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).p).y; (_wcl_allocs->pa._wcl_spherePoint).z = (_wcl_allocs->pa._wcl_spherePoint).z + ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_light), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).p).z; };
+
+   /* Build the shadow ray direction */
+   { (_wcl_allocs->pa._wcl_shadowRay.d).x = (_wcl_allocs->pa._wcl_spherePoint).x - ((*(_wcl_addr_clamp_private_1_const__Vec__Ptr((hitPoint), 1, (const Vec *)&_wcl_allocs->pa, (const Vec *)(&_wcl_allocs->pa + 1), (const Vec *)_wcl_allocs->pn)))).x; (_wcl_allocs->pa._wcl_shadowRay.d).y = (_wcl_allocs->pa._wcl_spherePoint).y - ((*(_wcl_addr_clamp_private_1_const__Vec__Ptr((hitPoint), 1, (const Vec *)&_wcl_allocs->pa, (const Vec *)(&_wcl_allocs->pa + 1), (const Vec *)_wcl_allocs->pn)))).y; (_wcl_allocs->pa._wcl_shadowRay.d).z = (_wcl_allocs->pa._wcl_spherePoint).z - ((*(_wcl_addr_clamp_private_1_const__Vec__Ptr((hitPoint), 1, (const Vec *)&_wcl_allocs->pa, (const Vec *)(&_wcl_allocs->pa + 1), (const Vec *)_wcl_allocs->pn)))).z; };
+   const float len = sqrt(((_wcl_allocs->pa._wcl_shadowRay.d).x * (_wcl_allocs->pa._wcl_shadowRay.d).x + (_wcl_allocs->pa._wcl_shadowRay.d).y * (_wcl_allocs->pa._wcl_shadowRay.d).y + (_wcl_allocs->pa._wcl_shadowRay.d).z * (_wcl_allocs->pa._wcl_shadowRay.d).z));
+   { float k = (1.f / len); { (_wcl_allocs->pa._wcl_shadowRay.d).x = k * (_wcl_allocs->pa._wcl_shadowRay.d).x; (_wcl_allocs->pa._wcl_shadowRay.d).y = k * (_wcl_allocs->pa._wcl_shadowRay.d).y; (_wcl_allocs->pa._wcl_shadowRay.d).z = k * (_wcl_allocs->pa._wcl_shadowRay.d).z; } };
+
+   float wo = ((_wcl_allocs->pa._wcl_shadowRay.d).x * (_wcl_allocs->pa._wcl_unitSpherePoint).x + (_wcl_allocs->pa._wcl_shadowRay.d).y * (_wcl_allocs->pa._wcl_unitSpherePoint).y + (_wcl_allocs->pa._wcl_shadowRay.d).z * (_wcl_allocs->pa._wcl_unitSpherePoint).z);
+   if (wo > 0.f) {
+    /* It is on the other half of the sphere */
+    continue;
+   } else
+    wo = -wo;
+
+   /* Check if the light is visible */
+   const float wi = ((_wcl_allocs->pa._wcl_shadowRay.d).x * ((*(_wcl_addr_clamp_private_1_const__Vec__Ptr((normal), 1, (const Vec *)&_wcl_allocs->pa, (const Vec *)(&_wcl_allocs->pa + 1), (const Vec *)_wcl_allocs->pn)))).x + (_wcl_allocs->pa._wcl_shadowRay.d).y * ((*(_wcl_addr_clamp_private_1_const__Vec__Ptr((normal), 1, (const Vec *)&_wcl_allocs->pa, (const Vec *)(&_wcl_allocs->pa + 1), (const Vec *)_wcl_allocs->pn)))).y + (_wcl_allocs->pa._wcl_shadowRay.d).z * ((*(_wcl_addr_clamp_private_1_const__Vec__Ptr((normal), 1, (const Vec *)&_wcl_allocs->pa, (const Vec *)(&_wcl_allocs->pa + 1), (const Vec *)_wcl_allocs->pn)))).z);
+   if ((wi > 0.f) && (!IntersectP(_wcl_allocs, spheres, sphereCount, &_wcl_allocs->pa._wcl_shadowRay, len - 0.01f))) {
+    Vec c; { (_wcl_allocs->pa._wcl_c).x = ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_light), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).e).x; (_wcl_allocs->pa._wcl_c).y = ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_light), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).e).y; (_wcl_allocs->pa._wcl_c).z = ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_light), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).e).z; };
+    const float s = (4.f * 3.14159265358979323846f * (*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_light), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).rad * (*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_light), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).rad) * wi * wo / (len *len);
+    { float k = (s); { (_wcl_allocs->pa._wcl_c).x = k * (_wcl_allocs->pa._wcl_c).x; (_wcl_allocs->pa._wcl_c).y = k * (_wcl_allocs->pa._wcl_c).y; (_wcl_allocs->pa._wcl_c).z = k * (_wcl_allocs->pa._wcl_c).z; } };
+    { ((*(_wcl_addr_clamp_private_1_Vec__Ptr((result), 1, (Vec *)&_wcl_allocs->pa, (Vec *)(&_wcl_allocs->pa + 1), (Vec *)_wcl_allocs->pn)))).x = ((*(_wcl_addr_clamp_private_1_Vec__Ptr((result), 1, (Vec *)&_wcl_allocs->pa, (Vec *)(&_wcl_allocs->pa + 1), (Vec *)_wcl_allocs->pn)))).x + (_wcl_allocs->pa._wcl_c).x; ((*(_wcl_addr_clamp_private_1_Vec__Ptr((result), 1, (Vec *)&_wcl_allocs->pa, (Vec *)(&_wcl_allocs->pa + 1), (Vec *)_wcl_allocs->pn)))).y = ((*(_wcl_addr_clamp_private_1_Vec__Ptr((result), 1, (Vec *)&_wcl_allocs->pa, (Vec *)(&_wcl_allocs->pa + 1), (Vec *)_wcl_allocs->pn)))).y + (_wcl_allocs->pa._wcl_c).y; ((*(_wcl_addr_clamp_private_1_Vec__Ptr((result), 1, (Vec *)&_wcl_allocs->pa, (Vec *)(&_wcl_allocs->pa + 1), (Vec *)_wcl_allocs->pn)))).z = ((*(_wcl_addr_clamp_private_1_Vec__Ptr((result), 1, (Vec *)&_wcl_allocs->pa, (Vec *)(&_wcl_allocs->pa + 1), (Vec *)_wcl_allocs->pn)))).z + (_wcl_allocs->pa._wcl_c).z; };
+   }
+  }
+ }
+}
+
+ void Radiance(_WclProgramAllocations *_wcl_allocs, 
+ __global const Sphere *spheres,
+ const unsigned int sphereCount,
+ const Ray *startRay,
+ unsigned int *seed0, unsigned int *seed1,
+ Vec *result) {
+ Ray currentRay; { { ((_wcl_allocs->pa._wcl_currentRay).o).x = (((*(_wcl_addr_clamp_private_1_const__Ray__Ptr((startRay), 1, (const Ray *)&_wcl_allocs->pa, (const Ray *)(&_wcl_allocs->pa + 1), (const Ray *)_wcl_allocs->pn)))).o).x; ((_wcl_allocs->pa._wcl_currentRay).o).y = (((*(_wcl_addr_clamp_private_1_const__Ray__Ptr((startRay), 1, (const Ray *)&_wcl_allocs->pa, (const Ray *)(&_wcl_allocs->pa + 1), (const Ray *)_wcl_allocs->pn)))).o).y; ((_wcl_allocs->pa._wcl_currentRay).o).z = (((*(_wcl_addr_clamp_private_1_const__Ray__Ptr((startRay), 1, (const Ray *)&_wcl_allocs->pa, (const Ray *)(&_wcl_allocs->pa + 1), (const Ray *)_wcl_allocs->pn)))).o).z; }; { ((_wcl_allocs->pa._wcl_currentRay).d).x = (((*(_wcl_addr_clamp_private_1_const__Ray__Ptr((startRay), 1, (const Ray *)&_wcl_allocs->pa, (const Ray *)(&_wcl_allocs->pa + 1), (const Ray *)_wcl_allocs->pn)))).d).x; ((_wcl_allocs->pa._wcl_currentRay).d).y = (((*(_wcl_addr_clamp_private_1_const__Ray__Ptr((startRay), 1, (const Ray *)&_wcl_allocs->pa, (const Ray *)(&_wcl_allocs->pa + 1), (const Ray *)_wcl_allocs->pn)))).d).y; ((_wcl_allocs->pa._wcl_currentRay).d).z = (((*(_wcl_addr_clamp_private_1_const__Ray__Ptr((startRay), 1, (const Ray *)&_wcl_allocs->pa, (const Ray *)(&_wcl_allocs->pa + 1), (const Ray *)_wcl_allocs->pn)))).d).z; }; };
+ Vec rad; { (_wcl_allocs->pa._wcl_rad).x = 0.f; (_wcl_allocs->pa._wcl_rad).y = 0.f; (_wcl_allocs->pa._wcl_rad).z = 0.f; };
+ Vec throughput; { (_wcl_allocs->pa._wcl_throughput).x = 1.f; (_wcl_allocs->pa._wcl_throughput).y = 1.f; (_wcl_allocs->pa._wcl_throughput).z = 1.f; };
+
+ unsigned int depth = 0;
+ int specularBounce = 1;
+ for (;; ++depth) {
+  // Removed Russian Roulette in order to improve execution on SIMT
+  if (depth > 6) {
+   (*(_wcl_addr_clamp_private_1_Vec__Ptr((result), 1, (Vec *)&_wcl_allocs->pa, (Vec *)(&_wcl_allocs->pa + 1), (Vec *)_wcl_allocs->pn))) = _wcl_allocs->pa._wcl_rad;
+   return;
+  }
+
+  float t; /* distance to intersection */
+  unsigned int id = 0;;_wcl_allocs->pa._wcl_id = id; /* id of intersected object */
+  if (!Intersect(_wcl_allocs, spheres, sphereCount, &_wcl_allocs->pa._wcl_currentRay, &_wcl_allocs->pa._wcl_t, &_wcl_allocs->pa._wcl_id)) {
+   (*(_wcl_addr_clamp_private_1_Vec__Ptr((result), 1, (Vec *)&_wcl_allocs->pa, (Vec *)(&_wcl_allocs->pa + 1), (Vec *)_wcl_allocs->pn))) = _wcl_allocs->pa._wcl_rad; /* if miss, return */
+   return;
+  }
+
+  __global const Sphere *obj = &(*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((spheres)+(_wcl_allocs->pa._wcl_id), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn)));;_wcl_allocs->pa._wcl_obj = obj; /* the hit object */
+
+  Vec hitPoint;
+  { float k = (_wcl_allocs->pa._wcl_t); { (_wcl_allocs->pa._wcl_hitPoint).x = k * (_wcl_allocs->pa._wcl_currentRay.d).x; (_wcl_allocs->pa._wcl_hitPoint).y = k * (_wcl_allocs->pa._wcl_currentRay.d).y; (_wcl_allocs->pa._wcl_hitPoint).z = k * (_wcl_allocs->pa._wcl_currentRay.d).z; } };
+  { (_wcl_allocs->pa._wcl_hitPoint).x = (_wcl_allocs->pa._wcl_currentRay.o).x + (_wcl_allocs->pa._wcl_hitPoint).x; (_wcl_allocs->pa._wcl_hitPoint).y = (_wcl_allocs->pa._wcl_currentRay.o).y + (_wcl_allocs->pa._wcl_hitPoint).y; (_wcl_allocs->pa._wcl_hitPoint).z = (_wcl_allocs->pa._wcl_currentRay.o).z + (_wcl_allocs->pa._wcl_hitPoint).z; };
+
+  Vec normal;
+  { (_wcl_allocs->pa._wcl_normal).x = (_wcl_allocs->pa._wcl_hitPoint).x - ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).p).x; (_wcl_allocs->pa._wcl_normal).y = (_wcl_allocs->pa._wcl_hitPoint).y - ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).p).y; (_wcl_allocs->pa._wcl_normal).z = (_wcl_allocs->pa._wcl_hitPoint).z - ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).p).z; };
+  { float l = 1.f / sqrt(((_wcl_allocs->pa._wcl_normal).x * (_wcl_allocs->pa._wcl_normal).x + (_wcl_allocs->pa._wcl_normal).y * (_wcl_allocs->pa._wcl_normal).y + (_wcl_allocs->pa._wcl_normal).z * (_wcl_allocs->pa._wcl_normal).z)); { float k = (l); { (_wcl_allocs->pa._wcl_normal).x = k * (_wcl_allocs->pa._wcl_normal).x; (_wcl_allocs->pa._wcl_normal).y = k * (_wcl_allocs->pa._wcl_normal).y; (_wcl_allocs->pa._wcl_normal).z = k * (_wcl_allocs->pa._wcl_normal).z; } }; };
+
+  const float dp = ((_wcl_allocs->pa._wcl_normal).x * (_wcl_allocs->pa._wcl_currentRay.d).x + (_wcl_allocs->pa._wcl_normal).y * (_wcl_allocs->pa._wcl_currentRay.d).y + (_wcl_allocs->pa._wcl_normal).z * (_wcl_allocs->pa._wcl_currentRay.d).z);
+  Vec nl;
+  // SIMT optimization
+  const float invSignDP = -1.f * sign(dp);
+  { float k = (invSignDP); { (_wcl_allocs->pa._wcl_nl).x = k * (_wcl_allocs->pa._wcl_normal).x; (_wcl_allocs->pa._wcl_nl).y = k * (_wcl_allocs->pa._wcl_normal).y; (_wcl_allocs->pa._wcl_nl).z = k * (_wcl_allocs->pa._wcl_normal).z; } };
+
+  /* Add emitted light */
+  Vec eCol; { (_wcl_allocs->pa._wcl_eCol).x = ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).e).x; (_wcl_allocs->pa._wcl_eCol).y = ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).e).y; (_wcl_allocs->pa._wcl_eCol).z = ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).e).z; };
+  if (!(((_wcl_allocs->pa._wcl_eCol).x == 0.f) && ((_wcl_allocs->pa._wcl_eCol).x == 0.f) && ((_wcl_allocs->pa._wcl_eCol).z == 0.f))) {
+   if (specularBounce) {
+    { float k = (fabs(dp)); { (_wcl_allocs->pa._wcl_eCol).x = k * (_wcl_allocs->pa._wcl_eCol).x; (_wcl_allocs->pa._wcl_eCol).y = k * (_wcl_allocs->pa._wcl_eCol).y; (_wcl_allocs->pa._wcl_eCol).z = k * (_wcl_allocs->pa._wcl_eCol).z; } };
+    { (_wcl_allocs->pa._wcl_eCol).x = (_wcl_allocs->pa._wcl_throughput).x * (_wcl_allocs->pa._wcl_eCol).x; (_wcl_allocs->pa._wcl_eCol).y = (_wcl_allocs->pa._wcl_throughput).y * (_wcl_allocs->pa._wcl_eCol).y; (_wcl_allocs->pa._wcl_eCol).z = (_wcl_allocs->pa._wcl_throughput).z * (_wcl_allocs->pa._wcl_eCol).z; };
+    { (_wcl_allocs->pa._wcl_rad).x = (_wcl_allocs->pa._wcl_rad).x + (_wcl_allocs->pa._wcl_eCol).x; (_wcl_allocs->pa._wcl_rad).y = (_wcl_allocs->pa._wcl_rad).y + (_wcl_allocs->pa._wcl_eCol).y; (_wcl_allocs->pa._wcl_rad).z = (_wcl_allocs->pa._wcl_rad).z + (_wcl_allocs->pa._wcl_eCol).z; };
+   }
+
+   (*(_wcl_addr_clamp_private_1_Vec__Ptr((result), 1, (Vec *)&_wcl_allocs->pa, (Vec *)(&_wcl_allocs->pa + 1), (Vec *)_wcl_allocs->pn))) = _wcl_allocs->pa._wcl_rad;
+   return;
+  }
+
+  if ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).refl == DIFF) { /* Ideal DIFFUSE reflection */
+   specularBounce = 0;
+   { (_wcl_allocs->pa._wcl_throughput).x = (_wcl_allocs->pa._wcl_throughput).x * ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).c).x; (_wcl_allocs->pa._wcl_throughput).y = (_wcl_allocs->pa._wcl_throughput).y * ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).c).y; (_wcl_allocs->pa._wcl_throughput).z = (_wcl_allocs->pa._wcl_throughput).z * ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).c).z; };
+
+   /* Direct lighting component */
+
+   Vec Ld;
+   SampleLights(_wcl_allocs, spheres, sphereCount, seed0, seed1, &_wcl_allocs->pa._wcl_hitPoint, &_wcl_allocs->pa._wcl_nl, &_wcl_allocs->pa._wcl_Ld);
+   { (_wcl_allocs->pa._wcl_Ld).x = (_wcl_allocs->pa._wcl_throughput).x * (_wcl_allocs->pa._wcl_Ld).x; (_wcl_allocs->pa._wcl_Ld).y = (_wcl_allocs->pa._wcl_throughput).y * (_wcl_allocs->pa._wcl_Ld).y; (_wcl_allocs->pa._wcl_Ld).z = (_wcl_allocs->pa._wcl_throughput).z * (_wcl_allocs->pa._wcl_Ld).z; };
+   { (_wcl_allocs->pa._wcl_rad).x = (_wcl_allocs->pa._wcl_rad).x + (_wcl_allocs->pa._wcl_Ld).x; (_wcl_allocs->pa._wcl_rad).y = (_wcl_allocs->pa._wcl_rad).y + (_wcl_allocs->pa._wcl_Ld).y; (_wcl_allocs->pa._wcl_rad).z = (_wcl_allocs->pa._wcl_rad).z + (_wcl_allocs->pa._wcl_Ld).z; };
+
+   // Check if we have to stop
+
+   /* Diffuse component */
+
+   float r1 = 2.f * 3.14159265358979323846f * GetRandom(_wcl_allocs, seed0, seed1);
+   float r2 = GetRandom(_wcl_allocs, seed0, seed1);
+   float r2s = sqrt(r2);
+
+   Vec w; { (_wcl_allocs->pa._wcl_w).x = (_wcl_allocs->pa._wcl_nl).x; (_wcl_allocs->pa._wcl_w).y = (_wcl_allocs->pa._wcl_nl).y; (_wcl_allocs->pa._wcl_w).z = (_wcl_allocs->pa._wcl_nl).z; };
+
+   Vec u, a;
+   if (fabs(_wcl_allocs->pa._wcl_w.x) > .1f) {
+     { (_wcl_allocs->pa._wcl_a).x = 0.f; (_wcl_allocs->pa._wcl_a).y = 1.f; (_wcl_allocs->pa._wcl_a).z = 0.f; };
+   } else {
+     { (_wcl_allocs->pa._wcl_a).x = 1.f; (_wcl_allocs->pa._wcl_a).y = 0.f; (_wcl_allocs->pa._wcl_a).z = 0.f; };
+   }
+   { (_wcl_allocs->pa._wcl_u).x = (_wcl_allocs->pa._wcl_a).y * (_wcl_allocs->pa._wcl_w).z - (_wcl_allocs->pa._wcl_a).z * (_wcl_allocs->pa._wcl_w).y; (_wcl_allocs->pa._wcl_u).y = (_wcl_allocs->pa._wcl_a).z * (_wcl_allocs->pa._wcl_w).x - (_wcl_allocs->pa._wcl_a).x * (_wcl_allocs->pa._wcl_w).z; (_wcl_allocs->pa._wcl_u).z = (_wcl_allocs->pa._wcl_a).x * (_wcl_allocs->pa._wcl_w).y - (_wcl_allocs->pa._wcl_a).y * (_wcl_allocs->pa._wcl_w).x; };
+   { float l = 1.f / sqrt(((_wcl_allocs->pa._wcl_u).x * (_wcl_allocs->pa._wcl_u).x + (_wcl_allocs->pa._wcl_u).y * (_wcl_allocs->pa._wcl_u).y + (_wcl_allocs->pa._wcl_u).z * (_wcl_allocs->pa._wcl_u).z)); { float k = (l); { (_wcl_allocs->pa._wcl_u).x = k * (_wcl_allocs->pa._wcl_u).x; (_wcl_allocs->pa._wcl_u).y = k * (_wcl_allocs->pa._wcl_u).y; (_wcl_allocs->pa._wcl_u).z = k * (_wcl_allocs->pa._wcl_u).z; } }; };
+
+   Vec v;
+   { (_wcl_allocs->pa._wcl_v).x = (_wcl_allocs->pa._wcl_w).y * (_wcl_allocs->pa._wcl_u).z - (_wcl_allocs->pa._wcl_w).z * (_wcl_allocs->pa._wcl_u).y; (_wcl_allocs->pa._wcl_v).y = (_wcl_allocs->pa._wcl_w).z * (_wcl_allocs->pa._wcl_u).x - (_wcl_allocs->pa._wcl_w).x * (_wcl_allocs->pa._wcl_u).z; (_wcl_allocs->pa._wcl_v).z = (_wcl_allocs->pa._wcl_w).x * (_wcl_allocs->pa._wcl_u).y - (_wcl_allocs->pa._wcl_w).y * (_wcl_allocs->pa._wcl_u).x; };
+
+   Vec newDir;
+   { float k = (cos(r1) * r2s); { (_wcl_allocs->pa._wcl_u).x = k * (_wcl_allocs->pa._wcl_u).x; (_wcl_allocs->pa._wcl_u).y = k * (_wcl_allocs->pa._wcl_u).y; (_wcl_allocs->pa._wcl_u).z = k * (_wcl_allocs->pa._wcl_u).z; } };
+   { float k = (sin(r1) * r2s); { (_wcl_allocs->pa._wcl_v).x = k * (_wcl_allocs->pa._wcl_v).x; (_wcl_allocs->pa._wcl_v).y = k * (_wcl_allocs->pa._wcl_v).y; (_wcl_allocs->pa._wcl_v).z = k * (_wcl_allocs->pa._wcl_v).z; } };
+   { (_wcl_allocs->pa._wcl_newDir).x = (_wcl_allocs->pa._wcl_u).x + (_wcl_allocs->pa._wcl_v).x; (_wcl_allocs->pa._wcl_newDir).y = (_wcl_allocs->pa._wcl_u).y + (_wcl_allocs->pa._wcl_v).y; (_wcl_allocs->pa._wcl_newDir).z = (_wcl_allocs->pa._wcl_u).z + (_wcl_allocs->pa._wcl_v).z; };
+   { float k = (sqrt(1 - r2)); { (_wcl_allocs->pa._wcl_w).x = k * (_wcl_allocs->pa._wcl_w).x; (_wcl_allocs->pa._wcl_w).y = k * (_wcl_allocs->pa._wcl_w).y; (_wcl_allocs->pa._wcl_w).z = k * (_wcl_allocs->pa._wcl_w).z; } };
+   { (_wcl_allocs->pa._wcl_newDir).x = (_wcl_allocs->pa._wcl_newDir).x + (_wcl_allocs->pa._wcl_w).x; (_wcl_allocs->pa._wcl_newDir).y = (_wcl_allocs->pa._wcl_newDir).y + (_wcl_allocs->pa._wcl_w).y; (_wcl_allocs->pa._wcl_newDir).z = (_wcl_allocs->pa._wcl_newDir).z + (_wcl_allocs->pa._wcl_w).z; };
+
+   _wcl_allocs->pa._wcl_currentRay.o = _wcl_allocs->pa._wcl_hitPoint;
+   _wcl_allocs->pa._wcl_currentRay.d = _wcl_allocs->pa._wcl_newDir;
+   continue;
+  } else if ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).refl == SPEC) { /* Ideal SPECULAR reflection */
+   specularBounce = 1;
+
+   Vec newDir;
+   { float k = (2.f * ((_wcl_allocs->pa._wcl_normal).x * (_wcl_allocs->pa._wcl_currentRay.d).x + (_wcl_allocs->pa._wcl_normal).y * (_wcl_allocs->pa._wcl_currentRay.d).y + (_wcl_allocs->pa._wcl_normal).z * (_wcl_allocs->pa._wcl_currentRay.d).z)); { (_wcl_allocs->pa._wcl_2_newDir).x = k * (_wcl_allocs->pa._wcl_normal).x; (_wcl_allocs->pa._wcl_2_newDir).y = k * (_wcl_allocs->pa._wcl_normal).y; (_wcl_allocs->pa._wcl_2_newDir).z = k * (_wcl_allocs->pa._wcl_normal).z; } };
+   { (_wcl_allocs->pa._wcl_2_newDir).x = (_wcl_allocs->pa._wcl_currentRay.d).x - (_wcl_allocs->pa._wcl_2_newDir).x; (_wcl_allocs->pa._wcl_2_newDir).y = (_wcl_allocs->pa._wcl_currentRay.d).y - (_wcl_allocs->pa._wcl_2_newDir).y; (_wcl_allocs->pa._wcl_2_newDir).z = (_wcl_allocs->pa._wcl_currentRay.d).z - (_wcl_allocs->pa._wcl_2_newDir).z; };
+
+   { (_wcl_allocs->pa._wcl_throughput).x = (_wcl_allocs->pa._wcl_throughput).x * ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).c).x; (_wcl_allocs->pa._wcl_throughput).y = (_wcl_allocs->pa._wcl_throughput).y * ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).c).y; (_wcl_allocs->pa._wcl_throughput).z = (_wcl_allocs->pa._wcl_throughput).z * ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).c).z; };
+
+   { { ((_wcl_allocs->pa._wcl_currentRay).o).x = (_wcl_allocs->pa._wcl_hitPoint).x; ((_wcl_allocs->pa._wcl_currentRay).o).y = (_wcl_allocs->pa._wcl_hitPoint).y; ((_wcl_allocs->pa._wcl_currentRay).o).z = (_wcl_allocs->pa._wcl_hitPoint).z; }; { ((_wcl_allocs->pa._wcl_currentRay).d).x = (_wcl_allocs->pa._wcl_2_newDir).x; ((_wcl_allocs->pa._wcl_currentRay).d).y = (_wcl_allocs->pa._wcl_2_newDir).y; ((_wcl_allocs->pa._wcl_currentRay).d).z = (_wcl_allocs->pa._wcl_2_newDir).z; }; };
+   continue;
+  } else {
+   specularBounce = 1;
+
+   Vec newDir;
+   { float k = (2.f * ((_wcl_allocs->pa._wcl_normal).x * (_wcl_allocs->pa._wcl_currentRay.d).x + (_wcl_allocs->pa._wcl_normal).y * (_wcl_allocs->pa._wcl_currentRay.d).y + (_wcl_allocs->pa._wcl_normal).z * (_wcl_allocs->pa._wcl_currentRay.d).z)); { (_wcl_allocs->pa._wcl_3_newDir).x = k * (_wcl_allocs->pa._wcl_normal).x; (_wcl_allocs->pa._wcl_3_newDir).y = k * (_wcl_allocs->pa._wcl_normal).y; (_wcl_allocs->pa._wcl_3_newDir).z = k * (_wcl_allocs->pa._wcl_normal).z; } };
+   { (_wcl_allocs->pa._wcl_3_newDir).x = (_wcl_allocs->pa._wcl_currentRay.d).x - (_wcl_allocs->pa._wcl_3_newDir).x; (_wcl_allocs->pa._wcl_3_newDir).y = (_wcl_allocs->pa._wcl_currentRay.d).y - (_wcl_allocs->pa._wcl_3_newDir).y; (_wcl_allocs->pa._wcl_3_newDir).z = (_wcl_allocs->pa._wcl_currentRay.d).z - (_wcl_allocs->pa._wcl_3_newDir).z; };
+
+   Ray reflRay; { { ((_wcl_allocs->pa._wcl_reflRay).o).x = (_wcl_allocs->pa._wcl_hitPoint).x; ((_wcl_allocs->pa._wcl_reflRay).o).y = (_wcl_allocs->pa._wcl_hitPoint).y; ((_wcl_allocs->pa._wcl_reflRay).o).z = (_wcl_allocs->pa._wcl_hitPoint).z; }; { ((_wcl_allocs->pa._wcl_reflRay).d).x = (_wcl_allocs->pa._wcl_3_newDir).x; ((_wcl_allocs->pa._wcl_reflRay).d).y = (_wcl_allocs->pa._wcl_3_newDir).y; ((_wcl_allocs->pa._wcl_reflRay).d).z = (_wcl_allocs->pa._wcl_3_newDir).z; }; }; /* Ideal dielectric REFRACTION */
+   int into = (((_wcl_allocs->pa._wcl_normal).x * (_wcl_allocs->pa._wcl_nl).x + (_wcl_allocs->pa._wcl_normal).y * (_wcl_allocs->pa._wcl_nl).y + (_wcl_allocs->pa._wcl_normal).z * (_wcl_allocs->pa._wcl_nl).z) > 0); /* Ray from outside going in? */
+
+   float nc = 1.f;
+   float nt = 1.5f;
+   float nnt = into ? nc / nt : nt / nc;
+   float ddn = ((_wcl_allocs->pa._wcl_currentRay.d).x * (_wcl_allocs->pa._wcl_nl).x + (_wcl_allocs->pa._wcl_currentRay.d).y * (_wcl_allocs->pa._wcl_nl).y + (_wcl_allocs->pa._wcl_currentRay.d).z * (_wcl_allocs->pa._wcl_nl).z);
+   float cos2t = 1.f - nnt * nnt * (1.f - ddn * ddn);
+
+   if (cos2t < 0.f) { /* Total internal reflection */
+    { (_wcl_allocs->pa._wcl_throughput).x = (_wcl_allocs->pa._wcl_throughput).x * ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).c).x; (_wcl_allocs->pa._wcl_throughput).y = (_wcl_allocs->pa._wcl_throughput).y * ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).c).y; (_wcl_allocs->pa._wcl_throughput).z = (_wcl_allocs->pa._wcl_throughput).z * ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).c).z; };
+
+    { { ((_wcl_allocs->pa._wcl_currentRay).o).x = ((_wcl_allocs->pa._wcl_reflRay).o).x; ((_wcl_allocs->pa._wcl_currentRay).o).y = ((_wcl_allocs->pa._wcl_reflRay).o).y; ((_wcl_allocs->pa._wcl_currentRay).o).z = ((_wcl_allocs->pa._wcl_reflRay).o).z; }; { ((_wcl_allocs->pa._wcl_currentRay).d).x = ((_wcl_allocs->pa._wcl_reflRay).d).x; ((_wcl_allocs->pa._wcl_currentRay).d).y = ((_wcl_allocs->pa._wcl_reflRay).d).y; ((_wcl_allocs->pa._wcl_currentRay).d).z = ((_wcl_allocs->pa._wcl_reflRay).d).z; }; };
+    continue;
+   }
+
+   float kk = (into ? 1 : -1) * (ddn * nnt + sqrt(cos2t));
+   Vec nkk;
+   { float k = (kk); { (_wcl_allocs->pa._wcl_nkk).x = k * (_wcl_allocs->pa._wcl_normal).x; (_wcl_allocs->pa._wcl_nkk).y = k * (_wcl_allocs->pa._wcl_normal).y; (_wcl_allocs->pa._wcl_nkk).z = k * (_wcl_allocs->pa._wcl_normal).z; } };
+   Vec transDir;
+   { float k = (nnt); { (_wcl_allocs->pa._wcl_transDir).x = k * (_wcl_allocs->pa._wcl_currentRay.d).x; (_wcl_allocs->pa._wcl_transDir).y = k * (_wcl_allocs->pa._wcl_currentRay.d).y; (_wcl_allocs->pa._wcl_transDir).z = k * (_wcl_allocs->pa._wcl_currentRay.d).z; } };
+   { (_wcl_allocs->pa._wcl_transDir).x = (_wcl_allocs->pa._wcl_transDir).x - (_wcl_allocs->pa._wcl_nkk).x; (_wcl_allocs->pa._wcl_transDir).y = (_wcl_allocs->pa._wcl_transDir).y - (_wcl_allocs->pa._wcl_nkk).y; (_wcl_allocs->pa._wcl_transDir).z = (_wcl_allocs->pa._wcl_transDir).z - (_wcl_allocs->pa._wcl_nkk).z; };
+   { float l = 1.f / sqrt(((_wcl_allocs->pa._wcl_transDir).x * (_wcl_allocs->pa._wcl_transDir).x + (_wcl_allocs->pa._wcl_transDir).y * (_wcl_allocs->pa._wcl_transDir).y + (_wcl_allocs->pa._wcl_transDir).z * (_wcl_allocs->pa._wcl_transDir).z)); { float k = (l); { (_wcl_allocs->pa._wcl_transDir).x = k * (_wcl_allocs->pa._wcl_transDir).x; (_wcl_allocs->pa._wcl_transDir).y = k * (_wcl_allocs->pa._wcl_transDir).y; (_wcl_allocs->pa._wcl_transDir).z = k * (_wcl_allocs->pa._wcl_transDir).z; } }; };
+
+   float a = nt - nc;
+   float b = nt + nc;
+   float R0 = a * a / (b * b);
+   float c = 1 - (into ? -ddn : ((_wcl_allocs->pa._wcl_transDir).x * (_wcl_allocs->pa._wcl_normal).x + (_wcl_allocs->pa._wcl_transDir).y * (_wcl_allocs->pa._wcl_normal).y + (_wcl_allocs->pa._wcl_transDir).z * (_wcl_allocs->pa._wcl_normal).z));
+
+   float Re = R0 + (1 - R0) * c * c * c * c*c;
+   float Tr = 1.f - Re;
+   float P = .25f + .5f * Re;
+   float RP = Re / P;
+   float TP = Tr / (1.f - P);
+
+   if (GetRandom(_wcl_allocs, seed0, seed1) < P) { /* R.R. */
+    { float k = (RP); { (_wcl_allocs->pa._wcl_throughput).x = k * (_wcl_allocs->pa._wcl_throughput).x; (_wcl_allocs->pa._wcl_throughput).y = k * (_wcl_allocs->pa._wcl_throughput).y; (_wcl_allocs->pa._wcl_throughput).z = k * (_wcl_allocs->pa._wcl_throughput).z; } };
+    { (_wcl_allocs->pa._wcl_throughput).x = (_wcl_allocs->pa._wcl_throughput).x * ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).c).x; (_wcl_allocs->pa._wcl_throughput).y = (_wcl_allocs->pa._wcl_throughput).y * ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).c).y; (_wcl_allocs->pa._wcl_throughput).z = (_wcl_allocs->pa._wcl_throughput).z * ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).c).z; };
+
+    { { ((_wcl_allocs->pa._wcl_currentRay).o).x = ((_wcl_allocs->pa._wcl_reflRay).o).x; ((_wcl_allocs->pa._wcl_currentRay).o).y = ((_wcl_allocs->pa._wcl_reflRay).o).y; ((_wcl_allocs->pa._wcl_currentRay).o).z = ((_wcl_allocs->pa._wcl_reflRay).o).z; }; { ((_wcl_allocs->pa._wcl_currentRay).d).x = ((_wcl_allocs->pa._wcl_reflRay).d).x; ((_wcl_allocs->pa._wcl_currentRay).d).y = ((_wcl_allocs->pa._wcl_reflRay).d).y; ((_wcl_allocs->pa._wcl_currentRay).d).z = ((_wcl_allocs->pa._wcl_reflRay).d).z; }; };
+    continue;
+   } else {
+    { float k = (TP); { (_wcl_allocs->pa._wcl_throughput).x = k * (_wcl_allocs->pa._wcl_throughput).x; (_wcl_allocs->pa._wcl_throughput).y = k * (_wcl_allocs->pa._wcl_throughput).y; (_wcl_allocs->pa._wcl_throughput).z = k * (_wcl_allocs->pa._wcl_throughput).z; } };
+    { (_wcl_allocs->pa._wcl_throughput).x = (_wcl_allocs->pa._wcl_throughput).x * ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).c).x; (_wcl_allocs->pa._wcl_throughput).y = (_wcl_allocs->pa._wcl_throughput).y * ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).c).y; (_wcl_allocs->pa._wcl_throughput).z = (_wcl_allocs->pa._wcl_throughput).z * ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Sphere__Ptr((_wcl_allocs->pa._wcl_obj), 1, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Sphere *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Sphere *)_wcl_allocs->gn))).c).z; };
+
+    { { ((_wcl_allocs->pa._wcl_currentRay).o).x = (_wcl_allocs->pa._wcl_hitPoint).x; ((_wcl_allocs->pa._wcl_currentRay).o).y = (_wcl_allocs->pa._wcl_hitPoint).y; ((_wcl_allocs->pa._wcl_currentRay).o).z = (_wcl_allocs->pa._wcl_hitPoint).z; }; { ((_wcl_allocs->pa._wcl_currentRay).d).x = (_wcl_allocs->pa._wcl_transDir).x; ((_wcl_allocs->pa._wcl_currentRay).d).y = (_wcl_allocs->pa._wcl_transDir).y; ((_wcl_allocs->pa._wcl_currentRay).d).z = (_wcl_allocs->pa._wcl_transDir).z; }; };
+    continue;
+   }
+  }
+ }
+}
+
+ void GenerateCameraRay(_WclProgramAllocations *_wcl_allocs, __global const Camera *camera,
+  unsigned int *seed0, unsigned int *seed1,
+  const int width, const int height, const int x, const int y, Ray *ray) {
+ const float invWidth = 1.f / width;
+ const float invHeight = 1.f / height;
+ const float r1 = GetRandom(_wcl_allocs, seed0, seed1) - .5f;
+ const float r2 = GetRandom(_wcl_allocs, seed0, seed1) - .5f;
+ const float kcx = (x + r1) * invWidth - .5f;
+ const float kcy = (y + r2) * invHeight - .5f;
+
+ Vec rdir;
+ { (_wcl_allocs->pa._wcl_rdir).x = (*(_wcl_addr_clamp_global_5_const___u_uglobal__Camera__Ptr((camera), 1, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Camera *)_wcl_allocs->gn))).x.x * kcx + (*(_wcl_addr_clamp_global_5_const___u_uglobal__Camera__Ptr((camera), 1, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Camera *)_wcl_allocs->gn))).y.x * kcy + (*(_wcl_addr_clamp_global_5_const___u_uglobal__Camera__Ptr((camera), 1, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Camera *)_wcl_allocs->gn))).dir.x; (_wcl_allocs->pa._wcl_rdir).y = (*(_wcl_addr_clamp_global_5_const___u_uglobal__Camera__Ptr((camera), 1, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Camera *)_wcl_allocs->gn))).x.y * kcx + (*(_wcl_addr_clamp_global_5_const___u_uglobal__Camera__Ptr((camera), 1, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Camera *)_wcl_allocs->gn))).y.y * kcy + (*(_wcl_addr_clamp_global_5_const___u_uglobal__Camera__Ptr((camera), 1, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Camera *)_wcl_allocs->gn))).dir.y; (_wcl_allocs->pa._wcl_rdir).z = (*(_wcl_addr_clamp_global_5_const___u_uglobal__Camera__Ptr((camera), 1, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Camera *)_wcl_allocs->gn))).x.z * kcx + (*(_wcl_addr_clamp_global_5_const___u_uglobal__Camera__Ptr((camera), 1, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Camera *)_wcl_allocs->gn))).y.z * kcy + (*(_wcl_addr_clamp_global_5_const___u_uglobal__Camera__Ptr((camera), 1, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Camera *)_wcl_allocs->gn))).dir.z; };
+
+
+
+
+ Vec rorig;
+ { float k = (0.1f); { (_wcl_allocs->pa._wcl_rorig).x = k * (_wcl_allocs->pa._wcl_rdir).x; (_wcl_allocs->pa._wcl_rorig).y = k * (_wcl_allocs->pa._wcl_rdir).y; (_wcl_allocs->pa._wcl_rorig).z = k * (_wcl_allocs->pa._wcl_rdir).z; } };
+ { (_wcl_allocs->pa._wcl_rorig).x = (_wcl_allocs->pa._wcl_rorig).x + ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Camera__Ptr((camera), 1, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Camera *)_wcl_allocs->gn))).orig).x; (_wcl_allocs->pa._wcl_rorig).y = (_wcl_allocs->pa._wcl_rorig).y + ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Camera__Ptr((camera), 1, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Camera *)_wcl_allocs->gn))).orig).y; (_wcl_allocs->pa._wcl_rorig).z = (_wcl_allocs->pa._wcl_rorig).z + ((*(_wcl_addr_clamp_global_5_const___u_uglobal__Camera__Ptr((camera), 1, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__colors_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__sphere_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__camera_max, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_min, (const __global Camera *)_wcl_allocs->gl.RadianceGPU__pixels_max, (const __global Camera *)_wcl_allocs->gn))).orig).z; }
+
+ { float l = 1.f / sqrt(((_wcl_allocs->pa._wcl_rdir).x * (_wcl_allocs->pa._wcl_rdir).x + (_wcl_allocs->pa._wcl_rdir).y * (_wcl_allocs->pa._wcl_rdir).y + (_wcl_allocs->pa._wcl_rdir).z * (_wcl_allocs->pa._wcl_rdir).z)); { float k = (l); { (_wcl_allocs->pa._wcl_rdir).x = k * (_wcl_allocs->pa._wcl_rdir).x; (_wcl_allocs->pa._wcl_rdir).y = k * (_wcl_allocs->pa._wcl_rdir).y; (_wcl_allocs->pa._wcl_rdir).z = k * (_wcl_allocs->pa._wcl_rdir).z; } }; };
+ { { (((*(_wcl_addr_clamp_private_1_Ray__Ptr((ray), 1, (Ray *)&_wcl_allocs->pa, (Ray *)(&_wcl_allocs->pa + 1), (Ray *)_wcl_allocs->pn)))).o).x = (_wcl_allocs->pa._wcl_rorig).x; (((*(_wcl_addr_clamp_private_1_Ray__Ptr((ray), 1, (Ray *)&_wcl_allocs->pa, (Ray *)(&_wcl_allocs->pa + 1), (Ray *)_wcl_allocs->pn)))).o).y = (_wcl_allocs->pa._wcl_rorig).y; (((*(_wcl_addr_clamp_private_1_Ray__Ptr((ray), 1, (Ray *)&_wcl_allocs->pa, (Ray *)(&_wcl_allocs->pa + 1), (Ray *)_wcl_allocs->pn)))).o).z = (_wcl_allocs->pa._wcl_rorig).z; }; { (((*(_wcl_addr_clamp_private_1_Ray__Ptr((ray), 1, (Ray *)&_wcl_allocs->pa, (Ray *)(&_wcl_allocs->pa + 1), (Ray *)_wcl_allocs->pn)))).d).x = (_wcl_allocs->pa._wcl_rdir).x; (((*(_wcl_addr_clamp_private_1_Ray__Ptr((ray), 1, (Ray *)&_wcl_allocs->pa, (Ray *)(&_wcl_allocs->pa + 1), (Ray *)_wcl_allocs->pn)))).d).y = (_wcl_allocs->pa._wcl_rdir).y; (((*(_wcl_addr_clamp_private_1_Ray__Ptr((ray), 1, (Ray *)&_wcl_allocs->pa, (Ray *)(&_wcl_allocs->pa + 1), (Ray *)_wcl_allocs->pn)))).d).z = (_wcl_allocs->pa._wcl_rdir).z; }; };
+}
+
+__kernel void RadianceGPU(
+    __global Vec *colors, ulong _wcl_colors_size, __global unsigned int *seedsInput, ulong _wcl_seedsInput_size,
+ __global const Sphere *sphere, ulong _wcl_sphere_size, __global const Camera *camera, ulong _wcl_camera_size,
+ const unsigned int sphereCount,
+ const unsigned int width, const unsigned int height,
+ const unsigned int currentSample,
+ __global int *pixels, ulong _wcl_pixels_size,
+ const unsigned int workOffset,
+ const unsigned int workAmount) {
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &colors[0], &colors[_wcl_colors_size],&seedsInput[0], &seedsInput[_wcl_seedsInput_size],&sphere[0], &sphere[_wcl_sphere_size],&camera[0], &camera[_wcl_camera_size],&pixels[0], &pixels[_wcl_pixels_size] },
+        0,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.RadianceGPU__colors_min, _wcl_allocs->gl.RadianceGPU__colors_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.RadianceGPU__seedsInput_min, _wcl_allocs->gl.RadianceGPU__seedsInput_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.RadianceGPU__sphere_min, _wcl_allocs->gl.RadianceGPU__sphere_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.RadianceGPU__camera_min, _wcl_allocs->gl.RadianceGPU__camera_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.RadianceGPU__pixels_min, _wcl_allocs->gl.RadianceGPU__pixels_max, (__global uint*)0)))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+ const int gid = get_global_id(0);
+ // Check if we have to do something
+ if (gid >= workAmount)
+  return;
+
+ const int scrX = (workOffset + gid) % width;
+ const int scrY = (workOffset + gid) / width;
+
+ /* LordCRC: move seed to local store */
+ unsigned int seed0 = (*(_wcl_addr_clamp_global_5__u_uglobal__unsigned__int__Ptr((seedsInput)+(2 * gid), 1, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__colors_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__colors_max, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__sphere_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__sphere_max, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__camera_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__camera_max, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__pixels_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__pixels_max, (__global unsigned int *)_wcl_allocs->gn)));;_wcl_allocs->pa._wcl_seed0 = seed0;
+ unsigned int seed1 = (*(_wcl_addr_clamp_global_5__u_uglobal__unsigned__int__Ptr((seedsInput)+(2 * gid + 1), 1, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__colors_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__colors_max, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__sphere_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__sphere_max, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__camera_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__camera_max, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__pixels_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__pixels_max, (__global unsigned int *)_wcl_allocs->gn)));;_wcl_allocs->pa._wcl_seed1 = seed1;
+
+ Ray ray;
+ GenerateCameraRay(_wcl_allocs, camera, &_wcl_allocs->pa._wcl_seed0, &_wcl_allocs->pa._wcl_seed1, width, height, scrX, scrY, &_wcl_allocs->pa._wcl_ray);
+
+ Vec r;
+ Radiance(_wcl_allocs, sphere, sphereCount, &_wcl_allocs->pa._wcl_ray, &_wcl_allocs->pa._wcl_seed0, &_wcl_allocs->pa._wcl_seed1, &_wcl_allocs->pa._wcl_r);
+
+ if (currentSample == 0) {
+  // Jens's patch for MacOS
+  { ((*(_wcl_addr_clamp_global_5__u_uglobal__Vec__Ptr((colors)+(gid), 1, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_max, (__global Vec *)_wcl_allocs->gn)))).x = (_wcl_allocs->pa._wcl_r).x; ((*(_wcl_addr_clamp_global_5__u_uglobal__Vec__Ptr((colors)+(gid), 1, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_max, (__global Vec *)_wcl_allocs->gn)))).y = (_wcl_allocs->pa._wcl_r).y; ((*(_wcl_addr_clamp_global_5__u_uglobal__Vec__Ptr((colors)+(gid), 1, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_max, (__global Vec *)_wcl_allocs->gn)))).z = (_wcl_allocs->pa._wcl_r).z; };
+ } else {
+  const float k1 = currentSample;
+  const float k2 = 1.f / (currentSample + 1.f);
+  (*(_wcl_addr_clamp_global_5__u_uglobal__Vec__Ptr((colors)+(gid), 1, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_max, (__global Vec *)_wcl_allocs->gn))).x = ((*(_wcl_addr_clamp_global_5__u_uglobal__Vec__Ptr((colors)+(gid), 1, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_max, (__global Vec *)_wcl_allocs->gn))).x * k1 + _wcl_allocs->pa._wcl_r.x) * k2;
+  (*(_wcl_addr_clamp_global_5__u_uglobal__Vec__Ptr((colors)+(gid), 1, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_max, (__global Vec *)_wcl_allocs->gn))).y = ((*(_wcl_addr_clamp_global_5__u_uglobal__Vec__Ptr((colors)+(gid), 1, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_max, (__global Vec *)_wcl_allocs->gn))).y * k1 + _wcl_allocs->pa._wcl_r.y) * k2;
+  (*(_wcl_addr_clamp_global_5__u_uglobal__Vec__Ptr((colors)+(gid), 1, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_max, (__global Vec *)_wcl_allocs->gn))).z = ((*(_wcl_addr_clamp_global_5__u_uglobal__Vec__Ptr((colors)+(gid), 1, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_max, (__global Vec *)_wcl_allocs->gn))).z * k1 + _wcl_allocs->pa._wcl_r.z) * k2;
+ }
+
+ (*(_wcl_addr_clamp_global_5__u_uglobal__int__Ptr((pixels)+(gid), 1, (__global int *)_wcl_allocs->gl.RadianceGPU__colors_min, (__global int *)_wcl_allocs->gl.RadianceGPU__colors_max, (__global int *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (__global int *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (__global int *)_wcl_allocs->gl.RadianceGPU__sphere_min, (__global int *)_wcl_allocs->gl.RadianceGPU__sphere_max, (__global int *)_wcl_allocs->gl.RadianceGPU__camera_min, (__global int *)_wcl_allocs->gl.RadianceGPU__camera_max, (__global int *)_wcl_allocs->gl.RadianceGPU__pixels_min, (__global int *)_wcl_allocs->gl.RadianceGPU__pixels_max, (__global int *)_wcl_allocs->gn))) = ((int)(pow(clamp((*(_wcl_addr_clamp_global_5__u_uglobal__Vec__Ptr((colors)+(gid), 1, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_max, (__global Vec *)_wcl_allocs->gn))).x, 0.f, 1.f), 1.f / 2.2f) * 255.f + .5f)) |
+   (((int)(pow(clamp((*(_wcl_addr_clamp_global_5__u_uglobal__Vec__Ptr((colors)+(gid), 1, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_max, (__global Vec *)_wcl_allocs->gn))).y, 0.f, 1.f), 1.f / 2.2f) * 255.f + .5f)) << 8) |
+   (((int)(pow(clamp((*(_wcl_addr_clamp_global_5__u_uglobal__Vec__Ptr((colors)+(gid), 1, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__colors_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__sphere_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__camera_max, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_min, (__global Vec *)_wcl_allocs->gl.RadianceGPU__pixels_max, (__global Vec *)_wcl_allocs->gn))).z, 0.f, 1.f), 1.f / 2.2f) * 255.f + .5f)) << 16);
+
+ (*(_wcl_addr_clamp_global_5__u_uglobal__unsigned__int__Ptr((seedsInput)+(2 * gid), 1, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__colors_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__colors_max, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__sphere_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__sphere_max, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__camera_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__camera_max, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__pixels_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__pixels_max, (__global unsigned int *)_wcl_allocs->gn))) = _wcl_allocs->pa._wcl_seed0;
+ (*(_wcl_addr_clamp_global_5__u_uglobal__unsigned__int__Ptr((seedsInput)+(2 * gid + 1), 1, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__colors_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__colors_max, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__seedsInput_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__seedsInput_max, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__sphere_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__sphere_max, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__camera_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__camera_max, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__pixels_min, (__global unsigned int *)_wcl_allocs->gl.RadianceGPU__pixels_max, (__global unsigned int *)_wcl_allocs->gn))) = _wcl_allocs->pa._wcl_seed1;
+}
 #!/usr/bin/perl
 
 $maxDepth = 4.0;

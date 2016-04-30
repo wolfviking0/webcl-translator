@@ -1,0 +1,797 @@
+
+/* WebCL Validator JSON header
+{
+    "version" : "1.0",
+    "kernels" :
+        {
+            "bitonicSortLocal" :
+                {
+                    "d_DstKey" :
+                        {
+                            "index" : 0,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_DstKey_size"
+                        },
+                    "_wcl_d_DstKey_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "d_DstVal" :
+                        {
+                            "index" : 2,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_DstVal_size"
+                        },
+                    "_wcl_d_DstVal_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "d_SrcKey" :
+                        {
+                            "index" : 4,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_SrcKey_size"
+                        },
+                    "_wcl_d_SrcKey_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "d_SrcVal" :
+                        {
+                            "index" : 6,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_SrcVal_size"
+                        },
+                    "_wcl_d_SrcVal_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        },
+                    "arrayLength" :
+                        {
+                            "index" : 8,
+                            "type" : "uint"
+                        },
+                    "sortDir" :
+                        {
+                            "index" : 9,
+                            "type" : "uint"
+                        }
+                },
+            "bitonicSortLocal1" :
+                {
+                    "d_DstKey" :
+                        {
+                            "index" : 0,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_DstKey_size"
+                        },
+                    "_wcl_d_DstKey_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "d_DstVal" :
+                        {
+                            "index" : 2,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_DstVal_size"
+                        },
+                    "_wcl_d_DstVal_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "d_SrcKey" :
+                        {
+                            "index" : 4,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_SrcKey_size"
+                        },
+                    "_wcl_d_SrcKey_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "d_SrcVal" :
+                        {
+                            "index" : 6,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_SrcVal_size"
+                        },
+                    "_wcl_d_SrcVal_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        }
+                },
+            "bitonicMergeGlobal" :
+                {
+                    "d_DstKey" :
+                        {
+                            "index" : 0,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_DstKey_size"
+                        },
+                    "_wcl_d_DstKey_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "d_DstVal" :
+                        {
+                            "index" : 2,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_DstVal_size"
+                        },
+                    "_wcl_d_DstVal_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "d_SrcKey" :
+                        {
+                            "index" : 4,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_SrcKey_size"
+                        },
+                    "_wcl_d_SrcKey_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "d_SrcVal" :
+                        {
+                            "index" : 6,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_SrcVal_size"
+                        },
+                    "_wcl_d_SrcVal_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        },
+                    "arrayLength" :
+                        {
+                            "index" : 8,
+                            "type" : "uint"
+                        },
+                    "size" :
+                        {
+                            "index" : 9,
+                            "type" : "uint"
+                        },
+                    "stride" :
+                        {
+                            "index" : 10,
+                            "type" : "uint"
+                        },
+                    "sortDir" :
+                        {
+                            "index" : 11,
+                            "type" : "uint"
+                        }
+                },
+            "bitonicMergeLocal" :
+                {
+                    "d_DstKey" :
+                        {
+                            "index" : 0,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_DstKey_size"
+                        },
+                    "_wcl_d_DstKey_size" :
+                        {
+                            "index" : 1,
+                            "type" : "ulong"
+                        },
+                    "d_DstVal" :
+                        {
+                            "index" : 2,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_DstVal_size"
+                        },
+                    "_wcl_d_DstVal_size" :
+                        {
+                            "index" : 3,
+                            "type" : "ulong"
+                        },
+                    "d_SrcKey" :
+                        {
+                            "index" : 4,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_SrcKey_size"
+                        },
+                    "_wcl_d_SrcKey_size" :
+                        {
+                            "index" : 5,
+                            "type" : "ulong"
+                        },
+                    "d_SrcVal" :
+                        {
+                            "index" : 6,
+                            "type" : "uint *",
+                            "address-space" : "global",
+                            "size-parameter" : "_wcl_d_SrcVal_size"
+                        },
+                    "_wcl_d_SrcVal_size" :
+                        {
+                            "index" : 7,
+                            "type" : "ulong"
+                        },
+                    "arrayLength" :
+                        {
+                            "index" : 8,
+                            "type" : "uint"
+                        },
+                    "stride" :
+                        {
+                            "index" : 9,
+                            "type" : "uint"
+                        },
+                    "size" :
+                        {
+                            "index" : 10,
+                            "type" : "uint"
+                        },
+                    "sortDir" :
+                        {
+                            "index" : 11,
+                            "type" : "uint"
+                        }
+                }
+        }
+}
+*/
+
+// WebCL Validator: validation stage.
+#define _WCL_ADDRESS_SPACE_private_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_private_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_global_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_global_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_local_MIN (((32 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_local_ALIGNMENT (32/CHAR_BIT)
+#define _WCL_ADDRESS_SPACE_constant_MIN (((8 + (CHAR_BIT - 1)) / CHAR_BIT))
+#define _WCL_ADDRESS_SPACE_constant_ALIGNMENT (8/CHAR_BIT)
+typedef struct {
+    uint _wcl_t;
+    uint _wcl_2_t;
+    uint _wcl_keyA;
+    uint _wcl_valA;
+    uint _wcl_keyB;
+    uint _wcl_valB;
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
+
+typedef struct {
+    uint _wcl_l_key[512];
+    uint _wcl_l_val[512];
+    uint _wcl_2_l_key[512];
+    uint _wcl_2_l_val[512];
+    uint _wcl_3_l_key[512];
+    uint _wcl_3_l_val[512];
+} __attribute__ ((aligned (_WCL_ADDRESS_SPACE_local_ALIGNMENT))) _WclLocals;
+
+typedef struct {
+    __global uint *bitonicSortLocal__d_DstKey_min;
+    __global uint *bitonicSortLocal__d_DstKey_max;
+    __global uint *bitonicSortLocal__d_DstVal_min;
+    __global uint *bitonicSortLocal__d_DstVal_max;
+    __global uint *bitonicSortLocal__d_SrcKey_min;
+    __global uint *bitonicSortLocal__d_SrcKey_max;
+    __global uint *bitonicSortLocal__d_SrcVal_min;
+    __global uint *bitonicSortLocal__d_SrcVal_max;
+    __global uint *bitonicSortLocal1__d_DstKey_min;
+    __global uint *bitonicSortLocal1__d_DstKey_max;
+    __global uint *bitonicSortLocal1__d_DstVal_min;
+    __global uint *bitonicSortLocal1__d_DstVal_max;
+    __global uint *bitonicSortLocal1__d_SrcKey_min;
+    __global uint *bitonicSortLocal1__d_SrcKey_max;
+    __global uint *bitonicSortLocal1__d_SrcVal_min;
+    __global uint *bitonicSortLocal1__d_SrcVal_max;
+    __global uint *bitonicMergeGlobal__d_DstKey_min;
+    __global uint *bitonicMergeGlobal__d_DstKey_max;
+    __global uint *bitonicMergeGlobal__d_DstVal_min;
+    __global uint *bitonicMergeGlobal__d_DstVal_max;
+    __global uint *bitonicMergeGlobal__d_SrcKey_min;
+    __global uint *bitonicMergeGlobal__d_SrcKey_max;
+    __global uint *bitonicMergeGlobal__d_SrcVal_min;
+    __global uint *bitonicMergeGlobal__d_SrcVal_max;
+    __global uint *bitonicMergeLocal__d_DstKey_min;
+    __global uint *bitonicMergeLocal__d_DstKey_max;
+    __global uint *bitonicMergeLocal__d_DstVal_min;
+    __global uint *bitonicMergeLocal__d_DstVal_max;
+    __global uint *bitonicMergeLocal__d_SrcKey_min;
+    __global uint *bitonicMergeLocal__d_SrcKey_max;
+    __global uint *bitonicMergeLocal__d_SrcVal_min;
+    __global uint *bitonicMergeLocal__d_SrcVal_max;
+} _WclGlobalLimits;
+
+typedef struct {
+    __local _WclLocals * _wcl_locals_min;
+    __local _WclLocals * _wcl_locals_max;
+} _WclLocalLimits;
+
+typedef struct {
+    _WclGlobalLimits gl;
+    __global uint *gn;
+    _WclLocalLimits ll;
+    __local uint *ln;
+    _WclPrivates pa;
+    __private uint *pn;
+} _WclProgramAllocations;
+
+__constant uint _wcl_constant_null[_WCL_ADDRESS_SPACE_constant_MIN] = { 0 };
+
+// => General code that doesn't depend on input.
+
+#define _WCL_MEMCPY(dst, src) for(ulong i = 0; i < sizeof((src))/sizeof((src)[0]); i++) { (dst)[i] = (src)[i]; }
+
+#define _WCL_LAST(type, ptr) (((type)(ptr)) - 1)
+#define _WCL_FILLCHAR ((uchar)0xCC)
+
+// POCL crashes at run time if the parameters are local character
+// pointers.
+typedef uint _WclInitType;
+
+// NOTE: this expects that null pointer is type of uint*
+#define _WCL_SET_NULL(type, req_bytes, min, max, null) ( ((((type)max)-((type)min))*sizeof(uint) >= req_bytes) ? ((type)min) : (null) )
+
+#ifdef cl_khr_initialize_memory
+#pragma OPENCL EXTENSION cl_khr_initialize_memory : enable
+#define _WCL_LOCAL_RANGE_INIT(begin, end)
+#else
+
+// be careful to edit this, this has been carefully tuned to work on every OpenCL driver
+// e.g. % item_count was added to start[(items_offset+i)] = _WCL_FILLCHAR;
+// to prevent compiler crash on Apple GeForce 640M
+#define _WCL_LOCAL_RANGE_INIT(begin, end) do {               \
+    __local uchar *start = (__local uchar *)begin;           \
+    __local uchar *stop = (__local uchar *)end;              \
+    const size_t z_items = get_local_size(2);                \
+    const size_t yz_items = get_local_size(1) * z_items;     \
+    const size_t xyz_items = get_local_size(0) * yz_items;   \
+    const size_t item_index =                                \
+        (get_local_id(0) * yz_items) +                       \
+        (get_local_id(1) * z_items) +                        \
+        get_local_id(2);                                     \
+    size_t item_count = stop - start;                        \
+    size_t items_per_kernel = item_count / xyz_items;        \
+    size_t items_offset = items_per_kernel * item_index;     \
+    size_t reminders = item_count % xyz_items;               \
+    if (item_index < reminders) {                            \
+        start[xyz_items*items_per_kernel + item_index] = _WCL_FILLCHAR; \
+    }                                                                   \
+    for (size_t i = 0; i < items_per_kernel; i++) {                     \
+        start[(items_offset+i) % item_count] = _WCL_FILLCHAR;           \
+    }                                                                   \
+} while (0)                                                             \
+
+#endif // cl_khr_initialize_memory
+
+constant int hd4k_workaround_constant = 0;
+
+// <= General code that doesn't depend on input.
+
+bool _wcl_addr_check_private_1_uint__Ptr(uint *addr, unsigned size, uint * min0, uint * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(uint *, max0)) );
+}
+uint *_wcl_addr_clamp_private_1_uint__Ptr(uint *addr, unsigned size, uint * min0, uint * max0, uint * asnull)
+{
+     return _wcl_addr_check_private_1_uint__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+bool _wcl_addr_check_global_16__u_uglobal__uint__Ptr(__global uint *addr, unsigned size, __global uint * min0, __global uint * max0, __global uint * min1, __global uint * max1, __global uint * min2, __global uint * max2, __global uint * min3, __global uint * max3, __global uint * min4, __global uint * max4, __global uint * min5, __global uint * max5, __global uint * min6, __global uint * max6, __global uint * min7, __global uint * max7, __global uint * min8, __global uint * max8, __global uint * min9, __global uint * max9, __global uint * min10, __global uint * max10, __global uint * min11, __global uint * max11, __global uint * min12, __global uint * max12, __global uint * min13, __global uint * max13, __global uint * min14, __global uint * max14, __global uint * min15, __global uint * max15)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max0)) )
+        || ( ((addr) >= (min1)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max1)) )
+        || ( ((addr) >= (min2)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max2)) )
+        || ( ((addr) >= (min3)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max3)) )
+        || ( ((addr) >= (min4)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max4)) )
+        || ( ((addr) >= (min5)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max5)) )
+        || ( ((addr) >= (min6)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max6)) )
+        || ( ((addr) >= (min7)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max7)) )
+        || ( ((addr) >= (min8)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max8)) )
+        || ( ((addr) >= (min9)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max9)) )
+        || ( ((addr) >= (min10)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max10)) )
+        || ( ((addr) >= (min11)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max11)) )
+        || ( ((addr) >= (min12)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max12)) )
+        || ( ((addr) >= (min13)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max13)) )
+        || ( ((addr) >= (min14)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max14)) )
+        || ( ((addr) >= (min15)) && ((addr + size - 1) <= _WCL_LAST(__global uint *, max15)) );
+}
+__global uint *_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr(__global uint *addr, unsigned size, __global uint * min0, __global uint * max0, __global uint * min1, __global uint * max1, __global uint * min2, __global uint * max2, __global uint * min3, __global uint * max3, __global uint * min4, __global uint * max4, __global uint * min5, __global uint * max5, __global uint * min6, __global uint * max6, __global uint * min7, __global uint * max7, __global uint * min8, __global uint * max8, __global uint * min9, __global uint * max9, __global uint * min10, __global uint * max10, __global uint * min11, __global uint * max11, __global uint * min12, __global uint * max12, __global uint * min13, __global uint * max13, __global uint * min14, __global uint * max14, __global uint * min15, __global uint * max15, __global uint * asnull)
+{
+     return _wcl_addr_check_global_16__u_uglobal__uint__Ptr(addr, size, min0, max0, min1, max1, min2, max2, min3, max3, min4, max4, min5, max5, min6, max6, min7, max7, min8, max8, min9, max9, min10, max10, min11, max11, min12, max12, min13, max13, min14, max14, min15, max15) ? addr : asnull;
+}
+
+bool _wcl_addr_check_local_1__u_ulocal__uint__Ptr(__local uint *addr, unsigned size, __local uint * min0, __local uint * max0)
+{
+      return 0
+        || ( ((addr) >= (min0)) && ((addr + size - 1) <= _WCL_LAST(__local uint *, max0)) );
+}
+__local uint *_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr(__local uint *addr, unsigned size, __local uint * min0, __local uint * max0, __local uint * asnull)
+{
+     return _wcl_addr_check_local_1__u_ulocal__uint__Ptr(addr, size, min0, max0) ? addr : asnull;
+}
+
+
+// WebCL Validator: matching stage 2.
+// WebCL Validator: matching stage 1.
+/*
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ *
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
+ */
+
+
+
+//Passed down by clBuildProgram
+//#define LOCAL_SIZE_LIMIT 1024
+
+
+
+inline void ComparatorPrivate(_WclProgramAllocations *_wcl_allocs, 
+    uint *keyA,
+    uint *valA,
+    uint *keyB,
+    uint *valB,
+    uint arrowDir
+){
+    if( ((*(_wcl_addr_clamp_private_1_uint__Ptr((keyA), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn))) > (*(_wcl_addr_clamp_private_1_uint__Ptr((keyB), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn)))) == arrowDir ){
+        uint t;
+        _wcl_allocs->pa._wcl_t = (*(_wcl_addr_clamp_private_1_uint__Ptr((keyA), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn))); (*(_wcl_addr_clamp_private_1_uint__Ptr((keyA), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_private_1_uint__Ptr((keyB), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn))); (*(_wcl_addr_clamp_private_1_uint__Ptr((keyB), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn))) = _wcl_allocs->pa._wcl_t;
+        _wcl_allocs->pa._wcl_t = (*(_wcl_addr_clamp_private_1_uint__Ptr((valA), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn))); (*(_wcl_addr_clamp_private_1_uint__Ptr((valA), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn))) = (*(_wcl_addr_clamp_private_1_uint__Ptr((valB), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn))); (*(_wcl_addr_clamp_private_1_uint__Ptr((valB), 1, (uint *)&_wcl_allocs->pa, (uint *)(&_wcl_allocs->pa + 1), (uint *)_wcl_allocs->pn))) = _wcl_allocs->pa._wcl_t;
+    }
+}
+
+inline void ComparatorLocal(_WclProgramAllocations *_wcl_allocs, 
+    __local uint *keyA,
+    __local uint *valA,
+    __local uint *keyB,
+    __local uint *valB,
+    uint arrowDir
+){
+    if( ((*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((keyA), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))) > (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((keyB), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln)))) == arrowDir ){
+        uint t;
+        _wcl_allocs->pa._wcl_2_t = (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((keyA), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))); (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((keyA), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((keyB), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))); (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((keyB), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))) = _wcl_allocs->pa._wcl_2_t;
+        _wcl_allocs->pa._wcl_2_t = (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((valA), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))); (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((valA), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((valB), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))); (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((valB), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))) = _wcl_allocs->pa._wcl_2_t;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Monolithic bitonic sort kernel for short arrays fitting into local memory
+////////////////////////////////////////////////////////////////////////////////
+__kernel __attribute__((reqd_work_group_size(512 / 2, 1, 1)))
+void bitonicSortLocal(
+    __global uint *d_DstKey, ulong _wcl_d_DstKey_size,
+    __global uint *d_DstVal, ulong _wcl_d_DstVal_size,
+    __global uint *d_SrcKey, ulong _wcl_d_SrcKey_size,
+    __global uint *d_SrcVal, ulong _wcl_d_SrcVal_size,
+    uint arrayLength,
+    uint sortDir
+){
+
+    __local _WclLocals _wcl_locals;
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { &d_DstKey[0], &d_DstKey[_wcl_d_DstKey_size],&d_DstVal[0], &d_DstVal[_wcl_d_DstVal_size],&d_SrcKey[0], &d_SrcKey[_wcl_d_SrcKey_size],&d_SrcVal[0], &d_SrcVal[_wcl_d_SrcVal_size],0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { &(&_wcl_locals)[0], &(&_wcl_locals)[1] },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, _wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, _wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, _wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, _wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, _wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, _wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, _wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, _wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, _wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, _wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, _wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, _wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, _wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, _wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, _wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, _wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint*)0))))))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll._wcl_locals_min, _wcl_allocs->ll._wcl_locals_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    __local uint l_key[512];
+    __local uint l_val[512];
+
+    //Offset to the beginning of subbatch and load data
+    d_SrcKey += get_group_id(0) * 512 + get_local_id(0);
+    d_SrcVal += get_group_id(0) * 512 + get_local_id(0);
+    d_DstKey += get_group_id(0) * 512 + get_local_id(0);
+    d_DstVal += get_group_id(0) * 512 + get_local_id(0);
+    (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_l_key)+(get_local_id(0) + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_SrcKey)+(0), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn)));
+    (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_l_val)+(get_local_id(0) + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_SrcVal)+(0), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn)));
+    (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_l_key)+(get_local_id(0) + (512 / 2)), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_SrcKey)+((512 / 2)), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn)));
+    (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_l_val)+(get_local_id(0) + (512 / 2)), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_SrcVal)+((512 / 2)), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn)));
+
+    for(uint size = 2; size < arrayLength; size <<= 1){
+        //Bitonic merge
+        uint dir = ( (get_local_id(0) & (size / 2)) != 0 );
+        for(uint stride = size / 2; stride > 0; stride >>= 1){
+            barrier(CLK_LOCAL_MEM_FENCE);
+            uint pos = 2 * get_local_id(0) - (get_local_id(0) & (stride - 1));
+            ComparatorLocal(_wcl_allocs, 
+                &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_l_key)+(pos + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))), &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_l_val)+(pos + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))),
+                &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_l_key)+(pos + stride), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))), &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_l_val)+(pos + stride), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))),
+                dir
+            );
+        }
+    }
+
+    //dir == sortDir for the last bitonic merge step
+    {
+        for(uint stride = arrayLength / 2; stride > 0; stride >>= 1){
+            barrier(CLK_LOCAL_MEM_FENCE);
+            uint pos = 2 * get_local_id(0) - (get_local_id(0) & (stride - 1));
+            ComparatorLocal(_wcl_allocs, 
+                &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_l_key)+(pos + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))), &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_l_val)+(pos + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))),
+                &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_l_key)+(pos + stride), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))), &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_l_val)+(pos + stride), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))),
+                sortDir
+            );
+        }
+    }
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+    (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_DstKey)+(0), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_l_key)+(get_local_id(0) + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln)));
+    (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_DstVal)+(0), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_l_val)+(get_local_id(0) + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln)));
+    (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_DstKey)+((512 / 2)), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_l_key)+(get_local_id(0) + (512 / 2)), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln)));
+    (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_DstVal)+((512 / 2)), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_l_val)+(get_local_id(0) + (512 / 2)), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln)));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Bitonic sort kernel for large arrays (not fitting into local memory)
+////////////////////////////////////////////////////////////////////////////////
+//Bottom-level bitonic sort
+//Almost the same as bitonicSortLocal with the only exception
+//of even / odd subarrays (of LOCAL_SIZE_LIMIT points) being
+//sorted in opposite directions
+__kernel __attribute__((reqd_work_group_size(512 / 2, 1, 1)))
+void bitonicSortLocal1(
+    __global uint *d_DstKey, ulong _wcl_d_DstKey_size,
+    __global uint *d_DstVal, ulong _wcl_d_DstVal_size,
+    __global uint *d_SrcKey, ulong _wcl_d_SrcKey_size,
+    __global uint *d_SrcVal, ulong _wcl_d_SrcVal_size
+){
+
+    __local _WclLocals _wcl_locals;
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,&d_DstKey[0], &d_DstKey[_wcl_d_DstKey_size],&d_DstVal[0], &d_DstVal[_wcl_d_DstVal_size],&d_SrcKey[0], &d_SrcKey[_wcl_d_SrcKey_size],&d_SrcVal[0], &d_SrcVal[_wcl_d_SrcVal_size],0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { &(&_wcl_locals)[0], &(&_wcl_locals)[1] },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, _wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, _wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, _wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, _wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, _wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, _wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, _wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, _wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, _wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, _wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, _wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, _wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, _wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, _wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, _wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, _wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint*)0))))))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll._wcl_locals_min, _wcl_allocs->ll._wcl_locals_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    __local uint l_key[512];
+    __local uint l_val[512];
+
+    //Offset to the beginning of subarray and load data
+    d_SrcKey += get_group_id(0) * 512 + get_local_id(0);
+    d_SrcVal += get_group_id(0) * 512 + get_local_id(0);
+    d_DstKey += get_group_id(0) * 512 + get_local_id(0);
+    d_DstVal += get_group_id(0) * 512 + get_local_id(0);
+    (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_2_l_key)+(get_local_id(0) + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_SrcKey)+(0), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn)));
+    (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_2_l_val)+(get_local_id(0) + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_SrcVal)+(0), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn)));
+    (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_2_l_key)+(get_local_id(0) + (512 / 2)), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_SrcKey)+((512 / 2)), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn)));
+    (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_2_l_val)+(get_local_id(0) + (512 / 2)), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_SrcVal)+((512 / 2)), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn)));
+
+    uint comparatorI = get_global_id(0) & ((512 / 2) - 1);
+
+    for(uint size = 2; size < 512; size <<= 1){
+        //Bitonic merge
+        uint dir = (comparatorI & (size / 2)) != 0;
+        for(uint stride = size / 2; stride > 0; stride >>= 1){
+            barrier(CLK_LOCAL_MEM_FENCE);
+            uint pos = 2 * get_local_id(0) - (get_local_id(0) & (stride - 1));
+            ComparatorLocal(_wcl_allocs, 
+                &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_2_l_key)+(pos + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))), &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_2_l_val)+(pos + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))),
+                &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_2_l_key)+(pos + stride), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))), &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_2_l_val)+(pos + stride), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))),
+                dir
+            );
+        }
+    }
+
+    //Odd / even arrays of LOCAL_SIZE_LIMIT elements
+    //sorted in opposite directions
+    {
+        uint dir = (get_group_id(0) & 1);
+        for(uint stride = 512 / 2; stride > 0; stride >>= 1){
+            barrier(CLK_LOCAL_MEM_FENCE);
+            uint pos = 2 * get_local_id(0) - (get_local_id(0) & (stride - 1));
+            ComparatorLocal(_wcl_allocs, 
+                &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_2_l_key)+(pos + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))), &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_2_l_val)+(pos + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))),
+                &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_2_l_key)+(pos + stride), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))), &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_2_l_val)+(pos + stride), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))),
+               dir
+            );
+        }
+    }
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+    (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_DstKey)+(0), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_2_l_key)+(get_local_id(0) + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln)));
+    (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_DstVal)+(0), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_2_l_val)+(get_local_id(0) + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln)));
+    (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_DstKey)+((512 / 2)), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_2_l_key)+(get_local_id(0) + (512 / 2)), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln)));
+    (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_DstVal)+((512 / 2)), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_2_l_val)+(get_local_id(0) + (512 / 2)), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln)));
+}
+
+//Bitonic merge iteration for 'stride' >= LOCAL_SIZE_LIMIT
+__kernel void bitonicMergeGlobal(
+    __global uint *d_DstKey, ulong _wcl_d_DstKey_size,
+    __global uint *d_DstVal, ulong _wcl_d_DstVal_size,
+    __global uint *d_SrcKey, ulong _wcl_d_SrcKey_size,
+    __global uint *d_SrcVal, ulong _wcl_d_SrcVal_size,
+    uint arrayLength,
+    uint size,
+    uint stride,
+    uint sortDir
+){
+
+    __local _WclLocals _wcl_locals;
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,&d_DstKey[0], &d_DstKey[_wcl_d_DstKey_size],&d_DstVal[0], &d_DstVal[_wcl_d_DstVal_size],&d_SrcKey[0], &d_SrcKey[_wcl_d_SrcKey_size],&d_SrcVal[0], &d_SrcVal[_wcl_d_SrcVal_size],0, 0,0, 0,0, 0,0, 0 },
+        0,
+        { &(&_wcl_locals)[0], &(&_wcl_locals)[1] },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, _wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, _wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, _wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, _wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, _wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, _wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, _wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, _wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, _wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, _wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, _wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, _wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, _wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, _wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, _wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, _wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint*)0))))))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll._wcl_locals_min, _wcl_allocs->ll._wcl_locals_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    uint global_comparatorI = get_global_id(0);
+    uint comparatorI = global_comparatorI & (arrayLength / 2 - 1);
+
+    //Bitonic merge
+    uint dir = sortDir ^ ( (comparatorI & (size / 2)) != 0 );
+    uint pos = 2 * global_comparatorI - (global_comparatorI & (stride - 1));
+
+    uint keyA = (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_SrcKey)+(pos + 0), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn)));;_wcl_allocs->pa._wcl_keyA = keyA;
+    uint valA = (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_SrcVal)+(pos + 0), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn)));;_wcl_allocs->pa._wcl_valA = valA;
+    uint keyB = (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_SrcKey)+(pos + stride), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn)));;_wcl_allocs->pa._wcl_keyB = keyB;
+    uint valB = (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_SrcVal)+(pos + stride), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn)));;_wcl_allocs->pa._wcl_valB = valB;
+
+    ComparatorPrivate(_wcl_allocs, 
+        &_wcl_allocs->pa._wcl_keyA, &_wcl_allocs->pa._wcl_valA,
+        &_wcl_allocs->pa._wcl_keyB, &_wcl_allocs->pa._wcl_valB,
+        dir
+    );
+
+    (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_DstKey)+(pos + 0), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn))) = _wcl_allocs->pa._wcl_keyA;
+    (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_DstVal)+(pos + 0), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn))) = _wcl_allocs->pa._wcl_valA;
+    (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_DstKey)+(pos + stride), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn))) = _wcl_allocs->pa._wcl_keyB;
+    (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_DstVal)+(pos + stride), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn))) = _wcl_allocs->pa._wcl_valB;
+}
+
+//Combined bitonic merge steps for
+//'size' > LOCAL_SIZE_LIMIT and 'stride' = [1 .. LOCAL_SIZE_LIMIT / 2]
+__kernel __attribute__((reqd_work_group_size(512 / 2, 1, 1)))
+void bitonicMergeLocal(
+    __global uint *d_DstKey, ulong _wcl_d_DstKey_size,
+    __global uint *d_DstVal, ulong _wcl_d_DstVal_size,
+    __global uint *d_SrcKey, ulong _wcl_d_SrcKey_size,
+    __global uint *d_SrcVal, ulong _wcl_d_SrcVal_size,
+    uint arrayLength,
+    uint stride,
+    uint size,
+    uint sortDir
+){
+
+    __local _WclLocals _wcl_locals;
+local int hd4k_workaround_local;
+hd4k_workaround_local = hd4k_workaround_constant;
+    __local uint _wcl_local_null[_WCL_ADDRESS_SPACE_local_MIN];
+
+    _WclProgramAllocations _wcl_allocations_allocation = {
+        { 0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,&d_DstKey[0], &d_DstKey[_wcl_d_DstKey_size],&d_DstVal[0], &d_DstVal[_wcl_d_DstVal_size],&d_SrcKey[0], &d_SrcKey[_wcl_d_SrcKey_size],&d_SrcVal[0], &d_SrcVal[_wcl_d_SrcVal_size] },
+        0,
+        { &(&_wcl_locals)[0], &(&_wcl_locals)[1] },
+        _wcl_local_null,
+        { },
+        0
+
+    };
+    _WclProgramAllocations *_wcl_allocs = &_wcl_allocations_allocation;
+    _wcl_allocs->gn = _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, _wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, _wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, _wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, _wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, _wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, _wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, _wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, _wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, _wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, _wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, _wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, _wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, _wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, _wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, _wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, _WCL_SET_NULL(__global uint*, _WCL_ADDRESS_SPACE_global_MIN,_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, _wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint*)0))))))))))))))));
+    if (_wcl_allocs->gn == (__global uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+    _wcl_allocs->pn = _WCL_SET_NULL(__private uint*, _WCL_ADDRESS_SPACE_private_MIN, &_wcl_allocs->pa, (&_wcl_allocs->pa + 1), (__private uint*)0);
+    if (_wcl_allocs->pn == (__private uint*)0) return; // not enough space to meet the minimum access. Would be great if we could give info about the problem for the user. 
+
+    // => Local memory zeroing.
+    _WCL_LOCAL_RANGE_INIT(_wcl_allocs->ll._wcl_locals_min, _wcl_allocs->ll._wcl_locals_max);
+    _WCL_LOCAL_RANGE_INIT(_wcl_local_null, _wcl_local_null + _WCL_ADDRESS_SPACE_local_MIN);
+    barrier(CLK_LOCAL_MEM_FENCE);
+    // <= Local memory zeroing.
+
+    __local uint l_key[512];
+    __local uint l_val[512];
+
+    d_SrcKey += get_group_id(0) * 512 + get_local_id(0);
+    d_SrcVal += get_group_id(0) * 512 + get_local_id(0);
+    d_DstKey += get_group_id(0) * 512 + get_local_id(0);
+    d_DstVal += get_group_id(0) * 512 + get_local_id(0);
+    (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_3_l_key)+(get_local_id(0) + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_SrcKey)+(0), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn)));
+    (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_3_l_val)+(get_local_id(0) + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_SrcVal)+(0), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn)));
+    (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_3_l_key)+(get_local_id(0) + (512 / 2)), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_SrcKey)+((512 / 2)), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn)));
+    (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_3_l_val)+(get_local_id(0) + (512 / 2)), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))) = (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_SrcVal)+((512 / 2)), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn)));
+
+    //Bitonic merge
+    uint comparatorI = get_global_id(0) & ((arrayLength / 2) - 1);
+    uint dir = sortDir ^ ( (comparatorI & (size / 2)) != 0 );
+    for(; stride > 0; stride >>= 1){
+        barrier(CLK_LOCAL_MEM_FENCE);
+        uint pos = 2 * get_local_id(0) - (get_local_id(0) & (stride - 1));
+        ComparatorLocal(_wcl_allocs, 
+            &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_3_l_key)+(pos + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))), &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_3_l_val)+(pos + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))),
+            &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_3_l_key)+(pos + stride), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))), &(*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_3_l_val)+(pos + stride), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln))),
+            dir
+        );
+    }
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+    (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_DstKey)+(0), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_3_l_key)+(get_local_id(0) + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln)));
+    (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_DstVal)+(0), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_3_l_val)+(get_local_id(0) + 0), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln)));
+    (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_DstKey)+((512 / 2)), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_3_l_key)+(get_local_id(0) + (512 / 2)), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln)));
+    (*(_wcl_addr_clamp_global_16__u_uglobal__uint__Ptr((d_DstVal)+((512 / 2)), 1, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicSortLocal1__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeGlobal__d_SrcVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_DstVal_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcKey_max, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_min, (__global uint *)_wcl_allocs->gl.bitonicMergeLocal__d_SrcVal_max, (__global uint *)_wcl_allocs->gn))) = (*(_wcl_addr_clamp_local_1__u_ulocal__uint__Ptr((_wcl_locals._wcl_3_l_val)+(get_local_id(0) + (512 / 2)), 1, (__local uint *)_wcl_allocs->ll._wcl_locals_min, (__local uint *)_wcl_allocs->ll._wcl_locals_max, (__local uint *)_wcl_allocs->ln)));
+}

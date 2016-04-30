@@ -81,7 +81,6 @@ struct Scene {
 };
 
 typedef struct {
-    struct Ray _wcl_ray;
     float _wcl_floorDist;
     int _wcl_sphereIdx;
     float _wcl_sphereDist;
@@ -96,6 +95,7 @@ typedef struct {
     float _wcl_roughness;
     float _wcl_reflection;
     float2 _wcl_checker;
+    struct Ray _wcl_ray;
 } __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
 
 typedef struct {

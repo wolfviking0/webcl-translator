@@ -941,11 +941,13 @@ const __local float *_wcl_addr_clamp_local_1_const___u_ulocal__float__Ptr(const 
 }
 
 
-void _wcl_vstore4_0(_WclProgramAllocations* _wcl_allocs, float4 arg0, size_t arg1, __global float * arg2)
+float4 _wcl_vload4_0(_WclProgramAllocations* _wcl_allocs, size_t arg0, const __global float * arg1)
 {
-    __global float * ptr = arg2 + 4 * (size_t) arg1;
-    if (_wcl_addr_check_global_2__u_uglobal__float__Ptr(ptr, 4, (__global float *)_wcl_allocs->gl.reduce__output_min, (__global float *)_wcl_allocs->gl.reduce__output_max, (__global float *)_wcl_allocs->gl.reduce__input_min, (__global float *)_wcl_allocs->gl.reduce__input_max))
-        vstore4(arg0, 0, ptr);
+    const __global float * ptr = arg1 + 4 * (size_t) arg0;
+    if (_wcl_addr_check_global_2_const___u_uglobal__float__Ptr(ptr, 4, (const __global float *)_wcl_allocs->gl.reduce__output_min, (const __global float *)_wcl_allocs->gl.reduce__output_max, (const __global float *)_wcl_allocs->gl.reduce__input_min, (const __global float *)_wcl_allocs->gl.reduce__input_max))
+        return vload4(0, ptr);
+    else
+        return (float) 0;
 }
 float4 _wcl_vload4_1(_WclProgramAllocations* _wcl_allocs, size_t arg0, const __global float * arg1)
 {
@@ -955,13 +957,11 @@ float4 _wcl_vload4_1(_WclProgramAllocations* _wcl_allocs, size_t arg0, const __g
     else
         return (float) 0;
 }
-float4 _wcl_vload4_2(_WclProgramAllocations* _wcl_allocs, size_t arg0, const __global float * arg1)
+void _wcl_vstore4_2(_WclProgramAllocations* _wcl_allocs, float4 arg0, size_t arg1, __global float * arg2)
 {
-    const __global float * ptr = arg1 + 4 * (size_t) arg0;
-    if (_wcl_addr_check_global_2_const___u_uglobal__float__Ptr(ptr, 4, (const __global float *)_wcl_allocs->gl.reduce__output_min, (const __global float *)_wcl_allocs->gl.reduce__output_max, (const __global float *)_wcl_allocs->gl.reduce__input_min, (const __global float *)_wcl_allocs->gl.reduce__input_max))
-        return vload4(0, ptr);
-    else
-        return (float) 0;
+    __global float * ptr = arg2 + 4 * (size_t) arg1;
+    if (_wcl_addr_check_global_2__u_uglobal__float__Ptr(ptr, 4, (__global float *)_wcl_allocs->gl.reduce__output_min, (__global float *)_wcl_allocs->gl.reduce__output_max, (__global float *)_wcl_allocs->gl.reduce__input_min, (__global float *)_wcl_allocs->gl.reduce__input_max))
+        vstore4(arg0, 0, ptr);
 }
 // WebCL Validator: matching stage 2.
 // WebCL Validator: matching stage 1.
@@ -1077,8 +1077,8 @@ hd4k_workaround_local = hd4k_workaround_constant;
         size_t i = group_id * group_stride + local_id;
         while (i < n)
         {
-            float4 a = _wcl_vload4_1(_wcl_allocs, (size_t)(i), (__global const float*)(input));
-            float4 b = _wcl_vload4_2(_wcl_allocs, (size_t)(i + group_size), (__global const float*)(input));
+            float4 a = _wcl_vload4_0(_wcl_allocs, (size_t)(i), (__global const float*)(input));
+            float4 b = _wcl_vload4_1(_wcl_allocs, (size_t)(i + group_size), (__global const float*)(input));
             float4 s = (float4)( ((*(_wcl_addr_clamp_local_1_const___u_ulocal__float__Ptr((((__local const float*)(shared)))+((size_t)(local_id)), 1, (const __local float *)_wcl_allocs->ll.reduce__shared_min, (const __local float *)_wcl_allocs->ll.reduce__shared_max, (const __local float *)_wcl_allocs->ln)))), ((*(_wcl_addr_clamp_local_1_const___u_ulocal__float__Ptr((((__local const float*)(shared)))+((size_t)(local_id + (64))), 1, (const __local float *)_wcl_allocs->ll.reduce__shared_min, (const __local float *)_wcl_allocs->ll.reduce__shared_max, (const __local float *)_wcl_allocs->ln)))), ((*(_wcl_addr_clamp_local_1_const___u_ulocal__float__Ptr((((__local const float*)(shared)))+((size_t)(local_id + ((64) + (64)))), 1, (const __local float *)_wcl_allocs->ll.reduce__shared_min, (const __local float *)_wcl_allocs->ll.reduce__shared_max, (const __local float *)_wcl_allocs->ln)))), ((*(_wcl_addr_clamp_local_1_const___u_ulocal__float__Ptr((((__local const float*)(shared)))+((size_t)(local_id + (((64) + (64)) + (64)))), 1, (const __local float *)_wcl_allocs->ll.reduce__shared_min, (const __local float *)_wcl_allocs->ll.reduce__shared_max, (const __local float *)_wcl_allocs->ln)))));
             (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((((__local float*)(shared)))+((size_t)(local_id)), 1, (__local float *)_wcl_allocs->ll.reduce__shared_min, (__local float *)_wcl_allocs->ll.reduce__shared_max, (__local float *)_wcl_allocs->ln))) = ((*(_wcl_addr_clamp_private_1_float___u_uattribute_u_u((ext_uvector_utype(4)))((((a + b + s)))+(0), 1, (float __attribute__((ext_vector_type(4))))&_wcl_allocs->pa, (float __attribute__((ext_vector_type(4))))(&_wcl_allocs->pa + 1), (float __attribute__((ext_vector_type(4))))_wcl_allocs->pn)))); (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((((__local float*)(shared)))+((size_t)(local_id + (64))), 1, (__local float *)_wcl_allocs->ll.reduce__shared_min, (__local float *)_wcl_allocs->ll.reduce__shared_max, (__local float *)_wcl_allocs->ln))) = ((*(_wcl_addr_clamp_private_1_float___u_uattribute_u_u((ext_uvector_utype(4)))((((a + b + s)))+(1), 1, (float __attribute__((ext_vector_type(4))))&_wcl_allocs->pa, (float __attribute__((ext_vector_type(4))))(&_wcl_allocs->pa + 1), (float __attribute__((ext_vector_type(4))))_wcl_allocs->pn)))); (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((((__local float*)(shared)))+((size_t)(local_id + ((64) + (64)))), 1, (__local float *)_wcl_allocs->ll.reduce__shared_min, (__local float *)_wcl_allocs->ll.reduce__shared_max, (__local float *)_wcl_allocs->ln))) = ((*(_wcl_addr_clamp_private_1_float___u_uattribute_u_u((ext_uvector_utype(4)))((((a + b + s)))+(2), 1, (float __attribute__((ext_vector_type(4))))&_wcl_allocs->pa, (float __attribute__((ext_vector_type(4))))(&_wcl_allocs->pa + 1), (float __attribute__((ext_vector_type(4))))_wcl_allocs->pn)))); (*(_wcl_addr_clamp_local_1__u_ulocal__float__Ptr((((__local float*)(shared)))+((size_t)(local_id + (((64) + (64)) + (64)))), 1, (__local float *)_wcl_allocs->ll.reduce__shared_min, (__local float *)_wcl_allocs->ll.reduce__shared_max, (__local float *)_wcl_allocs->ln))) = ((*(_wcl_addr_clamp_private_1_float___u_uattribute_u_u((ext_uvector_utype(4)))((((a + b + s)))+(3), 1, (float __attribute__((ext_vector_type(4))))&_wcl_allocs->pa, (float __attribute__((ext_vector_type(4))))(&_wcl_allocs->pa + 1), (float __attribute__((ext_vector_type(4))))_wcl_allocs->pn))));
             i += local_stride;
@@ -1135,7 +1135,7 @@ hd4k_workaround_local = hd4k_workaround_constant;
     if (get_local_id(0) == 0)
     {
         float4 v = (float4)( ((*(_wcl_addr_clamp_local_1_const___u_ulocal__float__Ptr((((__local const float*)(shared)))+((size_t)(0)), 1, (const __local float *)_wcl_allocs->ll.reduce__shared_min, (const __local float *)_wcl_allocs->ll.reduce__shared_max, (const __local float *)_wcl_allocs->ln)))), ((*(_wcl_addr_clamp_local_1_const___u_ulocal__float__Ptr((((__local const float*)(shared)))+((size_t)(0 + (64))), 1, (const __local float *)_wcl_allocs->ll.reduce__shared_min, (const __local float *)_wcl_allocs->ll.reduce__shared_max, (const __local float *)_wcl_allocs->ln)))), ((*(_wcl_addr_clamp_local_1_const___u_ulocal__float__Ptr((((__local const float*)(shared)))+((size_t)(0 + ((64) + (64)))), 1, (const __local float *)_wcl_allocs->ll.reduce__shared_min, (const __local float *)_wcl_allocs->ll.reduce__shared_max, (const __local float *)_wcl_allocs->ln)))), ((*(_wcl_addr_clamp_local_1_const___u_ulocal__float__Ptr((((__local const float*)(shared)))+((size_t)(0 + (((64) + (64)) + (64)))), 1, (const __local float *)_wcl_allocs->ll.reduce__shared_min, (const __local float *)_wcl_allocs->ll.reduce__shared_max, (const __local float *)_wcl_allocs->ln)))));
-        _wcl_vstore4_0(_wcl_allocs, (v), (size_t)(group_id), (__global float*)(output));
+        _wcl_vstore4_2(_wcl_allocs, (v), (size_t)(group_id), (__global float*)(output));
     }
 }
 

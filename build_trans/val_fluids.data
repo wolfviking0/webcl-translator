@@ -697,11 +697,11 @@ typedef struct {
     float _wcl_traced_q;
     float3 _wcl_halfway_vel;
     float3 _wcl_backtraced_position;
-    float3 _wcl_new_vel;
+    float _wcl_2_traced_q;
     float3 _wcl_2_halfway_vel;
     float3 _wcl_2_backtraced_position;
     float3 _wcl_traced_velocity;
-    float _wcl_2_traced_q;
+    float3 _wcl_new_vel;
 } __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
 
 typedef struct {
