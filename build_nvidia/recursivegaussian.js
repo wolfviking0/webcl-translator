@@ -180,7 +180,7 @@ Module['FS_createPath']('/', 'data', true, true);
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 7395, "filename": "/RecursiveGaussian.cl"}, {"audio": 0, "start": 7395, "crunched": 0, "end": 3153140, "filename": "/data/StoneRGB.ppm"}], "remote_package_size": 3153140, "package_uuid": "b2df5077-41c3-4b57-b684-4bc5cb0bad2c"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 7395, "filename": "/RecursiveGaussian.cl"}, {"audio": 0, "start": 7395, "crunched": 0, "end": 3153140, "filename": "/data/StoneRGB.ppm"}], "remote_package_size": 3153140, "package_uuid": "83e355a2-da8b-4e10-b422-cc9b09f14844"});
 
 })();
 

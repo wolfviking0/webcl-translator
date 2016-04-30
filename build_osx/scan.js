@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 15054, "filename": "/scan_kernel.cl"}], "remote_package_size": 15054, "package_uuid": "8dc91d9a-2a37-49f9-883b-4c31d1ccae89"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 15054, "filename": "/scan_kernel.cl"}], "remote_package_size": 15054, "package_uuid": "9fbcfde8-e677-41e3-aafc-3de3eb830a19"});
 
 })();
 

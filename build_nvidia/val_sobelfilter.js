@@ -180,7 +180,7 @@ Module['FS_createPath']('/', 'data', true, true);
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 41280, "filename": "/SobelFilter.cl"}, {"audio": 0, "start": 41280, "crunched": 0, "end": 3187025, "filename": "/data/StoneRGB.ppm"}], "remote_package_size": 3187025, "package_uuid": "ea27ef89-4b93-45a7-9ead-c0f69d5413b8"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 41280, "filename": "/SobelFilter.cl"}, {"audio": 0, "start": 41280, "crunched": 0, "end": 3187025, "filename": "/data/StoneRGB.ppm"}], "remote_package_size": 3187025, "package_uuid": "32445d4c-fe42-4ecf-85ef-319567b21a0b"});
 
 })();
 

@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 9773, "filename": "/HelloWorld.cl"}], "remote_package_size": 9773, "package_uuid": "a98fe0ad-8dd7-4c0e-b673-4e2bfde6642c"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 9773, "filename": "/HelloWorld.cl"}], "remote_package_size": 9773, "package_uuid": "0b3d46b0-41ae-40f6-bc1d-54b5ab29a418"});
 
 })();
 

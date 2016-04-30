@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 11498, "filename": "/oclMatVecMul.cl"}], "remote_package_size": 11498, "package_uuid": "31eb509f-f071-454d-b758-f853c09f913b"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 11498, "filename": "/oclMatVecMul.cl"}], "remote_package_size": 11498, "package_uuid": "0118e733-3e58-4be1-9913-d66616aa8b20"});
 
 })();
 

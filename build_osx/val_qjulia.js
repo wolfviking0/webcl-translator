@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 17212, "filename": "/qjulia_kernel.cl"}], "remote_package_size": 17212, "package_uuid": "f3860b47-6546-46e1-a452-100602714f53"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 17212, "filename": "/qjulia_kernel.cl"}], "remote_package_size": 17212, "package_uuid": "9e63303d-4824-4a2b-8f5e-ba4eb964b97d"});
 
 })();
 

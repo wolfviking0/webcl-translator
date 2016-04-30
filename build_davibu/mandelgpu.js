@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 3507, "filename": "/rendering_kernel_float4.cl"}], "remote_package_size": 3507, "package_uuid": "5002e4e1-5644-4ea8-99f5-5adcd6886764"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 3507, "filename": "/rendering_kernel_float4.cl"}], "remote_package_size": 3507, "package_uuid": "b3b266b8-dd8e-4952-83ae-1fa54d098093"});
 
 })();
 

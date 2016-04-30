@@ -180,7 +180,7 @@ Module['FS_createPath']('/', 'data', true, true);
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 7553, "filename": "/BoxFilter.cl"}, {"audio": 0, "start": 7553, "crunched": 0, "end": 3153321, "filename": "/data/lenaRGB.ppm"}], "remote_package_size": 3153321, "package_uuid": "65057d28-fd3e-4984-9060-712ad67d74e5"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 7553, "filename": "/BoxFilter.cl"}, {"audio": 0, "start": 7553, "crunched": 0, "end": 3153321, "filename": "/data/lenaRGB.ppm"}], "remote_package_size": 3153321, "package_uuid": "54e8ed88-204a-44a9-b2d8-c05dd86e612e"});
 
 })();
 

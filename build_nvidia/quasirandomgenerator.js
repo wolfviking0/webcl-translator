@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 4595, "filename": "/QuasirandomGenerator.cl"}], "remote_package_size": 4595, "package_uuid": "f25bcbdc-86d5-4efb-acf1-3866efe4b551"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 4595, "filename": "/QuasirandomGenerator.cl"}], "remote_package_size": 4595, "package_uuid": "ee91e028-e697-480a-9ab5-8f794c373c19"});
 
 })();
 

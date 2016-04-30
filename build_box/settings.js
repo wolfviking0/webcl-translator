@@ -48,7 +48,7 @@ for (var i = 0; i < urlParts.length; i++) {
     TITLE = eltParts[1];
     TITLE = TITLE.replace(/%20/gi, " ");
   } else {
-    PARAM.push(eltParts);
+    PARAM.push(''+eltParts);
   } 
 }
 
@@ -165,7 +165,6 @@ function loadModule(argv) {
       	text = Array.prototype.slice.call(arguments).join(' ');
       	element.value += text + '\n';
       	element.scrollTop = 1000000;
-      	//console.log(text);
       };
     })(),
     printErr: function(text) {

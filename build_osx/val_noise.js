@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 47888, "filename": "/noise_kernel.cl"}], "remote_package_size": 47888, "package_uuid": "62a24fdd-e0fd-409e-aa55-54d171d7bd88"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 47888, "filename": "/noise_kernel.cl"}], "remote_package_size": 47888, "package_uuid": "2dcce5c4-51cd-481c-9008-10fa5e29ea8e"});
 
 })();
 

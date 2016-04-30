@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 0, "filename": "/oclReduction_kernel.cl"}], "remote_package_size": 0, "package_uuid": "ff7254a4-4e21-472b-8295-53804ffc8234"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 0, "filename": "/oclReduction_kernel.cl"}], "remote_package_size": 0, "package_uuid": "40fbf158-da5f-4f90-b992-eb5e63c6c0c8"});
 
 })();
 

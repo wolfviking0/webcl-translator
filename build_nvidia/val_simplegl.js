@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 7224, "filename": "/simpleGL.cl"}], "remote_package_size": 7224, "package_uuid": "181478cc-3547-483d-8277-f61abcd23092"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 7224, "filename": "/simpleGL.cl"}], "remote_package_size": 7224, "package_uuid": "0cdc95a8-f3ab-4a00-88bd-5b1a15c88b0d"});
 
 })();
 

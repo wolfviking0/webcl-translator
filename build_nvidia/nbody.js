@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 12680, "filename": "/oclNbodyKernel.cl"}], "remote_package_size": 12680, "package_uuid": "f96ea970-b7bd-4639-b1b4-6aa420945a52"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 12680, "filename": "/oclNbodyKernel.cl"}], "remote_package_size": 12680, "package_uuid": "bedf78e1-fe3a-4250-a6a4-b2c5dc3122c6"});
 
 })();
 

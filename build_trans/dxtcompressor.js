@@ -180,7 +180,7 @@ Module['FS_createPath']('/', 'data', true, true);
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 131200, "filename": "/data/lena_ref.dds"}, {"audio": 0, "start": 131200, "crunched": 0, "end": 917647, "filename": "/data/lena.ppm"}, {"audio": 0, "start": 917647, "crunched": 0, "end": 930879, "filename": "/DXTCompressor_kernel.cl"}], "remote_package_size": 930879, "package_uuid": "0fdfcfcc-d1be-499c-a2d0-d745e58d2f01"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 131200, "filename": "/data/lena_ref.dds"}, {"audio": 0, "start": 131200, "crunched": 0, "end": 917647, "filename": "/data/lena.ppm"}, {"audio": 0, "start": 917647, "crunched": 0, "end": 930879, "filename": "/DXTCompressor_kernel.cl"}], "remote_package_size": 930879, "package_uuid": "2bde60db-d92a-49bf-a082-60a4efe026c0"});
 
 })();
 

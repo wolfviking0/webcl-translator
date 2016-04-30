@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 9421, "filename": "/transpose_kernel.cl"}], "remote_package_size": 9421, "package_uuid": "40934d0b-1c3a-4fb1-80f4-9032c92f156a"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 9421, "filename": "/transpose_kernel.cl"}], "remote_package_size": 9421, "package_uuid": "6af825bc-00d0-4cde-9e11-6ef45ad4844d"});
 
 })();
 

@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 4461, "filename": "/FDTD3d.cl"}], "remote_package_size": 4461, "package_uuid": "60c6bcfd-0bca-4c37-9aaa-355dcb829334"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 4461, "filename": "/FDTD3d.cl"}], "remote_package_size": 4461, "package_uuid": "5ef2e656-2798-4f11-bdcd-c94157d6c36d"});
 
 })();
 

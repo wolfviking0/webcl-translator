@@ -217,7 +217,6 @@ typedef struct mat4
 }mat4;
 
 typedef struct {
-    vec4 _wcl_v;
     mat4 _wcl_tmp;
     float _wcl_det;
     int _wcl_i;
@@ -232,6 +231,7 @@ typedef struct {
     mat4 _wcl_invCam;
     vec _wcl_translation;
     mat4 _wcl_rMatrix;
+    vec4 _wcl_v;
 } __attribute__ ((aligned (_WCL_ADDRESS_SPACE_private_ALIGNMENT))) _WclPrivates;
 
 typedef struct {

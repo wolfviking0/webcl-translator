@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 536, "filename": "/simple.cl"}], "remote_package_size": 536, "package_uuid": "e0009945-9ef3-4074-9a20-5dbf74cbe2df"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 536, "filename": "/simple.cl"}], "remote_package_size": 536, "package_uuid": "81a70d46-4684-4bc2-9466-93478bb021f2"});
 
 })();
 

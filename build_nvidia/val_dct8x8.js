@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 34601, "filename": "/DCT8x8.cl"}], "remote_package_size": 34601, "package_uuid": "95efbdd2-5c4a-4a4a-b48e-4ff317bcba54"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 34601, "filename": "/DCT8x8.cl"}], "remote_package_size": 34601, "package_uuid": "e2ab689c-7e31-4aca-854f-17c62c1d37f7"});
 
 })();
 

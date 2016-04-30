@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 35943, "filename": "/preprocessed_rendering_kernel_mandelbulb.cl"}], "remote_package_size": 35943, "package_uuid": "a6ec63f5-f8ac-4e64-8a09-309419aa7297"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 35943, "filename": "/preprocessed_rendering_kernel_mandelbulb.cl"}], "remote_package_size": 35943, "package_uuid": "2943574e-0ee2-49ed-9862-faf6425d26d2"});
 
 })();
 

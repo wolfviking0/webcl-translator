@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 11893, "filename": "/DotProduct.cl"}], "remote_package_size": 11893, "package_uuid": "2fda6c10-ec75-44ff-97c5-d7145a09c11e"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 11893, "filename": "/DotProduct.cl"}], "remote_package_size": 11893, "package_uuid": "2913ad55-9847-4ed5-bd79-0a50c52de636"});
 
 })();
 

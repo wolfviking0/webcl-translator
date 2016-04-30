@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 10457, "filename": "/VectorAdd.cl"}], "remote_package_size": 10457, "package_uuid": "b6c8fe01-a98b-43c2-ad05-ac33d539ec49"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 10457, "filename": "/VectorAdd.cl"}], "remote_package_size": 10457, "package_uuid": "8841d55a-9bc1-4885-be98-377c00e8b787"});
 
 })();
 

@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 1003, "filename": "/Convolution.cl"}], "remote_package_size": 1003, "package_uuid": "0a3d7c68-b24b-4deb-b074-10ec40a239d1"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 1003, "filename": "/Convolution.cl"}], "remote_package_size": 1003, "package_uuid": "6802de5a-b5a2-4bcd-a2a2-e5ce79e88b2e"});
 
 })();
 

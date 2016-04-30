@@ -181,7 +181,7 @@ Module['FS_createPath']('/Sources', 'Kernel', true, true);
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 5006, "filename": "/Sources/Kernel/TrajectoriesKernel.cl"}], "remote_package_size": 5006, "package_uuid": "d09b20d2-943d-4971-9b9e-426ba7ffb4dc"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 5006, "filename": "/Sources/Kernel/TrajectoriesKernel.cl"}], "remote_package_size": 5006, "package_uuid": "18bc11cf-6bf9-474b-aa56-68e1799a064c"});
 
 })();
 

@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 17452, "filename": "/BlackScholes.cl"}], "remote_package_size": 17452, "package_uuid": "02e52ee1-fefc-4e71-b952-06eb35ca5f3e"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 17452, "filename": "/BlackScholes.cl"}], "remote_package_size": 17452, "package_uuid": "e44ccfd2-637d-46e8-9f96-c97429738b06"});
 
 })();
 

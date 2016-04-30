@@ -48,7 +48,7 @@ for (var i = 0; i < urlParts.length; i++) {
     TITLE = eltParts[1];
     TITLE = TITLE.replace(/%20/gi, " ");
   } else {
-    PARAM.push(urlParts[i]);
+    PARAM.push(''+eltParts);
   } 
 }
 
@@ -62,8 +62,6 @@ function includeJS(jsFile) {
 }
 
 function loadModule(argv) {
-  console.info("setting.js : PARAM FOR LOAD MODULE : "+argv);
-
   // connect to canvas
   var preRunFunc = [];
   var postRunFunc = [];
@@ -79,7 +77,7 @@ function loadModule(argv) {
       function() {
         Elapsed_time = Date.now();
         if (typeof window !== 'undefined')
-          console.profile("cuda-profiling-result");
+          console.profile("webcl-profiling-result");
       }
     ); 
   }
@@ -96,8 +94,8 @@ function loadModule(argv) {
         console.info("Exec Time : " + (Date.now() - Elapsed_time) + " ms");
         console.info("Leaks : ");
         var count = 0;
-        for (obj in CU.cuda_objects) {
-          console.info("\t"+(count++)+" : "+CU.cuda_objects[obj]);
+        for (obj in CL.cl_objects) {
+          console.info("\t"+(count++)+" : "+CL.cl_objects[obj]);
         }
       }
     ); 
@@ -116,8 +114,8 @@ function loadModule(argv) {
           string+="Exec Time : " + (Date.now() - Elapsed_time) + " ms\n";
           string+="Leaks : \n";
           var count = 0;
-          for (obj in CU.cuda_objects) {
-            string+="\t"+(count++)+" : "+CU.cuda_objects[obj]+"\n";
+          for (obj in CL.cl_objects) {
+            string+="\t"+(count++)+" : "+CL.cl_objects[obj]+"\n";
           }
           string+="______________________________________________\n";
           string+="\n";
@@ -137,11 +135,11 @@ function loadModule(argv) {
         string+="\n";
         string+="\n";
         
-        if (CU.stack_trace_complete) {
+        if (CL.stack_trace_complete) {
           string+="STACK TRACER\n";
           string+="______________________________________________\n";
           string+="\n";
-          string+=CU.stack_trace_complete;
+          string+=CL.stack_trace_complete;
           string+="______________________________________________\n";
           string+="\n";
         }
@@ -167,7 +165,6 @@ function loadModule(argv) {
       	text = Array.prototype.slice.call(arguments).join(' ');
       	element.value += text + '\n';
       	element.scrollTop = 1000000;
-      	//console.log(text);
       };
     })(),
     printErr: function(text) {

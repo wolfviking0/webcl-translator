@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 10570, "filename": "/VectorHypot.cl"}], "remote_package_size": 10570, "package_uuid": "032e114b-a862-41cc-b24f-ee475e48bf78"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 10570, "filename": "/VectorHypot.cl"}], "remote_package_size": 10570, "package_uuid": "a8528909-8635-449e-bb1b-93b4a3057774"});
 
 })();
 

@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 7994, "filename": "/simpleMultiGPU.cl"}], "remote_package_size": 7994, "package_uuid": "b39b9569-65fd-46f7-b833-66df6302247c"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 7994, "filename": "/simpleMultiGPU.cl"}], "remote_package_size": 7994, "package_uuid": "a00f59d2-a8f5-43b8-9fbf-4b1e02432e42"});
 
 })();
 

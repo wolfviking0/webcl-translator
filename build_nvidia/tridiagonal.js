@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 7228, "filename": "/cyclic_kernels.cl"}, {"audio": 0, "start": 7228, "crunched": 0, "end": 12577, "filename": "/pcr_kernels.cl"}, {"audio": 0, "start": 12577, "crunched": 0, "end": 20938, "filename": "/sweep_kernels.cl"}], "remote_package_size": 20938, "package_uuid": "0aa2d2f3-3337-4324-a95b-951862859b6d"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 7228, "filename": "/cyclic_kernels.cl"}, {"audio": 0, "start": 7228, "crunched": 0, "end": 12577, "filename": "/pcr_kernels.cl"}, {"audio": 0, "start": 12577, "crunched": 0, "end": 20938, "filename": "/sweep_kernels.cl"}], "remote_package_size": 20938, "package_uuid": "1dada88e-b0cf-468b-9b75-3e7773e2a5ef"});
 
 })();
 

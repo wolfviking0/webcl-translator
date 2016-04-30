@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 8436, "filename": "/event_profiling.cl"}], "remote_package_size": 8436, "package_uuid": "dc789a1b-9da1-457e-b03d-b3ff1d3d17b1"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 8436, "filename": "/event_profiling.cl"}], "remote_package_size": 8436, "package_uuid": "5ca6a451-f906-4f3a-bdac-c34ed3d2c012"});
 
 })();
 

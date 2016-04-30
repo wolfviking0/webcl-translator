@@ -183,7 +183,7 @@ Module['FS_createPath']('/src', 'shaders', true, true);
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 205, "filename": "/res/flat_petal.mtl"}, {"audio": 0, "start": 205, "crunched": 0, "end": 3102, "filename": "/res/tri_petal_normals.obj"}, {"audio": 0, "start": 3102, "crunched": 0, "end": 118064, "filename": "/src/kernel/kernel_petal_motion.cl"}, {"audio": 0, "start": 118064, "crunched": 0, "end": 118394, "filename": "/src/shaders/fs_background.h"}, {"audio": 0, "start": 118394, "crunched": 0, "end": 118848, "filename": "/src/shaders/fs_diffuse.h"}, {"audio": 0, "start": 118848, "crunched": 0, "end": 119139, "filename": "/src/shaders/vs_diffuse.h"}, {"audio": 0, "start": 119139, "crunched": 0, "end": 119358, "filename": "/src/shaders/vs_ndcPlane.h"}], "remote_package_size": 119358, "package_uuid": "cd2944c3-35c6-4def-abdd-f489a424e837"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 205, "filename": "/res/flat_petal.mtl"}, {"audio": 0, "start": 205, "crunched": 0, "end": 3102, "filename": "/res/tri_petal_normals.obj"}, {"audio": 0, "start": 3102, "crunched": 0, "end": 118064, "filename": "/src/kernel/kernel_petal_motion.cl"}, {"audio": 0, "start": 118064, "crunched": 0, "end": 118394, "filename": "/src/shaders/fs_background.h"}, {"audio": 0, "start": 118394, "crunched": 0, "end": 118848, "filename": "/src/shaders/fs_diffuse.h"}, {"audio": 0, "start": 118848, "crunched": 0, "end": 119139, "filename": "/src/shaders/vs_diffuse.h"}, {"audio": 0, "start": 119139, "crunched": 0, "end": 119358, "filename": "/src/shaders/vs_ndcPlane.h"}], "remote_package_size": 119358, "package_uuid": "46d5c8be-78f2-41a3-bed0-97c4a261e88a"});
 
 })();
 

@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 5565, "filename": "/Histogram64.cl"}, {"audio": 0, "start": 5565, "crunched": 0, "end": 10074, "filename": "/Histogram256.cl"}], "remote_package_size": 10074, "package_uuid": "2106bb90-4ad9-425a-a807-7bcbc1d61c95"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 5565, "filename": "/Histogram64.cl"}, {"audio": 0, "start": 5565, "crunched": 0, "end": 10074, "filename": "/Histogram256.cl"}], "remote_package_size": 10074, "package_uuid": "e3977bcb-e2b0-434a-a4a3-0404194c6b6b"});
 
 })();
 

@@ -179,7 +179,7 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 20680, "filename": "/reduce_float_kernel.cl"}, {"audio": 0, "start": 20680, "crunched": 0, "end": 53624, "filename": "/reduce_float2_kernel.cl"}, {"audio": 0, "start": 53624, "crunched": 0, "end": 101967, "filename": "/reduce_float4_kernel.cl"}, {"audio": 0, "start": 101967, "crunched": 0, "end": 122230, "filename": "/reduce_int_kernel.cl"}, {"audio": 0, "start": 122230, "crunched": 0, "end": 154258, "filename": "/reduce_int2_kernel.cl"}, {"audio": 0, "start": 154258, "crunched": 0, "end": 201117, "filename": "/reduce_int4_kernel.cl"}], "remote_package_size": 201117, "package_uuid": "b59c92c4-f008-4d7e-b5aa-1df412740c0f"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 20680, "filename": "/reduce_float_kernel.cl"}, {"audio": 0, "start": 20680, "crunched": 0, "end": 53624, "filename": "/reduce_float2_kernel.cl"}, {"audio": 0, "start": 53624, "crunched": 0, "end": 101967, "filename": "/reduce_float4_kernel.cl"}, {"audio": 0, "start": 101967, "crunched": 0, "end": 122230, "filename": "/reduce_int_kernel.cl"}, {"audio": 0, "start": 122230, "crunched": 0, "end": 154258, "filename": "/reduce_int2_kernel.cl"}, {"audio": 0, "start": 154258, "crunched": 0, "end": 201117, "filename": "/reduce_int4_kernel.cl"}], "remote_package_size": 201117, "package_uuid": "9725b9e2-148a-4532-8979-84cf228e292e"});
 
 })();
 

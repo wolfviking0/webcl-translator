@@ -181,7 +181,7 @@ Module['FS_createPath']('/', 'shader', true, true);
   }
 
  }
- loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 2270, "filename": "/kernel/lorenz.cl"}, {"audio": 0, "start": 2270, "crunched": 0, "end": 5928, "filename": "/shader/lorenz.frag"}, {"audio": 0, "start": 5928, "crunched": 0, "end": 7436, "filename": "/shader/lorenz.vert"}], "remote_package_size": 7436, "package_uuid": "ce1304c5-c198-4148-bb1b-306ef7060fbf"});
+ loadPackage({"files": [{"audio": 0, "start": 0, "crunched": 0, "end": 2270, "filename": "/kernel/lorenz.cl"}, {"audio": 0, "start": 2270, "crunched": 0, "end": 5928, "filename": "/shader/lorenz.frag"}, {"audio": 0, "start": 5928, "crunched": 0, "end": 7436, "filename": "/shader/lorenz.vert"}], "remote_package_size": 7436, "package_uuid": "4e8c62c3-ec45-4d6f-b321-44f18450c53e"});
 
 })();
 
