@@ -138,7 +138,7 @@ KERNEL_attractor			= 	$(PRELOAD_FILE) kernel/lorenz.cl $(PRELOAD_FILE) shader/lo
 KERNEL_fluids					= 	$(PRELOAD_FILE) kernels.cl
 KERNEL_sakura					= 	$(PRELOAD_FILE) res/flat_petal.mtl $(PRELOAD_FILE) res/tri_petal_normals.obj $(PRELOAD_FILE) src/kernel/kernel_petal_motion.cl $(PRELOAD_FILE) src/shaders/fs_background.h $(PRELOAD_FILE) src/shaders/fs_diffuse.h $(PRELOAD_FILE) src/shaders/vs_diffuse.h $(PRELOAD_FILE) src/shaders/vs_ndcPlane.h
 
-CFLAGS_eventprofiling	=	  -s TOTAL_MEMORY=1024*1024*100
+CFLAGS_eventprofiling	=	  -s TOTAL_MEMORY=1024*1024*100*16
 CFLAGS_dxtcompressor	= 	-s GL_FFP_ONLY=1 -s LEGACY_GL_EMULATION=1
 CFLAGS_particles			= 	-s GL_FFP_ONLY=1 -s LEGACY_GL_EMULATION=1 -s TOTAL_MEMORY=1024*1024*256
 CFLAGS_attractor			= 	-s FULL_ES2=1 -s TOTAL_MEMORY=1024*1024*256 -std=c++11
