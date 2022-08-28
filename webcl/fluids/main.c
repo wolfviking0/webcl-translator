@@ -1027,7 +1027,7 @@ static void test_opencl_opengl_interop()
   
 }
 
-void run_opencl_test(use_gpu){
+void run_opencl_test(int use_gpu){
   
   init_opencl(use_gpu);
   load_cl_kernels(&clData);

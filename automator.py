@@ -7,7 +7,6 @@
 #  Copyright (c) 2013 Anthony Liot. All rights reserved.
 #
 
-import commands
 import subprocess
 import os
 import sys
@@ -56,8 +55,8 @@ def print_prof_data():
 
         savg = '%02d:%02d,%03d' % (m,s,mi)
 
-        print "Function '%s' called %d times" % (fname, data[0]),
-        print 'Execution time max: %s, average: %s' % (smax, savg)
+        print("Function '%s' called %d times" % (fname, data[0]))
+        print('Execution time max: %s, average: %s' % (smax, savg))
 
 def clear_prof_data():
     global PROF_DATA
@@ -80,7 +79,7 @@ def worker_update(online,local,option):
     """thread worker_update function"""
     directory = root_repositories + local
 
-    print "\tFunction worker 'update' ... "+str(directory)
+    print("\tFunction worker 'update' ... "+str(directory))
 
     if os.path.isdir(directory):
       pr = subprocess.Popen( "/usr/bin/git reset --hard" , cwd = os.path.dirname( root_repositories + local + "/"), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
@@ -97,7 +96,7 @@ def worker_update(online,local,option):
 
 @profile
 def update(repo_list):
-  print "\nFunction 'update' ... "+str(repo_list)
+  print("\nFunction 'update' ... "+str(repo_list))
   jobs = []
 
   for i in repo_list:
@@ -122,19 +121,19 @@ def worker_clean(repo,param):
     """thread worker_clean function"""
     directory = root_repositories + repo
 
-    print "\tFunction worker 'clean' ... "+str(directory)
+    print("\tFunction worker 'clean' ... "+str(directory))
 
     if os.path.isdir(directory):
       pr = subprocess.Popen( "make clean"+param , cwd = os.path.dirname( root_repositories + repo + "/"), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
       (out, error) = pr.communicate()
     else:
-      print "/!\ '",directory,"' doesn't exist, call with -u / --update options"
+      print("/!\ '",directory,"' doesn't exist, call with -u / --update options")
 
     return
 
 @profile
 def clean(repo_list,param):
-  print "\nFunction 'clean' ... "+str(repo_list)
+  print("\nFunction 'clean' ... "+str(repo_list))
   jobs = []
   for i in repo_list:
     p = multiprocessing.Process(target=worker_clean, args=(i,param,))
@@ -148,7 +147,7 @@ def clean(repo_list,param):
       pr = subprocess.Popen( "rm "+directory+"/*" , cwd = os.path.dirname( root_repositories ), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
       (out, error) = pr.communicate()
     else:
-      print "/!\ Website repo %s doesn't exist ..." % (folder)
+      print("/!\ Website repo %s doesn't exist ..." % (folder))
 
   for j in jobs:
     j.join()
@@ -157,24 +156,24 @@ def worker_build(repo,param,id):
     """thread worker_build function"""
     directory = root_repositories + repo
 
-    print "\tFunction worker 'build' ... "+str(directory)
+    print("\tFunction worker 'build' ... "+str(directory))
 
     if os.path.isdir(directory):
       pr = subprocess.Popen( "make all_"+str(id)+param , cwd = os.path.dirname( root_repositories + repo + "/"), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
       (out, error) = pr.communicate()
 
     else:
-      print "/!\ '",directory,"' doesn't exist, call with -u / --update options"
+      print("/!\ '",directory,"' doesn't exist, call with -u / --update options")
 
     return
 
 @profile
 def build(repo_list,param):
-  print "\nFunction 'build "+param+"' ... "+str(repo_list)
+  print("\nFunction 'build "+param+"' ... "+str(repo_list))
   if THREAD == False:
       for i in repo_list:
 
-        print "\tFunction no thread 'build' ... "+str(root_repositories + i)
+        print("\tFunction no thread 'build' ... "+str(root_repositories + i))
 
         pr = subprocess.Popen( "make"+param , cwd = os.path.dirname( root_repositories + i + "/"), shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
         (out, error) = pr.communicate()
@@ -193,7 +192,7 @@ def worker_copy(folder,repo):
     """thread worker_copy function"""
     directory = page_repositories + folder
 
-    print "\tFunction worker 'copy' ... "+str(directory)
+    print("\tFunction worker 'copy' ... "+str(directory))
     if not os.path.exists(directory):
       os.mkdir(directory)
 
@@ -223,13 +222,13 @@ def worker_copy(folder,repo):
       f.close()
 
     else:
-      print "/!\ Website repo %s doesn't exist ..." % (folder)
+      print("/!\ Website repo %s doesn't exist ..." % (folder))
 
     return
 
 @profile
 def copy(repo_list):
-  print "\nFunction 'copy' ... "+str(repo_list)
+  print("\nFunction 'copy' ... "+str(repo_list))
 
   jobs = []
   for repo in repo_list:
@@ -317,14 +316,14 @@ def launch(parser,options):
     param += " ORIG=0 " # Default value inside makefile
 
   if ( not ( ( all(repo.isdigit() for repo in options.repo) ) and all( ( int(repo) >= 0 and int(repo) <= 6 ) for repo in options.repo) ) ) :
-    print "/!\ You must use --repo with integer between 0 & 6"
+    print("/!\ You must use --repo with integer between 0 & 6")
     parser.print_help()
     exit(-1)
 
   # \todo Need to add the possibility
   # Check Error case
   if (options.all and num_opt_enabled != 1):
-    print "/!\ You must use --all alone or with --repo and/or --debug options"
+    print("/!\ You must use --all alone or with --repo and/or --debug options")
     parser.print_help()
     exit(-1)
 

@@ -5,6 +5,79 @@ webcl-translator
 
 Requirement :
 -------------
+	
+[Python3](http://python.org)
+
+[NodeJS](http://nodejs.org)
+
+ie: 
+    brew cmake node acorn python3
+
+How To (OSX) :
+--------------
+
+#### Step 1 (BUILD LLVM + BINARYEN + WEBCL-VALIDATOR) :
+
+	cd <YOUR_ROOT_DIRECTORY>
+    git clone git@github.com:llvm/llvm-project.git
+
+	// cd llvm-project/tools/clang/tools
+	// git clone git@github.com:wolfviking0/webcl-validator.git
+	// Disable the validor for now need more work to mske it up to date.
+    // echo "add_clang_subdirectory(webcl-validator)" >> CMakeLists.txt
+
+	cd <YOUR_ROOT_DIRECTORY>/llvm-project
+	mkdir build
+	cmake ../llvm -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS='lld;clang' -DLLVM_TARGETS_TO_BUILD="host;WebAssembly" -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=<YOUR_ROOT_DIRECTORY>/install
+
+	cd <YOUR_ROOT_DIRECTORY>
+    git clone git@github.com:WebAssembly/binaryen.git
+	cd <YOUR_ROOT_DIRECTORY>/binaryen
+	git submodule init
+	git submodule update
+	mkdir build
+	cmake ../ -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/Users/anthony.liot/Desktop/GitHub/install
+	
+
+#### Step 2 (WEBCL-TRANSLATOR) :
+
+	cd <YOUR_ROOT_DIRECTORY>
+	git clone git@github.com:wolfviking0/webcl-translator.git
+
+	cd webcl-translator/emscripten
+	./emcc --generate-config
+
+	# Edit the file and change the path to the LLVM_ROOT and BINARYEN_ROOT
+	vim .emscripten
+	'''
+	LLVM_ROOT = '/Users/anthony.liot/Desktop/GitHub/install/bin' # directory
+	BINARYEN_ROOT = '/Users/anthony.liot/Desktop/GitHub/install/bin' # directory
+	'''
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#####
+#####
+OLD DOCUMENTATIONS
+#####
+#####
+
+Requirement :
+-------------
 
 [Python2.7](http://python.org)
 
